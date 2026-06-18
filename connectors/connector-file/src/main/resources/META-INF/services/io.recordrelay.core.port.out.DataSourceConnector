@@ -1,0 +1,5 @@
+io.recordrelay.connector.file.csv.CsvConnector
+io.recordrelay.connector.file.excel.ExcelConnector
+io.recordrelay.connector.file.json.JsonConnector
+io.recordrelay.connector.file.yaml.YamlConnector
+io.recordrelay.connector.file.parquet.ParquetConnector

@@ -1,0 +1,4 @@
+io.recordrelay.mapping.JsonMappingParser
+io.recordrelay.mapping.YamlMappingParser
+io.recordrelay.mapping.SqlMappingParser
+io.recordrelay.mapping.NoSqlMappingParser

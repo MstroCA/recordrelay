@@ -1,0 +1,56 @@
+# Gradle
+.gradle/
+build/
+**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# OS generated
+Thumbs.db
+ehthumbs.db
+
+# Environment / secrets
+.env
+*.env
+*.properties.local
+
+# Test outputs
+**/test-results/
+**/jacoco/
+**/reports/
+
+# Distribution
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IntelliJ Platform plugin cache
+.intellijPlatform/
+
+# Ai Agent
+.claude

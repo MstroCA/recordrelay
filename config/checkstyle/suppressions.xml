@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- Generated sources and test code have relaxed rules -->
+    <suppress files="[\\/]generated[\\/]" checks=".*"/>
+    <suppress files="[\\/]test[\\/]" checks="MissingJavadocMethod,MissingJavadocType"/>
+    <suppress files="[\\/]test[\\/]" checks="MethodLength"/>
+</suppressions>

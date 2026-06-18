@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.recordrelay.desktop.view.MonitorController">
+
+    <top>
+        <VBox spacing="4">
+            <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
+            <Label text="Dashboard" styleClass="screen-title"/>
+            <Label text="Live transfer metrics — throughput, latency, and connection health."
+                   styleClass="screen-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="14">
+            <padding><Insets top="0" right="28" bottom="8" left="28"/></padding>
+
+            <!-- ── KPI row ──────────────────────────────────────────── -->
+            <HBox spacing="12">
+
+                <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" alignment="CENTER">
+                    <Label fx:id="lblTransferred" text="0" styleClass="kpi-value"/>
+                    <Label text="Records transferred" styleClass="kpi-label"/>
+                </VBox>
+
+                <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" alignment="CENTER">
+                    <Label fx:id="lblFailed" text="0" styleClass="kpi-value, kpi-danger"/>
+                    <Label text="Records failed" styleClass="kpi-label"/>
+                </VBox>
+
+                <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" alignment="CENTER">
+                    <Label fx:id="lblThroughput" text="0 rec/s" styleClass="kpi-value"/>
+                    <Label text="Current throughput" styleClass="kpi-label"/>
+                </VBox>
+
+                <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" alignment="CENTER">
+                    <Label fx:id="lblDuration" text="—" styleClass="kpi-value"/>
+                    <Label text="Duration" styleClass="kpi-label"/>
+                </VBox>
+
+                <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" spacing="4">
+                    <Label text="LATENCY" styleClass="section-label"/>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Label text="p50:" styleClass="kpi-label"/>
+                        <Label fx:id="lblP50" text="—" styleClass="kpi-mono"/>
+                    </HBox>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Label text="p95:" styleClass="kpi-label"/>
+                        <Label fx:id="lblP95" text="—" styleClass="kpi-mono"/>
+                    </HBox>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <Label text="p99:" styleClass="kpi-label"/>
+                        <Label fx:id="lblP99" text="—" styleClass="kpi-mono"/>
+                    </HBox>
+                </VBox>
+
+            </HBox>
+
+            <!-- ── Throughput chart ─────────────────────────────────── -->
+            <VBox styleClass="card" spacing="6" VBox.vgrow="ALWAYS">
+                <Label text="THROUGHPUT OVER TIME" styleClass="section-label"/>
+                <LineChart fx:id="chart" VBox.vgrow="ALWAYS" prefHeight="200"
+                           legendVisible="false">
+                    <xAxis>
+                        <NumberAxis label="Tick" autoRanging="true" minorTickVisible="false"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis label="rec/s" autoRanging="true" minorTickVisible="false"/>
+                    </yAxis>
+                </LineChart>
+            </VBox>
+
+            <!-- ── DB Health table ──────────────────────────────────── -->
+            <VBox styleClass="card" spacing="6">
+                <Label text="CONNECTION HEALTH" styleClass="section-label"/>
+                <TableView fx:id="tblHealth" prefHeight="160" tableMenuButtonVisible="false">
+                    <columns>
+                        <TableColumn fx:id="colConnName" text="Connection" prefWidth="200" minWidth="120"/>
+                        <TableColumn fx:id="colStatus"   text="Status"     prefWidth="120" minWidth="80"/>
+                        <TableColumn fx:id="colDetail"   text="Detail"     prefWidth="400" minWidth="100"/>
+                    </columns>
+                    <placeholder>
+                        <Label text="Click 'Check Health' to test all connections."
+                               styleClass="placeholder-hint"/>
+                    </placeholder>
+                </TableView>
+            </VBox>
+
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
+            <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
+            <Button fx:id="btnRefresh" text="Check Health" onAction="#onRefreshHealth"
+                    styleClass="accent-btn"/>
+            <Button text="Clear" onAction="#onClear"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="lblHealthStatus" text="● Ready" styleClass="status-label"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

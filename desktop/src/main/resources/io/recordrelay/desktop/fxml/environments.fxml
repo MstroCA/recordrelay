@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.recordrelay.desktop.view.EnvironmentsController">
+
+    <top>
+        <VBox spacing="4">
+            <padding><Insets top="28" right="28" bottom="12" left="28"/></padding>
+            <Label text="Environments" styleClass="screen-title"/>
+            <Label text="Manage logical groupings for your database connections."
+                   styleClass="screen-subtitle"/>
+            <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="table" tableMenuButtonVisible="false">
+            <padding><Insets left="28" right="28"/></padding>
+            <columns>
+                <TableColumn fx:id="colName" text="Name" prefWidth="220" minWidth="120"/>
+                <TableColumn fx:id="colDesc" text="Description" prefWidth="480" minWidth="200"/>
+            </columns>
+            <placeholder>
+                <Label text="No environments yet — click Add to create one."
+                       styleClass="placeholder-hint"/>
+            </placeholder>
+        </TableView>
+    </center>
+
+    <bottom>
+        <HBox spacing="8" styleClass="action-bar">
+            <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
+            <Button text="Add…"  onAction="#onAdd"    styleClass="accent-btn"/>
+            <Button fx:id="btnEdit"   text="Edit…"  onAction="#onEdit"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="btnRemove" text="Remove" onAction="#onRemove" styleClass="danger-btn"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

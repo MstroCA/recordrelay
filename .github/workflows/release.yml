@@ -1,0 +1,226 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  package-desktop:
+    name: Package Desktop (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            pkg_type: dmg
+            pkg_ext: dmg
+          - os: windows-latest
+            pkg_type: exe
+            pkg_ext: exe
+          - os: ubuntu-latest
+            pkg_type: deb
+            pkg_ext: deb
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Derive version
+        id: ver
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build installDist
+        run: ./gradlew :desktop:installDist -Pversion=${{ steps.ver.outputs.VERSION }}
+
+      - name: Install deb tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y fakeroot
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          MAIN_JAR=$(find desktop/build/install/desktop/lib -maxdepth 1 -name "desktop-*.jar" | head -1 | xargs basename)
+          jpackage \
+            --type dmg \
+            --name "RecordRelay" \
+            --app-version "${{ steps.ver.outputs.VERSION }}" \
+            --input desktop/build/install/desktop/lib \
+            --main-jar "$MAIN_JAR" \
+            --main-class io.recordrelay.desktop.RecordRelayApp \
+            --java-options "-Xmx512m" \
+            --dest desktop/build/packages
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          MAIN_JAR=$(find desktop/build/install/desktop/lib -maxdepth 1 -name "desktop-*.jar" | head -1 | xargs basename)
+          jpackage \
+            --type exe \
+            --name "RecordRelay" \
+            --app-version "${{ steps.ver.outputs.VERSION }}" \
+            --input desktop/build/install/desktop/lib \
+            --main-jar "$MAIN_JAR" \
+            --main-class io.recordrelay.desktop.RecordRelayApp \
+            --java-options "-Xmx512m" \
+            --win-dir-chooser \
+            --win-shortcut \
+            --dest desktop/build/packages
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          MAIN_JAR=$(find desktop/build/install/desktop/lib -maxdepth 1 -name "desktop-*.jar" | head -1 | xargs basename)
+          jpackage \
+            --type deb \
+            --name "recordrelay" \
+            --app-version "${{ steps.ver.outputs.VERSION }}" \
+            --input desktop/build/install/desktop/lib \
+            --main-jar "$MAIN_JAR" \
+            --main-class io.recordrelay.desktop.RecordRelayApp \
+            --java-options "-Xmx512m" \
+            --linux-shortcut \
+            --dest desktop/build/packages
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: desktop/build/packages/*.${{ matrix.pkg_ext }}
+          retention-days: 1
+
+  package-cli:
+    name: Package CLI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Derive version
+        id: ver
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Build fat JAR
+        run: ./gradlew :cli:shadowJar -Pversion=${{ steps.ver.outputs.VERSION }}
+
+      - name: Create archive
+        run: |
+          DIST="rr-cli-${{ steps.ver.outputs.VERSION }}"
+          mkdir -p "$DIST/bin" "$DIST/lib"
+          cp cli/build/libs/rr-cli-${{ steps.ver.outputs.VERSION }}.jar "$DIST/lib/"
+          printf '#!/usr/bin/env bash\nDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"\nexec java -jar "$DIR/lib/rr-cli-${{ steps.ver.outputs.VERSION }}.jar" "$@"\n' \
+            > "$DIST/bin/rr"
+          chmod +x "$DIST/bin/rr"
+          printf '@echo off\nset DIR=%%~dp0..\njava -jar "%%DIR%%\\lib\\rr-cli-${{ steps.ver.outputs.VERSION }}.jar" %%*\n' \
+            > "$DIST/bin/rr.cmd"
+          tar -czf "$DIST.tar.gz" "$DIST/"
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli
+          path: rr-cli-${{ steps.ver.outputs.VERSION }}.tar.gz
+          retention-days: 1
+
+  package-plugin:
+    name: Package Plugin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Derive version
+        id: ver
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Build plugin
+        run: ./gradlew :plugin:buildPlugin -Pversion=${{ steps.ver.outputs.VERSION }}
+
+      - name: Sign plugin
+        if: env.CERTIFICATE_CHAIN != ''
+        env:
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: ./gradlew :plugin:signPlugin -Pversion=${{ steps.ver.outputs.VERSION }}
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin
+          path: |
+            plugin/build/distributions/*.zip
+            plugin/build/distributions/*.sig
+          retention-days: 1
+
+  create-release:
+    name: Create GitHub Release
+    needs: [package-desktop, package-cli, package-plugin]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: List artifacts
+        run: find release-artifacts -type f | sort
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            release-artifacts/desktop-macos-latest/*.dmg
+            release-artifacts/desktop-windows-latest/*.exe
+            release-artifacts/desktop-ubuntu-latest/*.deb
+            release-artifacts/cli/*.tar.gz
+            release-artifacts/plugin/*.zip
+            release-artifacts/plugin/*.sig

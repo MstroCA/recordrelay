@@ -1,0 +1,186 @@
+/* RecordRelay Desktop — custom CSS overrides on top of AtlantaFX PrimerLight/Dark */
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+.sidebar {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 0 1 0 0;
+}
+
+.sidebar-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 0 8 4;
+}
+
+.nav-btn {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 9 12 9 12;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.nav-btn:hover {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.status-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-success-fg;
+    -fx-padding: 4 0 4 4;
+}
+
+/* ── Content pane ────────────────────────────────────────────────────── */
+.content-pane {
+    -fx-background-color: -color-bg-default;
+    -fx-padding: 0;
+}
+
+/* ── Screen typography ───────────────────────────────────────────────── */
+.screen-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.screen-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.placeholder-hint {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-warning-fg;
+    -fx-padding: 16 0 0 0;
+}
+
+/* ── Cards ───────────────────────────────────────────────────────────── */
+.card {
+    -fx-background-color: -color-bg-overlay;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+/* ── Progress bar ────────────────────────────────────────────────────── */
+.progress-bar > .bar {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-background-radius: 4;
+}
+
+.progress-bar > .track {
+    -fx-background-color: -color-accent-subtle;
+    -fx-background-radius: 4;
+}
+
+/* ── Action toolbar (bottom of screens) ─────────────────────────────── */
+.action-bar {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ── Error label ────────────────────────────────────────────────────── */
+.error-label {
+    -fx-text-fill: -color-danger-fg;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 0 0 0;
+}
+
+/* ── Accent button (Add actions) ────────────────────────────────────── */
+.accent-btn {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+}
+
+.accent-btn:hover {
+    -fx-opacity: 0.88;
+}
+
+/* ── Danger button (destructive actions) ────────────────────────────── */
+.danger-btn {
+    -fx-background-color: -color-danger-emphasis;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+}
+
+.danger-btn:hover {
+    -fx-opacity: 0.88;
+}
+
+/* ── Discovery panel ────────────────────────────────────────────────── */
+.discovery-panel {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 0 1 0 0;
+}
+
+.section-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 4 0 2 0;
+    -fx-letter-spacing: 0.08em;
+}
+
+.field-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-default;
+}
+
+/* ── Mapping panel ───────────────────────────────────────────────────── */
+.screen-subtitle-bold {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.match-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-success-fg;
+}
+
+.preview-area {
+    -fx-font-family: "Menlo", "Consolas", "Courier New", monospace;
+    -fx-font-size: 12px;
+    -fx-background-color: -color-bg-overlay;
+}
+
+/* ── Dashboard / KPI cards ───────────────────────────────────────────── */
+.kpi-card {
+    -fx-min-width: 100;
+    -fx-padding: 14 16 14 16;
+}
+
+.kpi-value {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.kpi-danger {
+    -fx-text-fill: -color-danger-fg;
+}
+
+.kpi-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-fg-muted;
+    -fx-padding: 2 0 0 0;
+}
+
+.kpi-mono {
+    -fx-font-family: "Menlo", "Consolas", "Courier New", monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-default;
+}

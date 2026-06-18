@@ -1,0 +1,36 @@
+<idea-plugin>
+    <id>io.recordrelay.plugin</id>
+    <name>RecordRelay</name>
+    <vendor>RecordRelay Authors</vendor>
+    <description>
+        Universal dynamic ETL — discover schemas, define column mappings, and execute data transfers
+        between SQL and NoSQL databases without leaving your IDE.
+        Requires IntelliJ IDEA 2024.1 or later.
+    </description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="RecordRelay"
+                    anchor="right"
+                    factoryClass="io.recordrelay.plugin.toolwindow.RecordRelayToolWindowFactory"
+                    canCloseContents="false"/>
+        <applicationService
+                serviceImplementation="io.recordrelay.plugin.service.RecordRelayService"/>
+    </extensions>
+
+    <actions>
+        <action id="RecordRelay.OpenMapping"
+                class="io.recordrelay.plugin.actions.OpenMappingAction"
+                text="Open RecordRelay Mapping…"
+                description="Open and validate a RecordRelay mapping file (JSON or YAML)">
+            <add-to-group group-id="FileMenu" anchor="last"/>
+        </action>
+        <action id="RecordRelay.RunTransfer"
+                class="io.recordrelay.plugin.actions.RunTransferFromFileAction"
+                text="Run RecordRelay Transfer"
+                description="Execute a transfer using the selected mapping file">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

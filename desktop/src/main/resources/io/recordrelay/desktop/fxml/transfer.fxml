@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.recordrelay.desktop.view.TransferController">
+
+    <top>
+        <VBox spacing="4">
+            <padding><Insets top="28" right="28" bottom="12" left="28"/></padding>
+            <Label text="Transfer" styleClass="screen-title"/>
+            <Label text="Configure source, target, and job settings, then start the transfer."
+                   styleClass="screen-subtitle"/>
+            <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="16">
+            <padding><Insets top="4" right="28" bottom="8" left="28"/></padding>
+
+            <!-- Source + Target cards -->
+            <HBox spacing="16">
+
+                <VBox styleClass="card" spacing="8" HBox.hgrow="ALWAYS">
+                    <Label text="SOURCE" styleClass="section-label"/>
+                    <Label text="Connection" styleClass="field-label"/>
+                    <ComboBox fx:id="cmbSrcConn" maxWidth="Infinity"/>
+                    <Label text="Table  (db.table)" styleClass="field-label"/>
+                    <TextField fx:id="tfSrcTable" promptText="e.g. analytics.users"/>
+                </VBox>
+
+                <VBox styleClass="card" spacing="8" HBox.hgrow="ALWAYS">
+                    <Label text="TARGET" styleClass="section-label"/>
+                    <Label text="Connection" styleClass="field-label"/>
+                    <ComboBox fx:id="cmbTgtConn" maxWidth="Infinity"/>
+                    <Label text="Table  (db.table)" styleClass="field-label"/>
+                    <TextField fx:id="tfTgtTable" promptText="e.g. warehouse.users"/>
+                </VBox>
+
+            </HBox>
+
+            <!-- Job settings card -->
+            <VBox styleClass="card" spacing="10">
+                <Label text="JOB SETTINGS" styleClass="section-label"/>
+                <GridPane hgap="12" vgap="8">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="120" prefWidth="140"/>
+                        <ColumnConstraints hgrow="ALWAYS" prefWidth="160"/>
+                        <ColumnConstraints minWidth="120" prefWidth="140"/>
+                        <ColumnConstraints hgrow="ALWAYS" prefWidth="200"/>
+                    </columnConstraints>
+
+                    <Label text="Transfer mode:"   GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <ComboBox fx:id="cmbMode"      GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+                    <Label text="Isolation:"       GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+                    <ComboBox fx:id="cmbIsolation" GridPane.columnIndex="3" GridPane.rowIndex="0" maxWidth="Infinity"/>
+
+                    <Label text="Chunk size:"      GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <TextField fx:id="tfChunkSize" GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="120"/>
+
+                    <Label text="Mapping file:"    GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <HBox spacing="6"              GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="3">
+                        <TextField fx:id="tfMappingFile" HBox.hgrow="ALWAYS"
+                                   promptText="Optional — path to saved .json / .yaml mapping"/>
+                        <Button text="Browse…" onAction="#onBrowseMapping"/>
+                    </HBox>
+                </GridPane>
+            </VBox>
+
+            <!-- Progress card -->
+            <VBox styleClass="card" spacing="8">
+                <Label text="PROGRESS" styleClass="section-label"/>
+                <ProgressBar fx:id="progressBar" maxWidth="Infinity" prefHeight="18"/>
+                <HBox spacing="24" alignment="CENTER_LEFT">
+                    <Label fx:id="lblStatus"      text="Ready" styleClass="status-label"/>
+                    <Label fx:id="lblTransferred" text="Transferred: 0 records"/>
+                </HBox>
+            </VBox>
+
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
+            <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
+            <Button fx:id="btnStart"  text="Start Transfer" onAction="#onStart"  styleClass="accent-btn"/>
+            <Button fx:id="btnCancel" text="Cancel"         onAction="#onCancel"/>
+            <Region HBox.hgrow="ALWAYS"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

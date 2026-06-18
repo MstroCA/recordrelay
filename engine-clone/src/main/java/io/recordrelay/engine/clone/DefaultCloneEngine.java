@@ -1,0 +1,378 @@
+/*
+ * Copyright 2026 the RecordRelay authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.recordrelay.engine.clone;
+
+import io.recordrelay.core.clone.domain.CloneJob;
+import io.recordrelay.core.clone.domain.CloneReport;
+import io.recordrelay.core.clone.domain.CloneRequest;
+import io.recordrelay.core.clone.domain.ClonedTableSummary;
+import io.recordrelay.core.clone.domain.ImportedPackage;
+import io.recordrelay.core.clone.domain.PackageManifest;
+import io.recordrelay.core.clone.domain.RelationshipGraph;
+import io.recordrelay.core.clone.engine.TraversalNode;
+import io.recordrelay.core.clone.exception.CloneException;
+import io.recordrelay.core.clone.port.in.CloneUseCase;
+import io.recordrelay.core.clone.port.in.ExportPackageUseCase;
+import io.recordrelay.core.clone.port.in.ImportPackageUseCase;
+import io.recordrelay.core.clone.port.out.CloneProgressListener;
+import io.recordrelay.core.clone.port.out.MaskingServicePort;
+import io.recordrelay.core.clone.port.out.PackageExporterPort;
+import io.recordrelay.core.clone.port.out.PackageImporterPort;
+import io.recordrelay.core.clone.port.out.RecordFetcherPort;
+import io.recordrelay.core.clone.port.out.RelationshipResolverPort;
+import io.recordrelay.core.domain.ConnectionProfile;
+import io.recordrelay.core.domain.DataRecord;
+import io.recordrelay.core.domain.DatabaseRef;
+import io.recordrelay.core.domain.MappingDefinition;
+import io.recordrelay.core.domain.MappingFormat;
+import io.recordrelay.core.domain.TableRef;
+import io.recordrelay.core.exception.ConnectorException;
+import io.recordrelay.core.spi.ConnectorRegistry;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Orchestrates the Smart Data Clone workflow.
+ *
+ * <p>Implements all three clone-related use cases:
+ *
+ * <ul>
+ *   <li>{@link CloneUseCase} — {@code rr clone}
+ *   <li>{@link ExportPackageUseCase} — {@code rr export-package}
+ *   <li>{@link ImportPackageUseCase} — {@code rr import-package}
+ * </ul>
+ *
+ * <p>Clone execution sequence:
+ *
+ * <ol>
+ *   <li>Resolve relationship graph from source
+ *   <li>BFS extraction of root record + all transitive dependencies
+ *   <li>Apply optional field masking (deterministic, preserves referential integrity)
+ *   <li>Write all records to target via {@link io.recordrelay.core.port.out.RecordWriter}
+ *   <li>Emit {@link CloneReport}
+ * </ol>
+ */
+public final class DefaultCloneEngine
+    implements CloneUseCase, ExportPackageUseCase, ImportPackageUseCase {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultCloneEngine.class);
+
+  private final RelationshipResolverPort relationshipResolver;
+  private final RecordFetcherPort recordFetcher;
+  private final MaskingServicePort maskingService;
+  private final PackageExporterPort packageExporter;
+  private final PackageImporterPort packageImporter;
+
+  public DefaultCloneEngine(
+      RelationshipResolverPort relationshipResolver,
+      RecordFetcherPort recordFetcher,
+      MaskingServicePort maskingService,
+      PackageExporterPort packageExporter,
+      PackageImporterPort packageImporter) {
+    this.relationshipResolver =
+        Objects.requireNonNull(relationshipResolver, "relationshipResolver");
+    this.recordFetcher = Objects.requireNonNull(recordFetcher, "recordFetcher");
+    this.maskingService = Objects.requireNonNull(maskingService, "maskingService");
+    this.packageExporter = Objects.requireNonNull(packageExporter, "packageExporter");
+    this.packageImporter = Objects.requireNonNull(packageImporter, "packageImporter");
+  }
+
+  /** Creates an engine with the default JDBC-backed implementations. */
+  public static DefaultCloneEngine createDefault() {
+    return new DefaultCloneEngine(
+        new JdbcRelationshipResolver(),
+        new JdbcRecordFetcher(),
+        new DefaultMaskingService(),
+        new RrPkgExporter(),
+        new RrPkgImporter());
+  }
+
+  @Override
+  public CloneReport clone(CloneJob job, CloneProgressListener listener) throws CloneException {
+    var request = job.request();
+    long startMs = System.currentTimeMillis();
+    var warnings = new ArrayList<String>();
+
+    LOG.info("Clone job {} starting: {}.{}", job.id(), request.rootTable(), request.rootId());
+    var graph = relationshipResolver.resolve(request.source(), request.rootTable());
+    listener.onRelationshipsDiscovered(graph.edgeCount());
+
+    var allRecords = bfsExtract(request, graph, warnings, listener);
+    writeToTarget(request, allRecords, listener, warnings);
+
+    long maskedFieldCount = countMaskedFields(allRecords, request);
+    var report =
+        new CloneReport(
+            request.rootTable(),
+            request.rootId(),
+            buildSummaries(allRecords),
+            System.currentTimeMillis() - startMs,
+            List.copyOf(warnings),
+            maskedFieldCount);
+
+    LOG.info(
+        "Clone job {} done: {} tables, {} records",
+        job.id(),
+        report.tableCount(),
+        report.totalRecords());
+    return report;
+  }
+
+  @Override
+  public Path exportPackage(CloneJob job, Path outputDirectory) throws CloneException {
+    var request = job.request();
+    var graph = relationshipResolver.resolve(request.source(), request.rootTable());
+    var allRecords = bfsExtract(request, graph, new ArrayList<>(), new CloneProgressListener() {});
+
+    var manifest =
+        new PackageManifest(
+            PackageManifest.CURRENT_VERSION,
+            Instant.now(),
+            request.source().type().name().toLowerCase(),
+            request.rootTable(),
+            request.rootId(),
+            new ArrayList<>(allRecords.keySet()),
+            null);
+
+    return packageExporter.export(manifest, graph, allRecords, outputDirectory);
+  }
+
+  @Override
+  public CloneReport importPackage(
+      Path packagePath, ConnectionProfile target, CloneProgressListener listener)
+      throws CloneException {
+    long startMs = System.currentTimeMillis();
+    var warnings = new ArrayList<String>();
+    var pkg = packageImporter.importFrom(packagePath);
+    writePackageToTarget(pkg, target, listener, warnings);
+    var summaries =
+        pkg.records().entrySet().stream()
+            .map(e -> new ClonedTableSummary(e.getKey(), e.getValue().size()))
+            .toList();
+    return new CloneReport(
+        pkg.manifest().rootTable(),
+        pkg.manifest().rootId(),
+        summaries,
+        System.currentTimeMillis() - startMs,
+        List.copyOf(warnings),
+        0L);
+  }
+
+  // ── BFS extraction ───────────────────────────────────────────────────────────
+
+  private Map<String, List<DataRecord>> bfsExtract(
+      CloneRequest request,
+      RelationshipGraph graph,
+      List<String> warnings,
+      CloneProgressListener listener)
+      throws CloneException {
+    var allRecords = new LinkedHashMap<String, List<DataRecord>>();
+    var visited = new HashSet<String>();
+    var queue = new ArrayDeque<TraversalNode>();
+    queue.add(new TraversalNode(request.rootTable(), "id", request.rootId(), 0));
+
+    while (!queue.isEmpty()) {
+      var node = queue.poll();
+      if (visited.contains(node.visitKey()) || node.depth() > request.depth()) {
+        continue;
+      }
+      visited.add(node.visitKey());
+      processNode(request, graph, node, allRecords, queue, warnings, listener);
+    }
+    return allRecords;
+  }
+
+  private void processNode(
+      CloneRequest request,
+      RelationshipGraph graph,
+      TraversalNode node,
+      Map<String, List<DataRecord>> allRecords,
+      ArrayDeque<TraversalNode> queue,
+      List<String> warnings,
+      CloneProgressListener listener)
+      throws CloneException {
+    listener.onTableExtractionStarted(node.tableName());
+    var records = applyMasking(fetchNode(request, node, warnings), request);
+    allRecords.computeIfAbsent(node.tableName(), k -> new ArrayList<>()).addAll(records);
+    listener.onTableExtractionCompleted(node.tableName(), records.size());
+    if (node.depth() == 0) {
+      listener.onRootRecordLoaded(node.tableName(), node.idValue());
+    }
+    enqueueOutgoing(graph, node, records, queue, warnings, listener);
+    enqueueIncoming(graph, node, records, queue);
+  }
+
+  private void enqueueOutgoing(
+      RelationshipGraph graph,
+      TraversalNode node,
+      List<DataRecord> records,
+      ArrayDeque<TraversalNode> queue,
+      List<String> warnings,
+      CloneProgressListener listener) {
+    for (var edge : graph.edgesFrom(node.tableName())) {
+      for (var record : records) {
+        var fkValue = record.get(edge.fromColumn());
+        if (fkValue == null) {
+          var msg = "Null FK value for " + node.tableName() + "." + edge.fromColumn();
+          warnings.add(msg);
+          listener.onWarning(msg);
+          continue;
+        }
+        queue.add(
+            new TraversalNode(
+                edge.toNode().tableName(), edge.toColumn(), fkValue.toString(), node.depth() + 1));
+      }
+    }
+  }
+
+  private void enqueueIncoming(
+      RelationshipGraph graph,
+      TraversalNode node,
+      List<DataRecord> records,
+      ArrayDeque<TraversalNode> queue) {
+    for (var edge : graph.edgesTo(node.tableName())) {
+      for (var record : records) {
+        var pkValue = record.get(edge.toColumn());
+        if (pkValue != null) {
+          queue.add(
+              new TraversalNode(
+                  edge.fromNode().tableName(),
+                  edge.fromColumn(),
+                  pkValue.toString(),
+                  node.depth() + 1));
+        }
+      }
+    }
+  }
+
+  // ── private helpers ──────────────────────────────────────────────────────────
+
+  private List<DataRecord> fetchNode(
+      CloneRequest request, TraversalNode node, List<String> warnings) throws CloneException {
+    if (node.depth() == 0) {
+      return recordFetcher
+          .fetchById(request.source(), node.tableName(), node.idColumn(), node.idValue())
+          .map(List::of)
+          .orElseGet(
+              () -> {
+                warnings.add("Root record not found: " + node.tableName() + ":" + node.idValue());
+                return List.of();
+              });
+    }
+    return recordFetcher.fetchByForeignKey(
+        request.source(), node.tableName(), node.idColumn(), node.idValue());
+  }
+
+  private List<DataRecord> applyMasking(List<DataRecord> records, CloneRequest request) {
+    if (request.masking().isEmpty()) {
+      return records;
+    }
+    return records.stream().map(r -> maskingService.mask(r, request.masking())).toList();
+  }
+
+  private void writeToTarget(
+      CloneRequest request,
+      Map<String, List<DataRecord>> allRecords,
+      CloneProgressListener listener,
+      List<String> warnings)
+      throws CloneException {
+    var targetConnector = ConnectorRegistry.findConnector(request.target());
+    var dbRef = new DatabaseRef(request.target().database(), request.target().type());
+    for (var entry : allRecords.entrySet()) {
+      if (!entry.getValue().isEmpty()) {
+        writeTable(
+            targetConnector,
+            request.target(),
+            dbRef,
+            entry.getKey(),
+            entry.getValue(),
+            listener,
+            warnings);
+      }
+    }
+  }
+
+  private void writePackageToTarget(
+      ImportedPackage pkg,
+      ConnectionProfile target,
+      CloneProgressListener listener,
+      List<String> warnings)
+      throws CloneException {
+    var targetConnector = ConnectorRegistry.findConnector(target);
+    var dbRef = new DatabaseRef(target.database(), target.type());
+    for (var entry : pkg.records().entrySet()) {
+      if (!entry.getValue().isEmpty()) {
+        writeTable(
+            targetConnector, target, dbRef, entry.getKey(), entry.getValue(), listener, warnings);
+      }
+    }
+  }
+
+  private void writeTable(
+      io.recordrelay.core.port.out.DataSourceConnector connector,
+      ConnectionProfile target,
+      DatabaseRef dbRef,
+      String tableName,
+      List<DataRecord> records,
+      CloneProgressListener listener,
+      List<String> warnings)
+      throws CloneException {
+    listener.onImportStarted(tableName);
+    var tableRef = new TableRef(dbRef, "", tableName);
+    var mapping =
+        new MappingDefinition(
+            "clone-identity", tableRef, tableRef, List.of(), MappingFormat.DIRECT, null);
+    try (var writer = connector.createWriter()) {
+      writer.open(target, tableRef, mapping);
+      for (var record : records) {
+        writer.write(record);
+      }
+      writer.flush();
+    } catch (ConnectorException e) {
+      var msg = "Failed to write table " + tableName + ": " + e.getMessage();
+      warnings.add(msg);
+      LOG.warn(msg, e);
+    } catch (Exception e) {
+      throw new CloneException("Unexpected error writing " + tableName, e);
+    }
+    listener.onImportCompleted(tableName, records.size());
+  }
+
+  private long countMaskedFields(Map<String, List<DataRecord>> allRecords, CloneRequest request) {
+    if (request.masking().isEmpty()) {
+      return 0L;
+    }
+    return allRecords.values().stream()
+        .flatMap(List::stream)
+        .mapToLong(r -> maskingService.countMaskedFields(r, request.masking()))
+        .sum();
+  }
+
+  private List<ClonedTableSummary> buildSummaries(Map<String, List<DataRecord>> allRecords) {
+    return allRecords.entrySet().stream()
+        .map(e -> new ClonedTableSummary(e.getKey(), e.getValue().size()))
+        .toList();
+  }
+}

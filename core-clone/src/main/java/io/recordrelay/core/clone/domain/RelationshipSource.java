@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.recordrelay.cli;
+package io.recordrelay.core.clone.domain;
 
-/** Process exit codes returned by all CLI commands. */
-public final class ExitCode {
-
-  public static final int SUCCESS = 0;
-  public static final int TRANSFER_FAILED = 1;
-  public static final int VALIDATION_ERROR = 2;
-  public static final int CONNECTION_ERROR = 3;
-  public static final int CONFIG_ERROR = 4;
-  public static final int CLONE_FAILED = 5;
-
-  private ExitCode() {}
+/**
+ * How a {@link RelationshipEdge} was discovered.
+ *
+ * <p>Priority order for resolution: FOREIGN_KEY → UNIQUE_KEY → HEURISTIC.
+ */
+public enum RelationshipSource {
+  /** Discovered from a database-level foreign key constraint (highest confidence). */
+  FOREIGN_KEY,
+  /** Inferred from unique key or index analysis (medium confidence). */
+  UNIQUE_KEY,
+  /** Inferred from column naming conventions (e.g., {@code customer_id}) (lowest confidence). */
+  HEURISTIC
 }

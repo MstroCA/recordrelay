@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.recordrelay.cli;
+package io.recordrelay.core.clone.extension;
 
-/** Process exit codes returned by all CLI commands. */
-public final class ExitCode {
-
-  public static final int SUCCESS = 0;
-  public static final int TRANSFER_FAILED = 1;
-  public static final int VALIDATION_ERROR = 2;
-  public static final int CONNECTION_ERROR = 3;
-  public static final int CONFIG_ERROR = 4;
-  public static final int CLONE_FAILED = 5;
-
-  private ExitCode() {}
+/**
+ * Extension point: AI-assisted relationship discovery.
+ *
+ * <p><strong>Not yet implemented.</strong> Future implementations will use language models and
+ * statistical analysis to discover implicit relationships between tables that lack explicit foreign
+ * key constraints, supplementing heuristic discovery with higher accuracy.
+ */
+public interface AiRelationshipDiscoveryPort {
+  // Reserved for future AI-based relationship discovery.
 }

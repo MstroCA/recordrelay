@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.recordrelay.cli;
+package io.recordrelay.core.clone.extension;
 
-/** Process exit codes returned by all CLI commands. */
-public final class ExitCode {
-
-  public static final int SUCCESS = 0;
-  public static final int TRANSFER_FAILED = 1;
-  public static final int VALIDATION_ERROR = 2;
-  public static final int CONNECTION_ERROR = 3;
-  public static final int CONFIG_ERROR = 4;
-  public static final int CLONE_FAILED = 5;
-
-  private ExitCode() {}
+/**
+ * Extension point: Observability and metrics emission (Micrometer, OpenTelemetry, Prometheus,
+ * etc.).
+ *
+ * <p><strong>Not yet implemented.</strong> Future implementations will emit metrics and traces for
+ * clone and transfer operations to monitoring backends.
+ */
+public interface ObservabilityPort {
+  // Reserved for future observability integration.
 }

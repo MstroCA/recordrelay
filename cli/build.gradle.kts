@@ -20,6 +20,7 @@ dependencies {
 
     // Engine pipeline and mapping parser implementations
     implementation(project(":engine-batch"))
+    implementation(project(":engine-clone"))
     runtimeOnly(project(":mapping-parsers"))
 
     // Connectors discovered at runtime via ServiceLoader

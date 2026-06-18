@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.recordrelay.cli;
+package io.recordrelay.core.clone.domain;
 
-/** Process exit codes returned by all CLI commands. */
-public final class ExitCode {
+import java.util.Objects;
 
-  public static final int SUCCESS = 0;
-  public static final int TRANSFER_FAILED = 1;
-  public static final int VALIDATION_ERROR = 2;
-  public static final int CONNECTION_ERROR = 3;
-  public static final int CONFIG_ERROR = 4;
-  public static final int CLONE_FAILED = 5;
+/** A vertex in the {@link RelationshipGraph} representing a single database table. */
+public record RelationshipNode(String tableName) {
 
-  private ExitCode() {}
+  /** Validates that the table name is non-blank. */
+  public RelationshipNode {
+    Objects.requireNonNull(tableName, "tableName");
+    if (tableName.isBlank()) {
+      throw new IllegalArgumentException("tableName must not be blank");
+    }
+  }
 }

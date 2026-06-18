@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.recordrelay.cli;
+package io.recordrelay.core.clone.exception;
 
-/** Process exit codes returned by all CLI commands. */
-public final class ExitCode {
+/** Thrown when the clone engine cannot complete an operation. */
+public final class CloneException extends Exception {
 
-  public static final int SUCCESS = 0;
-  public static final int TRANSFER_FAILED = 1;
-  public static final int VALIDATION_ERROR = 2;
-  public static final int CONNECTION_ERROR = 3;
-  public static final int CONFIG_ERROR = 4;
-  public static final int CLONE_FAILED = 5;
+  /** Creates a new exception with a descriptive message. */
+  public CloneException(String message) {
+    super(message);
+  }
 
-  private ExitCode() {}
+  /** Creates a new exception wrapping a lower-level cause. */
+  public CloneException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

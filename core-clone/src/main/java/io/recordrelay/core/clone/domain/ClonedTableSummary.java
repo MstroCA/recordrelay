@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.recordrelay.cli;
+package io.recordrelay.core.clone.domain;
 
-/** Process exit codes returned by all CLI commands. */
-public final class ExitCode {
+import java.util.Objects;
 
-  public static final int SUCCESS = 0;
-  public static final int TRANSFER_FAILED = 1;
-  public static final int VALIDATION_ERROR = 2;
-  public static final int CONNECTION_ERROR = 3;
-  public static final int CONFIG_ERROR = 4;
-  public static final int CLONE_FAILED = 5;
+/** Per-table statistics included in a {@link CloneReport}. */
+public record ClonedTableSummary(String tableName, long recordCount) {
 
-  private ExitCode() {}
+  /** Validates fields. */
+  public ClonedTableSummary {
+    Objects.requireNonNull(tableName, "tableName");
+    if (recordCount < 0) {
+      throw new IllegalArgumentException("recordCount must be non-negative");
+    }
+  }
 }

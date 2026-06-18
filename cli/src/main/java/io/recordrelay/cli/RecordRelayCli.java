@@ -16,9 +16,12 @@
 package io.recordrelay.cli;
 
 import io.recordrelay.cli.command.AnalyzeCommand;
+import io.recordrelay.cli.command.CloneCommand;
 import io.recordrelay.cli.command.ConnCommand;
 import io.recordrelay.cli.command.DiscoverCommand;
 import io.recordrelay.cli.command.EnvCommand;
+import io.recordrelay.cli.command.ExportPackageCommand;
+import io.recordrelay.cli.command.ImportPackageCommand;
 import io.recordrelay.cli.command.StatusCommand;
 import io.recordrelay.cli.command.TransferCommand;
 import io.recordrelay.cli.command.ValidateCommand;
@@ -45,7 +48,10 @@ import picocli.CommandLine.Option;
       AnalyzeCommand.class,
       ValidateCommand.class,
       TransferCommand.class,
-      StatusCommand.class
+      StatusCommand.class,
+      CloneCommand.class,
+      ExportPackageCommand.class,
+      ImportPackageCommand.class
     })
 public final class RecordRelayCli implements Callable<Integer> {
 

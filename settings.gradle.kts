@@ -11,6 +11,7 @@ rootProject.name = "recordrelay"
 
 include(
     "core",
+    "core-clone",
     "connectors:connector-postgresql",
     "connectors:connector-mongodb",
     "connectors:connector-jdbc-base",
@@ -24,6 +25,7 @@ include(
     "connectors:connector-file",
     "connectors:connector-template",
     "engine-batch",
+    "engine-clone",
     "mapping-parsers",
     "cli",
     "desktop",

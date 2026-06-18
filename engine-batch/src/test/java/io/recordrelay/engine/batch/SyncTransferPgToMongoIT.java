@@ -17,9 +17,6 @@ package io.recordrelay.engine.batch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.mongodb.MongoClientSettings;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClients;
 import io.recordrelay.core.domain.ColumnMapping;
 import io.recordrelay.core.domain.ConnectionProfile;
@@ -37,7 +34,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MongoDBContainer;
@@ -109,16 +105,8 @@ class SyncTransferPgToMongoIT {
   }
 
   private void assertMongoHas3Documents() {
-    var settings =
-        MongoClientSettings.builder()
-            .applyToClusterSettings(
-                b ->
-                    b.hosts(
-                        List.of(new ServerAddress(MONGO.getHost(), MONGO.getMappedPort(27017)))))
-            .applyToSocketSettings(b -> b.connectTimeout(5_000, TimeUnit.MILLISECONDS))
-            .credential(MongoCredential.createCredential("test", "testdb", "test".toCharArray()))
-            .build();
-    try (var client = MongoClients.create(settings)) {
+    var uri = String.format("mongodb://%s:%d", MONGO.getHost(), MONGO.getMappedPort(27017));
+    try (var client = MongoClients.create(uri)) {
       var count = client.getDatabase("testdb").getCollection("products").countDocuments();
       assertThat(count).isEqualTo(3L);
     }
@@ -146,7 +134,7 @@ class SyncTransferPgToMongoIT {
         MONGO.getHost(),
         MONGO.getMappedPort(27017),
         "testdb",
-        new Credentials("test", "test"),
+        new Credentials("", ""),
         Map.of());
   }
 }

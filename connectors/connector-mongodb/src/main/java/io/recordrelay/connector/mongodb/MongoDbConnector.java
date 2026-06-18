@@ -98,17 +98,17 @@ public final class MongoDbConnector implements DataSourceConnector {
 
   private com.mongodb.client.MongoClient buildClient(ConnectionProfile profile) {
     var credentials = profile.credentials();
-    var settings =
+    var builder =
         MongoClientSettings.builder()
             .applyToClusterSettings(
                 b -> b.hosts(List.of(new ServerAddress(profile.host(), profile.port()))))
-            .applyToSocketSettings(b -> b.connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
-            .credential(
-                MongoCredential.createCredential(
-                    credentials.username(),
-                    profile.database(),
-                    credentials.password().toCharArray()))
-            .build();
-    return MongoClients.create(settings);
+            .applyToSocketSettings(
+                b -> b.connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    if (!credentials.username().isBlank()) {
+      builder.credential(
+          MongoCredential.createCredential(
+              credentials.username(), profile.database(), credentials.password().toCharArray()));
+    }
+    return MongoClients.create(builder.build());
   }
 }

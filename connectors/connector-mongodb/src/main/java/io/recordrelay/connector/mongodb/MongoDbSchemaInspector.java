@@ -91,16 +91,18 @@ public final class MongoDbSchemaInspector implements SchemaInspector {
 
   private com.mongodb.client.MongoClient buildClient(ConnectionProfile profile) {
     var creds = profile.credentials();
-    var settings =
+    var builder =
         MongoClientSettings.builder()
             .applyToClusterSettings(
                 b -> b.hosts(List.of(new ServerAddress(profile.host(), profile.port()))))
-            .applyToSocketSettings(b -> b.connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
-            .credential(
-                MongoCredential.createCredential(
-                    creds.username(), profile.database(), creds.password().toCharArray()))
-            .build();
-    return MongoClients.create(settings);
+            .applyToSocketSettings(
+                b -> b.connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    if (!creds.username().isBlank()) {
+      builder.credential(
+          MongoCredential.createCredential(
+              creds.username(), profile.database(), creds.password().toCharArray()));
+    }
+    return MongoClients.create(builder.build());
   }
 
   private void mergeDocumentFields(Document doc, LinkedHashMap<String, String> fieldOrder) {

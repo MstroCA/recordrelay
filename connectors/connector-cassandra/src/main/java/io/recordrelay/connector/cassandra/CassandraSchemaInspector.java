@@ -81,14 +81,17 @@ public final class CassandraSchemaInspector implements SchemaInspector {
     var pks = new HashSet<String>();
     var rs =
         session.execute(
-            "SELECT column_name FROM system_schema.columns"
+            "SELECT column_name, kind FROM system_schema.columns"
                 + " WHERE keyspace_name = '"
                 + table.schemaName()
                 + "' AND table_name = '"
                 + table.tableName()
-                + "' AND kind IN ('partition_key', 'clustering')");
+                + "'");
     for (var row : rs) {
-      pks.add(row.getString("column_name"));
+      String kind = row.getString("kind");
+      if ("partition_key".equals(kind) || "clustering".equals(kind)) {
+        pks.add(row.getString("column_name"));
+      }
     }
     return pks;
   }

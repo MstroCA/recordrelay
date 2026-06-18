@@ -48,6 +48,8 @@ ehthumbs.db
 *.zip
 *.tar.gz
 *.rar
+# Keep Gradle wrapper JAR (required for CI)
+!gradle/wrapper/gradle-wrapper.jar
 
 # IntelliJ Platform plugin cache
 .intellijPlatform/

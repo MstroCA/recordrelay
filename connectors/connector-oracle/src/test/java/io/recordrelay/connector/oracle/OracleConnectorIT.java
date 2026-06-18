@@ -72,7 +72,6 @@ class OracleConnectorIT {
             "CREATE TABLE products (id NUMBER PRIMARY KEY, name VARCHAR2(100), price NUMBER(10,2))");
         stmt.execute("INSERT INTO products VALUES (1, 'Widget', 9.99)");
         stmt.execute("INSERT INTO products VALUES (2, 'Gadget', 24.99)");
-        conn.commit();
       }
     }
   }

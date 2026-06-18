@@ -21,11 +21,13 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.Credentials;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -35,9 +37,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class ElasticsearchConnectorIT {
 
   @Container
-  static final ElasticsearchContainer ELASTICSEARCH =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.17.0")
-          .withPassword("testpassword");
+  @SuppressWarnings("resource")
+  static final GenericContainer<?> ELASTICSEARCH =
+      new GenericContainer<>("docker.elastic.co/elasticsearch/elasticsearch:8.17.0")
+          .withEnv("discovery.type", "single-node")
+          .withEnv("xpack.security.enabled", "false")
+          .withExposedPorts(9200)
+          .waitingFor(
+              Wait.forHttp("/").forStatusCode(200).withStartupTimeout(Duration.ofSeconds(120)));
 
   private static ConnectionProfile profile;
   private final ElasticsearchConnector connector = new ElasticsearchConnector();
@@ -54,7 +61,7 @@ class ElasticsearchConnectorIT {
             ELASTICSEARCH.getHost(),
             ELASTICSEARCH.getMappedPort(9200),
             "",
-            new Credentials("elastic", "testpassword"),
+            new Credentials("", ""),
             Map.of());
 
     // Create a test index with a mapping

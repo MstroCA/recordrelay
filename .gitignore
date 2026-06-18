@@ -52,5 +52,8 @@ ehthumbs.db
 # IntelliJ Platform plugin cache
 .intellijPlatform/
 
+# JVM crash logs
+hs_err_pid*.log
+
 # Ai Agent
 .claude

@@ -149,4 +149,9 @@ public final class TransferViewModel extends BaseViewModel {
     clearError();
     setBusy(true);
   }
+
+  /** Exposes {@link #setError} publicly so the Transfer controller can report discovery errors. */
+  public void reportError(String message) {
+    javafx.application.Platform.runLater(() -> setError(message));
+  }
 }

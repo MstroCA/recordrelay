@@ -18,7 +18,7 @@ package io.recordrelay.core.domain;
 import java.util.Objects;
 
 /**
- * Immutable specification for a single ETL transfer operation.
+ * Immutable specification for a single low-level data transfer operation (internal).
  *
  * <p>A job references the source and target {@link ConnectionProfile}s, the {@link
  * MappingDefinition}, and tuning parameters. It does not hold runtime state; execution state lives

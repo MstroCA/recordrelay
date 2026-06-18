@@ -18,6 +18,7 @@ package io.recordrelay.engine.clone;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.recordrelay.core.clone.domain.BugReport;
 import io.recordrelay.core.clone.domain.ImportedPackage;
 import io.recordrelay.core.clone.domain.PackageManifest;
 import io.recordrelay.core.clone.exception.CloneException;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,13 +43,18 @@ import org.slf4j.LoggerFactory;
 /**
  * Reads a {@code .rrpkg} archive (ZIP) produced by {@link RrPkgExporter} and returns an {@link
  * ImportedPackage}.
+ *
+ * <p>Supports both v1.0 and v2.0 packages. v1.0 packages will have {@code null} for the {@code
+ * businessEntityName} and {@code bugReport} fields in the manifest.
  */
 public final class RrPkgImporter implements PackageImporterPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(RrPkgImporter.class);
 
+  private static final Set<String> SUPPORTED_VERSIONS =
+      Set.of(PackageManifest.MIN_SUPPORTED_VERSION, "2.0", PackageManifest.CURRENT_VERSION);
+
   private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
-  private static final TypeReference<List<String>> LIST_STRING_TYPE = new TypeReference<>() {};
 
   private final ObjectMapper mapper;
 
@@ -79,15 +86,21 @@ public final class RrPkgImporter implements PackageImporterPort {
     try (var stream = zip.getInputStream(entry)) {
       var map = mapper.readValue(stream, MAP_TYPE);
       var version = (String) map.get("formatVersion");
-      if (!PackageManifest.CURRENT_VERSION.equals(version)) {
+      if (!SUPPORTED_VERSIONS.contains(version)) {
         throw new CloneException(
             "Unsupported .rrpkg format version: "
                 + version
-                + "; expected "
-                + PackageManifest.CURRENT_VERSION);
+                + "; supported versions: "
+                + SUPPORTED_VERSIONS);
       }
+
       @SuppressWarnings("unchecked")
       var tableNames = (List<String>) map.getOrDefault("tableNames", List.of());
+
+      // v2.0 optional fields
+      var businessEntityName = (String) map.get("businessEntityName");
+      var bugReport = readBugReport(map);
+
       return new PackageManifest(
           version,
           Instant.parse((String) map.get("createdAt")),
@@ -95,17 +108,40 @@ public final class RrPkgImporter implements PackageImporterPort {
           (String) map.get("rootTable"),
           (String) map.get("rootId"),
           tableNames,
+          null,
+          businessEntityName,
+          bugReport,
           null);
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private BugReport readBugReport(Map<String, Object> manifestMap) {
+    var bugReportMap = (Map<String, Object>) manifestMap.get("bugReport");
+    if (bugReportMap == null) {
+      return null;
+    }
+    var capturedAtStr = (String) bugReportMap.get("capturedAt");
+    return new BugReport(
+        (String) bugReportMap.get("id"),
+        (String) bugReportMap.get("title"),
+        (String) bugReportMap.get("service"),
+        (String) bugReportMap.get("environment"),
+        capturedAtStr != null ? Instant.parse(capturedAtStr) : Instant.now(),
+        (String) bugReportMap.get("stepsToReproduce"));
   }
 
   private Map<String, List<DataRecord>> readRecords(ZipFile zip, List<String> tableNames)
       throws IOException {
     var result = new LinkedHashMap<String, List<DataRecord>>();
     for (String table : tableNames) {
-      var entry = zip.getEntry("records/" + table + ".jsonl");
+      // v2.1 uses data/ folder; v2.0 used records/ — check both for backward compatibility
+      var entry = zip.getEntry("data/" + table + ".jsonl");
       if (entry == null) {
-        LOG.warn("No records file found for table '{}'", table);
+        entry = zip.getEntry("records/" + table + ".jsonl");
+      }
+      if (entry == null) {
+        LOG.warn("No data file found for table '{}'", table);
         result.put(table, List.of());
         continue;
       }

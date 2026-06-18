@@ -20,7 +20,7 @@ import io.recordrelay.core.domain.TransferResult;
 import io.recordrelay.core.port.out.TransferProgressListener;
 
 /**
- * Driving port: initiates and monitors ETL transfer jobs.
+ * Driving port: initiates and monitors low-level data transfer jobs (internal use only).
  *
  * <p>The synchronous overload blocks until the transfer completes. The asynchronous overload
  * returns immediately and delivers progress updates via the supplied listener; the returned {@link

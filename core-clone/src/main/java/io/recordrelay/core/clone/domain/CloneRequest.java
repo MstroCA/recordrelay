@@ -30,7 +30,8 @@ public record CloneRequest(
     String rootTable,
     String rootId,
     int depth,
-    MaskingConfig masking) {
+    MaskingConfig masking,
+    ConflictResolution conflictResolution) {
 
   /** Default traversal depth when none is specified. */
   public static final int DEFAULT_DEPTH = 3;
@@ -55,6 +56,8 @@ public record CloneRequest(
           "depth must be between 1 and " + MAX_DEPTH + ", got: " + depth);
     }
     masking = masking == null ? MaskingConfig.none() : masking;
+    conflictResolution =
+        conflictResolution == null ? ConflictResolution.REGENERATE_IDENTITIES : conflictResolution;
   }
 
   /** Returns a builder pre-populated with required fields. */
@@ -71,6 +74,7 @@ public record CloneRequest(
     private final String rootId;
     private int depth = DEFAULT_DEPTH;
     private MaskingConfig masking = MaskingConfig.none();
+    private ConflictResolution conflictResolution = ConflictResolution.REGENERATE_IDENTITIES;
 
     private Builder(
         ConnectionProfile source, ConnectionProfile target, String rootTable, String rootId) {
@@ -103,12 +107,25 @@ public record CloneRequest(
     }
 
     /**
+     * Sets the conflict resolution strategy (default: {@link
+     * ConflictResolution#REGENERATE_IDENTITIES}).
+     *
+     * @param conflictResolution strategy to use when target already has data
+     * @return this builder
+     */
+    public Builder conflictResolution(ConflictResolution conflictResolution) {
+      this.conflictResolution = conflictResolution;
+      return this;
+    }
+
+    /**
      * Builds and returns an immutable {@link CloneRequest}.
      *
      * @return the constructed request
      */
     public CloneRequest build() {
-      return new CloneRequest(source, target, rootTable, rootId, depth, masking);
+      return new CloneRequest(
+          source, target, rootTable, rootId, depth, masking, conflictResolution);
     }
   }
 }

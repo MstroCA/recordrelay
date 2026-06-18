@@ -1,6 +1,6 @@
 # RecordRelay
 
-**Universal Dynamic ETL Tool** — SQL ve NoSQL veritabanları ile dosya formatları arasında dinamik, esnek, bağımsız çalışan veri aktarım aracı.
+**Universal Data Reproduction & Debug Platform** — Gerçek üretim veya test sistemi durumunu dakikalar içinde yerel ortamda yeniden üret.
 
 [![CI](https://github.com/MstroCA/recordrelay/actions/workflows/ci.yml/badge.svg)](https://github.com/MstroCA/recordrelay/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/MstroCA/recordrelay?label=release)](https://github.com/MstroCA/recordrelay/releases/latest)
@@ -18,7 +18,7 @@ RecordRelay, geliştiricilerin ve veri mühendislerinin herhangi bir veritabanı
 **Üç dağıtım hedefi:**
 - **Desktop** — JavaFX tabanlı modern masaüstü uygulaması (AtlantaFX, MVVM)
 - **CLI** — CI/CD pipeline'larına entegre edilebilen komut satırı aracı
-- **IntelliJ Plugin** — IDE içinden doğrudan ETL işlemi, 4-tab tool window
+- **IntelliJ Plugin** — IDE içinden doğrudan context clone işlemi, 4-tab tool window
 
 ---
 

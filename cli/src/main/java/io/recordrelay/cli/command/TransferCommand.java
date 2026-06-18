@@ -40,7 +40,10 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 /** Executes a data transfer driven by a mapping file. */
-@Command(name = "transfer", description = "Transfer data between databases using a mapping file.")
+@Command(
+    name = "transfer",
+    description = "Internal: low-level data transfer (use 'rr clone' instead).",
+    hidden = true)
 public final class TransferCommand implements Callable<Integer> {
 
   @ParentCommand private RecordRelayCli parent;

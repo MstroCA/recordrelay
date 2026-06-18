@@ -17,8 +17,10 @@ javafx {
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":core-clone"))
     implementation(project(":cli"))
     implementation(project(":engine-batch"))
+    implementation(project(":engine-clone"))
     implementation(libs.atlantafx.base)
     implementation(libs.jackson.databind)
     compileOnly(libs.spotbugs.annotations)

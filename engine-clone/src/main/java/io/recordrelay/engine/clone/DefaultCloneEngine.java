@@ -15,10 +15,12 @@
  */
 package io.recordrelay.engine.clone;
 
+import io.recordrelay.core.clone.domain.BugReport;
 import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
 import io.recordrelay.core.clone.domain.CloneRequest;
 import io.recordrelay.core.clone.domain.ClonedTableSummary;
+import io.recordrelay.core.clone.domain.IdentityMapping;
 import io.recordrelay.core.clone.domain.ImportedPackage;
 import io.recordrelay.core.clone.domain.PackageManifest;
 import io.recordrelay.core.clone.domain.RelationshipGraph;
@@ -28,11 +30,13 @@ import io.recordrelay.core.clone.port.in.CloneUseCase;
 import io.recordrelay.core.clone.port.in.ExportPackageUseCase;
 import io.recordrelay.core.clone.port.in.ImportPackageUseCase;
 import io.recordrelay.core.clone.port.out.CloneProgressListener;
+import io.recordrelay.core.clone.port.out.IdentityMapperPort;
 import io.recordrelay.core.clone.port.out.MaskingServicePort;
 import io.recordrelay.core.clone.port.out.PackageExporterPort;
 import io.recordrelay.core.clone.port.out.PackageImporterPort;
 import io.recordrelay.core.clone.port.out.RecordFetcherPort;
 import io.recordrelay.core.clone.port.out.RelationshipResolverPort;
+import io.recordrelay.core.clone.port.out.SequenceSyncPort;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
 import io.recordrelay.core.domain.DatabaseRef;
@@ -42,7 +46,6 @@ import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.spi.ConnectorRegistry;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -81,22 +84,28 @@ public final class DefaultCloneEngine
 
   private final RelationshipResolverPort relationshipResolver;
   private final RecordFetcherPort recordFetcher;
+  private final IdentityMapperPort identityMapper;
   private final MaskingServicePort maskingService;
   private final PackageExporterPort packageExporter;
   private final PackageImporterPort packageImporter;
+  private final SequenceSyncPort sequenceSyncer;
 
   public DefaultCloneEngine(
       RelationshipResolverPort relationshipResolver,
       RecordFetcherPort recordFetcher,
+      IdentityMapperPort identityMapper,
       MaskingServicePort maskingService,
       PackageExporterPort packageExporter,
-      PackageImporterPort packageImporter) {
+      PackageImporterPort packageImporter,
+      SequenceSyncPort sequenceSyncer) {
     this.relationshipResolver =
         Objects.requireNonNull(relationshipResolver, "relationshipResolver");
     this.recordFetcher = Objects.requireNonNull(recordFetcher, "recordFetcher");
+    this.identityMapper = Objects.requireNonNull(identityMapper, "identityMapper");
     this.maskingService = Objects.requireNonNull(maskingService, "maskingService");
     this.packageExporter = Objects.requireNonNull(packageExporter, "packageExporter");
     this.packageImporter = Objects.requireNonNull(packageImporter, "packageImporter");
+    this.sequenceSyncer = Objects.requireNonNull(sequenceSyncer, "sequenceSyncer");
   }
 
   /** Creates an engine with the default JDBC-backed implementations. */
@@ -104,9 +113,11 @@ public final class DefaultCloneEngine
     return new DefaultCloneEngine(
         new JdbcRelationshipResolver(),
         new JdbcRecordFetcher(),
+        new DefaultIdentityMapper(),
         new DefaultMaskingService(),
         new RrPkgExporter(),
-        new RrPkgImporter());
+        new RrPkgImporter(),
+        new JdbcSequenceSynchronizer());
   }
 
   @Override
@@ -116,47 +127,85 @@ public final class DefaultCloneEngine
     var warnings = new ArrayList<String>();
 
     LOG.info("Clone job {} starting: {}.{}", job.id(), request.rootTable(), request.rootId());
+
+    // Phase 1: Build relationship graph
     var graph = relationshipResolver.resolve(request.source(), request.rootTable());
     listener.onRelationshipsDiscovered(graph.edgeCount());
 
-    var allRecords = bfsExtract(request, graph, warnings, listener);
-    writeToTarget(request, allRecords, listener, warnings);
+    // Phase 2: Extract all records (raw, no masking yet — masking happens after FK remapping)
+    var rawRecords = bfsExtractRaw(request, graph, warnings, listener);
 
-    long maskedFieldCount = countMaskedFields(allRecords, request);
+    // Phase 3: Allocate new identities (CRITICAL — no direct PK copying)
+    var identityMapping =
+        identityMapper.allocate(
+            request.target(), request.rootTable(), rawRecords, request.conflictResolution());
+    listener.onIdentitiesAllocated(identityMapping.totalMappings());
+
+    // Phase 4: Remap all FK columns using the identity mapping
+    var remappedRecords = FkRemapper.remap(rawRecords, identityMapping, graph, request.rootTable());
+
+    // Phase 5: Apply masking on the remapped records
+    var finalRecords = applyMaskingAll(remappedRecords, request);
+
+    // Phase 6: Write remapped+masked records to target
+    writeToTarget(request, finalRecords, listener, warnings);
+
+    // Phase 7: Advance database sequences past the highest allocated ID (best-effort)
+    sequenceSyncer.synchronize(request.target(), identityMapping);
+
+    long maskedFieldCount = countMaskedFieldsAll(rawRecords, request);
     var report =
         new CloneReport(
             request.rootTable(),
             request.rootId(),
-            buildSummaries(allRecords),
+            buildSummaries(finalRecords),
             System.currentTimeMillis() - startMs,
             List.copyOf(warnings),
             maskedFieldCount);
 
     LOG.info(
-        "Clone job {} done: {} tables, {} records",
+        "Clone job {} done: {} tables, {} records, {} identity mappings",
         job.id(),
         report.tableCount(),
-        report.totalRecords());
+        report.totalRecords(),
+        identityMapping.totalMappings());
     return report;
   }
 
   @Override
   public Path exportPackage(CloneJob job, Path outputDirectory) throws CloneException {
+    return exportPackageWithContext(job, outputDirectory, null, null);
+  }
+
+  /**
+   * Exports a package with optional entity and bug-report context embedded in the manifest.
+   *
+   * <p>Called by {@link DefaultContextCloneEngine} when exporting via the semantic API.
+   */
+  public Path exportPackageWithContext(
+      CloneJob job, Path outputDirectory, String businessEntityName, BugReport bugReport)
+      throws CloneException {
     var request = job.request();
     var graph = relationshipResolver.resolve(request.source(), request.rootTable());
-    var allRecords = bfsExtract(request, graph, new ArrayList<>(), new CloneProgressListener() {});
+    var rawRecords =
+        bfsExtractRaw(request, graph, new ArrayList<>(), new CloneProgressListener() {});
+
+    // Allocate identities and remap FKs for the export package.
+    // For export we allocate from 0 (no live target), so IDs are relative offsets.
+    var identityMapping = IdentityMapping.empty();
+    var finalRecords = applyMaskingAll(rawRecords, request);
 
     var manifest =
-        new PackageManifest(
-            PackageManifest.CURRENT_VERSION,
-            Instant.now(),
+        PackageManifest.createWithIdentityMapping(
             request.source().type().name().toLowerCase(),
             request.rootTable(),
             request.rootId(),
-            new ArrayList<>(allRecords.keySet()),
-            null);
+            new ArrayList<>(finalRecords.keySet()),
+            businessEntityName,
+            bugReport,
+            identityMapping);
 
-    return packageExporter.export(manifest, graph, allRecords, outputDirectory);
+    return packageExporter.export(manifest, graph, finalRecords, outputDirectory);
   }
 
   @Override
@@ -182,7 +231,7 @@ public final class DefaultCloneEngine
 
   // ── BFS extraction ───────────────────────────────────────────────────────────
 
-  private Map<String, List<DataRecord>> bfsExtract(
+  private Map<String, List<DataRecord>> bfsExtractRaw(
       CloneRequest request,
       RelationshipGraph graph,
       List<String> warnings,
@@ -214,7 +263,7 @@ public final class DefaultCloneEngine
       CloneProgressListener listener)
       throws CloneException {
     listener.onTableExtractionStarted(node.tableName());
-    var records = applyMasking(fetchNode(request, node, warnings), request);
+    var records = fetchNode(request, node, warnings);
     allRecords.computeIfAbsent(node.tableName(), k -> new ArrayList<>()).addAll(records);
     listener.onTableExtractionCompleted(node.tableName(), records.size());
     if (node.depth() == 0) {
@@ -285,11 +334,20 @@ public final class DefaultCloneEngine
         request.source(), node.tableName(), node.idColumn(), node.idValue());
   }
 
-  private List<DataRecord> applyMasking(List<DataRecord> records, CloneRequest request) {
+  private Map<String, List<DataRecord>> applyMaskingAll(
+      Map<String, List<DataRecord>> records, CloneRequest request) {
     if (request.masking().isEmpty()) {
       return records;
     }
-    return records.stream().map(r -> maskingService.mask(r, request.masking())).toList();
+    var result = new LinkedHashMap<String, List<DataRecord>>();
+    records.forEach(
+        (table, tableRecords) ->
+            result.put(
+                table,
+                tableRecords.stream()
+                    .map(r -> maskingService.mask(r, request.masking()))
+                    .toList()));
+    return result;
   }
 
   private void writeToTarget(
@@ -360,11 +418,12 @@ public final class DefaultCloneEngine
     listener.onImportCompleted(tableName, records.size());
   }
 
-  private long countMaskedFields(Map<String, List<DataRecord>> allRecords, CloneRequest request) {
+  private long countMaskedFieldsAll(
+      Map<String, List<DataRecord>> rawRecords, CloneRequest request) {
     if (request.masking().isEmpty()) {
       return 0L;
     }
-    return allRecords.values().stream()
+    return rawRecords.values().stream()
         .flatMap(List::stream)
         .mapToLong(r -> maskingService.countMaskedFields(r, request.masking()))
         .sum();

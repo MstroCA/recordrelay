@@ -18,10 +18,12 @@ package io.recordrelay.cli;
 import io.recordrelay.cli.command.AnalyzeCommand;
 import io.recordrelay.cli.command.CloneCommand;
 import io.recordrelay.cli.command.ConnCommand;
+import io.recordrelay.cli.command.DiffCommand;
 import io.recordrelay.cli.command.DiscoverCommand;
 import io.recordrelay.cli.command.EnvCommand;
 import io.recordrelay.cli.command.ExportPackageCommand;
 import io.recordrelay.cli.command.ImportPackageCommand;
+import io.recordrelay.cli.command.ReplayCommand;
 import io.recordrelay.cli.command.StatusCommand;
 import io.recordrelay.cli.command.TransferCommand;
 import io.recordrelay.cli.command.ValidateCommand;
@@ -36,22 +38,37 @@ import picocli.CommandLine.Option;
 
 /** RecordRelay CLI root command. Global options (--json, --config) are inherited by subcommands. */
 @Command(
-    name = "recordrelay",
+    name = "rr",
     mixinStandardHelpOptions = true,
-    version = "0.1.0-SNAPSHOT",
-    description = "Universal dynamic ETL tool for SQL and NoSQL databases.",
+    version = "0.2.0-SNAPSHOT",
+    description = {
+      "RecordRelay — Universal Data Reproduction Platform",
+      "",
+      "Reproduce production issues locally in under 5 minutes.",
+      "",
+      "Quick start:",
+      "  rr clone --customer-id 123 --source prod --target local",
+      "  rr clone --order-id 987654 --source prod --export --bug-title \"Price bug\"",
+      "  rr replay bug-1234.rrpkg --target local",
+    },
     subcommands = {
       CommandLine.HelpCommand.class,
+      // ── Reproduction commands (primary) ──
+      CloneCommand.class,
+      ReplayCommand.class,
+      ExportPackageCommand.class,
+      ImportPackageCommand.class,
+      DiffCommand.class,
+      // ── Environment management ──
       EnvCommand.class,
       ConnCommand.class,
+      StatusCommand.class,
+      // ── Discovery & analysis (secondary) ──
       DiscoverCommand.class,
       AnalyzeCommand.class,
       ValidateCommand.class,
-      TransferCommand.class,
-      StatusCommand.class,
-      CloneCommand.class,
-      ExportPackageCommand.class,
-      ImportPackageCommand.class
+      // Internal only — not part of the public CLI surface.
+      TransferCommand.class
     })
 public final class RecordRelayCli implements Callable<Integer> {
 

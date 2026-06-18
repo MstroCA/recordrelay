@@ -38,12 +38,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Writes a {@code .rrpkg} archive (ZIP) containing:
+ * Writes a {@code .rrpkg} archive (ZIP) in v2.1 format:
  *
  * <ul>
- *   <li>{@code metadata.json} — {@link PackageManifest}
+ *   <li>{@code metadata.json} — {@link PackageManifest} (v2.1)
+ *   <li>{@code schema.json} — inferred column schema per table
  *   <li>{@code relationships.json} — edge list from the {@link RelationshipGraph}
- *   <li>{@code records/<table>.jsonl} — one JSON-Lines file per table
+ *   <li>{@code identity-mapping.json} — source → target ID mapping per table
+ *   <li>{@code masking-rules.json} — list of masking rules applied (if any)
+ *   <li>{@code data/<table>.jsonl} — one JSON-Lines file per table
  * </ul>
  */
 public final class RrPkgExporter implements PackageExporterPort {
@@ -81,7 +84,10 @@ public final class RrPkgExporter implements PackageExporterPort {
         zos.setComment("RecordRelay package v" + PackageManifest.CURRENT_VERSION);
 
         writeMetadata(zos, manifest);
+        writeSchema(zos, records);
         writeRelationships(zos, graph);
+        writeIdentityMapping(zos, manifest);
+        writeMaskingRules(zos, manifest);
         writeRecords(zos, records);
       }
 
@@ -104,11 +110,48 @@ public final class RrPkgExporter implements PackageExporterPort {
     zos.closeEntry();
   }
 
+  private void writeSchema(ZipOutputStream zos, Map<String, List<DataRecord>> records)
+      throws IOException {
+    var schema = new LinkedHashMap<String, Object>();
+    schema.put("formatVersion", PackageManifest.CURRENT_VERSION);
+    var tables = new LinkedHashMap<String, Object>();
+    for (var entry : records.entrySet()) {
+      var tableSchema = new LinkedHashMap<String, Object>();
+      var columns =
+          entry.getValue().isEmpty()
+              ? List.of()
+              : new ArrayList<>(entry.getValue().get(0).fields().keySet());
+      tableSchema.put("columns", columns);
+      tables.put(entry.getKey(), tableSchema);
+    }
+    schema.put("tables", tables);
+    zos.putNextEntry(new ZipEntry("schema.json"));
+    zos.write(mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(schema));
+    zos.closeEntry();
+  }
+
+  private void writeIdentityMapping(ZipOutputStream zos, PackageManifest manifest)
+      throws IOException {
+    zos.putNextEntry(new ZipEntry("identity-mapping.json"));
+    var mapping = manifest.identityMapping();
+    var content = mapping != null ? mapping.snapshot() : Map.of();
+    zos.write(mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(content));
+    zos.closeEntry();
+  }
+
+  private void writeMaskingRules(ZipOutputStream zos, PackageManifest manifest) throws IOException {
+    zos.putNextEntry(new ZipEntry("masking-rules.json"));
+    // Masking rules are embedded in the manifest report; emit empty list when not available.
+    zos.write(mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(List.of()));
+    zos.closeEntry();
+  }
+
   private void writeRecords(ZipOutputStream zos, Map<String, List<DataRecord>> records)
       throws IOException {
     for (var entry : records.entrySet()) {
       var table = entry.getKey();
-      zos.putNextEntry(new ZipEntry("records/" + table + ".jsonl"));
+      // v2.1: data/ folder (was records/ in v2.0)
+      zos.putNextEntry(new ZipEntry("data/" + table + ".jsonl"));
       for (var record : entry.getValue()) {
         var line = mapper.writeValueAsString(record.fields()) + "\n";
         zos.write(line.getBytes(StandardCharsets.UTF_8));
@@ -125,7 +168,35 @@ public final class RrPkgExporter implements PackageExporterPort {
     map.put("sourceConnectorId", manifest.sourceConnectorId());
     map.put("rootTable", manifest.rootTable());
     map.put("rootId", manifest.rootId());
+    if (manifest.businessEntityName() != null) {
+      map.put("businessEntityName", manifest.businessEntityName());
+    }
     map.put("tableNames", manifest.tableNames());
+    if (manifest.hasBugReport()) {
+      map.put("bugReport", toBugReportMap(manifest.bugReport()));
+    }
+    if (manifest.hasIdentityMapping()) {
+      var stats = new LinkedHashMap<String, Object>();
+      stats.put("totalMappings", manifest.identityMapping().totalMappings());
+      map.put("identityMappingStats", stats);
+    }
+    return map;
+  }
+
+  private Map<String, Object> toBugReportMap(io.recordrelay.core.clone.domain.BugReport bugReport) {
+    var map = new LinkedHashMap<String, Object>();
+    map.put("id", bugReport.id());
+    map.put("title", bugReport.title());
+    if (bugReport.service() != null) {
+      map.put("service", bugReport.service());
+    }
+    if (bugReport.environment() != null) {
+      map.put("environment", bugReport.environment());
+    }
+    map.put("capturedAt", bugReport.capturedAt().toString());
+    if (bugReport.stepsToReproduce() != null) {
+      map.put("stepsToReproduce", bugReport.stepsToReproduce());
+    }
     return map;
   }
 

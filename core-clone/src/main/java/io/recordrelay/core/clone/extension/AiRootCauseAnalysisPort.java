@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.recordrelay.cli;
+package io.recordrelay.core.clone.extension;
 
-/** Process exit codes returned by all CLI commands. */
-public final class ExitCode {
-
-  public static final int SUCCESS = 0;
-  public static final int TRANSFER_FAILED = 1;
-  public static final int VALIDATION_ERROR = 2;
-  public static final int CONNECTION_ERROR = 3;
-  public static final int CONFIG_ERROR = 4;
-  public static final int CLONE_FAILED = 5;
-  public static final int REPLAY_FAILED = 6;
-  public static final int PACKAGE_ERROR = 7;
-  public static final int DIFF_FAILED = 8;
-
-  private ExitCode() {}
+/**
+ * Extension point: AI-assisted root cause analysis on replayed data.
+ *
+ * <p><strong>Not yet implemented.</strong> Future implementations will inspect replayed records and
+ * the associated {@link io.recordrelay.core.clone.domain.BugReport} to suggest likely root causes,
+ * anomalous field values, and data integrity issues.
+ */
+public interface AiRootCauseAnalysisPort {
+  // Reserved for future AI-assisted root cause analysis.
 }

@@ -18,14 +18,19 @@ package io.recordrelay.cli.command;
 import io.recordrelay.cli.ExitCode;
 import io.recordrelay.cli.RecordRelayCli;
 import io.recordrelay.cli.engine.ConnProfileResolver;
+import io.recordrelay.core.clone.domain.BugReport;
 import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
 import io.recordrelay.core.clone.domain.CloneRequest;
+import io.recordrelay.core.clone.domain.ContextClonePlan;
 import io.recordrelay.core.clone.domain.MaskerType;
 import io.recordrelay.core.clone.domain.MaskingConfig;
 import io.recordrelay.core.clone.domain.MaskingRule;
 import io.recordrelay.core.clone.port.out.CloneProgressListener;
+import io.recordrelay.engine.clone.BuiltinEntityRegistry;
 import io.recordrelay.engine.clone.DefaultCloneEngine;
+import io.recordrelay.engine.clone.DefaultContextCloneEngine;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
@@ -33,22 +38,30 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 /**
- * {@code rr clone} — clones a root record and all its transitive dependencies into a target
- * database.
+ * {@code rr clone} — reproduces a production business context locally.
  *
- * <p>Example:
+ * <p>Semantic shortcuts resolve entity names to the correct table + ID column automatically:
  *
  * <pre>
- * rr clone --source staging --target local --table customer --id 12345
- * rr clone --source test --target local --table orders --id 99 --depth 5 --mask
+ * rr clone --customer-id 123 --source prod --target local
+ * rr clone --order-id 987654 --source staging --target local --mask
+ * rr clone --user-id 42 --source prod --target local --export --bug-title "Login fails"
+ * </pre>
+ *
+ * <p>Generic form (any table):
+ *
+ * <pre>
+ * rr clone --table invoices --id 55 --source prod --target local --depth 5
  * </pre>
  */
 @Command(
     name = "clone",
-    description = "Clone a root record and all related data from source to target.")
+    description = "Reproduce a production business context (customer, order, user…) locally.")
 public final class CloneCommand implements Callable<Integer> {
 
   @ParentCommand private RecordRelayCli parent;
+
+  // ── Connection profiles ───────────────────────────────────────────────────
 
   @Option(
       names = {"--source", "-s"},
@@ -58,21 +71,38 @@ public final class CloneCommand implements Callable<Integer> {
 
   @Option(
       names = {"--target", "-t"},
-      required = true,
-      description = "Target connection profile name")
+      description = "Target connection profile name (omit when --export is used)")
   String target;
 
-  @Option(
-      names = {"--table"},
-      required = true,
-      description = "Root table name")
+  // ── Semantic entity shortcuts ─────────────────────────────────────────────
+
+  @Option(names = "--customer-id", description = "Customer ID (resolves to the customers table)")
+  String customerId;
+
+  @Option(names = "--order-id", description = "Order ID (resolves to the orders table)")
+  String orderId;
+
+  @Option(names = "--user-id", description = "User ID (resolves to the users table)")
+  String userId;
+
+  @Option(names = "--product-id", description = "Product ID (resolves to the products table)")
+  String productId;
+
+  @Option(names = "--invoice-id", description = "Invoice ID (resolves to the invoices table)")
+  String invoiceId;
+
+  @Option(names = "--account-id", description = "Account ID (resolves to the accounts table)")
+  String accountId;
+
+  // ── Generic form ──────────────────────────────────────────────────────────
+
+  @Option(names = "--table", description = "Root table name (generic form)")
   String table;
 
-  @Option(
-      names = {"--id"},
-      required = true,
-      description = "Root record primary key value")
+  @Option(names = "--id", description = "Root record primary key value (generic form)")
   String id;
+
+  // ── Clone options ─────────────────────────────────────────────────────────
 
   @Option(
       names = {"--depth"},
@@ -81,8 +111,32 @@ public final class CloneCommand implements Callable<Integer> {
 
   @Option(
       names = {"--mask"},
-      description = "Enable automatic masking of common PII columns (email, phone)")
+      description = "Enable automatic masking of common PII columns (email, phone, address, iban)")
   boolean mask;
+
+  // ── Export / bug capture options ──────────────────────────────────────────
+
+  @Option(
+      names = {"--export"},
+      description = "Export to .rrpkg instead of writing to a live target")
+  boolean export;
+
+  @Option(
+      names = {"--output-dir"},
+      description = "Output directory for .rrpkg export (default: current directory)")
+  Path outputDir;
+
+  @Option(names = "--bug-id", description = "Bug / ticket ID to embed in the package")
+  String bugId;
+
+  @Option(names = "--bug-title", description = "Bug title to embed in the package")
+  String bugTitle;
+
+  @Option(names = "--bug-service", description = "Service name affected by the bug")
+  String bugService;
+
+  @Option(names = "--bug-env", description = "Source environment (e.g. production, staging)")
+  String bugEnv;
 
   @Override
   public Integer call() {
@@ -91,28 +145,118 @@ public final class CloneCommand implements Callable<Integer> {
       var store = parent.configStore();
       var resolver = new ConnProfileResolver(store);
       var srcProfile = resolver.resolve(source);
-      var tgtProfile = resolver.resolve(target);
-
       var masking = buildMaskingConfig();
+      var resolved = resolveEntityAndId();
+      var entityName = resolved[0];
+      var rootId = resolved[1];
+
+      if (export || target == null) {
+        return performExport(printer, srcProfile, entityName, rootId, masking);
+      }
+      return performLiveClone(printer, resolver, srcProfile, entityName, rootId, masking);
+
+    } catch (Exception e) {
+      return EnvCommand.handleError(parent, e, ExitCode.CLONE_FAILED);
+    }
+  }
+
+  private Integer performExport(
+      io.recordrelay.cli.output.Printer printer,
+      io.recordrelay.core.domain.ConnectionProfile srcProfile,
+      String entityName,
+      String rootId,
+      MaskingConfig masking)
+      throws Exception {
+    var outDir = outputDir != null ? outputDir : Path.of(".");
+    var fallbackTable = table != null ? table : entityName + "s";
+    var entity =
+        BuiltinEntityRegistry.INSTANCE
+            .findByName(entityName)
+            .orElseGet(
+                () ->
+                    io.recordrelay.core.clone.domain.BusinessEntity.of(entityName, fallbackTable));
+    var bugReport = buildBugReport();
+    var plan = ContextClonePlan.bugCapture(entity, rootId, srcProfile, outDir, masking, bugReport);
+    printer.printLine(
+        String.format("Exporting %s #%s from '%s'…", entity.displayName(), rootId, source));
+    var contextEngine = DefaultContextCloneEngine.createDefault();
+    var pkgPath = contextEngine.exportContext(plan);
+    printer.printSuccess("Exported → " + pkgPath.toAbsolutePath());
+    return ExitCode.SUCCESS;
+  }
+
+  private Integer performLiveClone(
+      io.recordrelay.cli.output.Printer printer,
+      ConnProfileResolver resolver,
+      io.recordrelay.core.domain.ConnectionProfile srcProfile,
+      String entityName,
+      String rootId,
+      MaskingConfig masking)
+      throws Exception {
+    var tgtProfile = resolver.resolve(target);
+    printer.printLine(
+        String.format(
+            "Cloning %s #%s from '%s' → '%s' (depth=%d)",
+            entityName, rootId, source, target, depth));
+
+    CloneReport report;
+    var registryEntity = BuiltinEntityRegistry.INSTANCE.findByName(entityName);
+    if (registryEntity.isPresent()) {
+      var plan =
+          ContextClonePlan.liveClone(
+              registryEntity.get(), rootId, srcProfile, tgtProfile, depth, masking);
+      report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener(printer));
+    } else {
       var request =
           CloneRequest.builder(srcProfile, tgtProfile, table, id)
               .depth(depth)
               .masking(masking)
               .build();
-      var job = CloneJob.of(request);
-
-      printer.printLine(
-          String.format(
-              "Cloning %s:%s from '%s' → '%s' (depth=%d)", table, id, source, target, depth));
-
-      var engine = DefaultCloneEngine.createDefault();
-      var report = engine.clone(job, buildListener(printer));
-
-      printReport(report);
-      return ExitCode.SUCCESS;
-    } catch (Exception e) {
-      return EnvCommand.handleError(parent, e, ExitCode.CLONE_FAILED);
+      report =
+          DefaultCloneEngine.createDefault().clone(CloneJob.of(request), buildListener(printer));
     }
+
+    printReport(report);
+    return ExitCode.SUCCESS;
+  }
+
+  // ── Private helpers ───────────────────────────────────────────────────────
+
+  /** Returns [entityName, entityId] from semantic shortcuts or generic --table/--id. */
+  private String[] resolveEntityAndId() {
+    if (customerId != null) {
+      return new String[] {"customer", customerId};
+    }
+    if (orderId != null) {
+      return new String[] {"order", orderId};
+    }
+    if (userId != null) {
+      return new String[] {"user", userId};
+    }
+    if (productId != null) {
+      return new String[] {"product", productId};
+    }
+    if (invoiceId != null) {
+      return new String[] {"invoice", invoiceId};
+    }
+    if (accountId != null) {
+      return new String[] {"account", accountId};
+    }
+    if (table != null && id != null) {
+      return new String[] {table, id};
+    }
+    throw new IllegalArgumentException(
+        "Specify an entity shortcut (--customer-id, --order-id, etc.) "
+            + "or use --table <name> --id <value>");
+  }
+
+  private BugReport buildBugReport() {
+    if (bugTitle == null && bugId == null) {
+      return null;
+    }
+    var id = bugId != null ? bugId : "UNKNOWN";
+    var title = bugTitle != null ? bugTitle : "Bug reproduction";
+    return BugReport.of(id, title, bugService, bugEnv, null);
   }
 
   private MaskingConfig buildMaskingConfig() {

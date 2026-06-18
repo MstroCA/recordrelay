@@ -54,7 +54,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import org.jetbrains.annotations.NotNull;
 
-/** Tool-window panel for configuring and executing ETL transfer jobs. */
+/** Tool-window panel for configuring and executing low-level data transfer jobs (internal). */
 public final class TransferPanel extends JPanel {
 
   private static final String DEFAULT_MODE = "SYNC";

@@ -15,10 +15,12 @@
  */
 package io.recordrelay.cli.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /** Root POJO for the CLI configuration file at {@code ~/.recordrelay/config.json}. */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CliConfig {
 
   private Map<String, EnvironmentEntry> environments = new LinkedHashMap<>();

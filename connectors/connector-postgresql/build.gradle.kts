@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay PostgreSQL connector — DataSourceConnector + SchemaInspector adapter"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.postgresql)
     implementation(libs.hikaricp)
     compileOnly(libs.spotbugs.annotations)

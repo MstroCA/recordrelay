@@ -2,7 +2,7 @@ plugins {
     `java-library`
 }
 
-description = "RecordRelay core-clone — Smart Data Clone domain models, port interfaces, graph engine"
+description = "RecordRelay domain — Business context models, relationship graph, clone ports"
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     dependsOn(tasks.named("jacocoTestReport"))
@@ -19,7 +19,7 @@ tasks.named("check") {
 }
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     api(libs.slf4j.api)
     compileOnly(libs.spotbugs.annotations)
 

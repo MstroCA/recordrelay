@@ -54,7 +54,8 @@ public final class DefaultContextCloneEngine implements ContextCloneUseCase {
   /** Creates an engine backed by the built-in entity registry and default JDBC adapters. */
   public static DefaultContextCloneEngine createDefault() {
     return new DefaultContextCloneEngine(
-        DefaultContextResolver.withBuiltins(), DefaultCloneEngine.createDefault());
+        new DefaultContextResolver(BuiltinEntityRegistry.INSTANCE),
+        DefaultCloneEngine.createDefault());
   }
 
   @Override

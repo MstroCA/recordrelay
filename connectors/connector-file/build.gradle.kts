@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay file connectors — CSV, Excel, JSON, YAML, Parquet adapters"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.commons.csv)
     implementation(libs.poi.ooxml)
     implementation(libs.jackson.databind)

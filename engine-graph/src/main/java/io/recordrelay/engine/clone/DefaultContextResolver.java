@@ -39,11 +39,6 @@ public final class DefaultContextResolver implements ContextResolverPort {
     this.registry = Objects.requireNonNull(registry, "registry");
   }
 
-  /** Creates a resolver backed by the built-in entity registry. */
-  public static DefaultContextResolver withBuiltins() {
-    return new DefaultContextResolver(BuiltinEntityRegistry.INSTANCE);
-  }
-
   @Override
   public CloneRequest resolve(ContextClonePlan plan) throws CloneException {
     Objects.requireNonNull(plan, "plan");

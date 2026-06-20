@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay connector template — starting point for custom connector implementations"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     compileOnly(libs.spotbugs.annotations)
 
     testImplementation(platform(libs.junit.bom))

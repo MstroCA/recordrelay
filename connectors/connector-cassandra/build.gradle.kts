@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay Cassandra connector — DataSourceConnector adapter"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.cassandra.driver.core)
     compileOnly(libs.spotbugs.annotations)
 

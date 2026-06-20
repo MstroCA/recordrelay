@@ -23,13 +23,13 @@ intellijPlatform {
         name = "RecordRelay"
         version = "0.1.0-SNAPSHOT"
         description =
-            "Universal dynamic ETL — migrate data between SQL and NoSQL databases directly from IntelliJ IDEA."
+            "Universal Data Reproduction & Debug Platform — reproduce production context locally from IntelliJ IDEA."
         ideaVersion {
             sinceBuild = "241"
         }
     }
-    // pluginVerification: run './gradlew :plugin:runPluginVerifier' manually to verify against
-    // target IDEs. Requires network access; not wired into the standard check task.
+    // pluginVerification: run './gradlew :recordrelay-plugin:runPluginVerifier' manually.
+    // Requires network access; not wired into the standard check task.
     signing {
         certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
         privateKey = providers.environmentVariable("PRIVATE_KEY")
@@ -47,20 +47,20 @@ dependencies {
         zipSigner()
         instrumentationTools()
     }
-    implementation(project(":core"))
-    implementation(project(":cli"))
+    implementation(project(":recordrelay-core"))
+    implementation(project(":recordrelay-cli"))
     implementation(libs.jackson.databind)
-    runtimeOnly(project(":engine-clone"))
-    runtimeOnly(project(":connectors:connector-postgresql"))
-    runtimeOnly(project(":connectors:connector-mongodb"))
-    runtimeOnly(project(":connectors:connector-mysql"))
-    runtimeOnly(project(":connectors:connector-sqlserver"))
-    runtimeOnly(project(":connectors:connector-oracle"))
-    runtimeOnly(project(":connectors:connector-sqlite"))
-    runtimeOnly(project(":connectors:connector-cassandra"))
-    runtimeOnly(project(":connectors:connector-redis"))
-    runtimeOnly(project(":connectors:connector-elasticsearch"))
-    runtimeOnly(project(":connectors:connector-file"))
+    runtimeOnly(project(":recordrelay-engine"))
+    runtimeOnly(project(":recordrelay-adapter-postgres"))
+    runtimeOnly(project(":recordrelay-adapter-mongodb"))
+    runtimeOnly(project(":recordrelay-adapter-mysql"))
+    runtimeOnly(project(":recordrelay-adapter-sqlserver"))
+    runtimeOnly(project(":recordrelay-adapter-oracle"))
+    runtimeOnly(project(":recordrelay-adapter-sqlite"))
+    runtimeOnly(project(":recordrelay-adapter-cassandra"))
+    runtimeOnly(project(":recordrelay-adapter-redis"))
+    runtimeOnly(project(":recordrelay-adapter-elasticsearch"))
+    runtimeOnly(project(":recordrelay-adapter-file"))
     compileOnly(libs.spotbugs.annotations)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)

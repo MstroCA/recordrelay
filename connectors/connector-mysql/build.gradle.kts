@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay MySQL connector — DataSourceConnector adapter"
 
 dependencies {
-    api(project(":connectors:connector-jdbc-base"))
+    api(project(":recordrelay-adapter-jdbc-base"))
     implementation(libs.mysql.connector.j)
     compileOnly(libs.spotbugs.annotations)
 

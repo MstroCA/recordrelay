@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay JDBC base — shared abstract classes for SQL connector adapters"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.hikaricp)
     compileOnly(libs.spotbugs.annotations)
 

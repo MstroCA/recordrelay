@@ -2,7 +2,7 @@ plugins {
     `java-library`
 }
 
-description = "RecordRelay core — domain models, port interfaces, SPI registry, transfer engine"
+description = "RecordRelay core — domain models, connector port interfaces, SPI registry"
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     dependsOn(tasks.named("jacocoTestReport"))

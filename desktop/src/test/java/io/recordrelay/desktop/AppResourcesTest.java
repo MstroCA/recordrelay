@@ -33,7 +33,6 @@ class AppResourcesTest {
         "environments.fxml",
         "connections.fxml",
         "discovery.fxml",
-        "transfer.fxml",
         "monitor.fxml"
       })
   void fxmlResourceExists(String name) {
@@ -52,10 +51,8 @@ class AppResourcesTest {
     assertThat(io.recordrelay.desktop.viewmodel.BaseViewModel.class).isNotNull();
     assertThat(io.recordrelay.desktop.viewmodel.EnvironmentViewModel.class).isNotNull();
     assertThat(io.recordrelay.desktop.viewmodel.ConnectionViewModel.class).isNotNull();
-    assertThat(io.recordrelay.desktop.viewmodel.TransferViewModel.class).isNotNull();
     assertThat(io.recordrelay.desktop.viewmodel.MonitorViewModel.class).isNotNull();
     assertThat(io.recordrelay.desktop.viewmodel.DiscoveryViewModel.class).isNotNull();
-    assertThat(io.recordrelay.desktop.viewmodel.MappingViewModel.class).isNotNull();
   }
 
   @Test

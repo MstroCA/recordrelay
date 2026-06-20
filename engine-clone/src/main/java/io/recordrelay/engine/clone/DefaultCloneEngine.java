@@ -40,8 +40,6 @@ import io.recordrelay.core.clone.port.out.SequenceSyncPort;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
 import io.recordrelay.core.domain.DatabaseRef;
-import io.recordrelay.core.domain.MappingDefinition;
-import io.recordrelay.core.domain.MappingFormat;
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.spi.ConnectorRegistry;
@@ -399,11 +397,8 @@ public final class DefaultCloneEngine
       throws CloneException {
     listener.onImportStarted(tableName);
     var tableRef = new TableRef(dbRef, "", tableName);
-    var mapping =
-        new MappingDefinition(
-            "clone-identity", tableRef, tableRef, List.of(), MappingFormat.DIRECT, null);
     try (var writer = connector.createWriter()) {
-      writer.open(target, tableRef, mapping);
+      writer.open(target, tableRef);
       for (var record : records) {
         writer.write(record);
       }

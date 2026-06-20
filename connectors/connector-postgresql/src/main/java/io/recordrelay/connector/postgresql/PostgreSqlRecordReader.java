@@ -17,7 +17,7 @@ package io.recordrelay.connector.postgresql;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -28,7 +28,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,7 @@ public final class PostgreSqlRecordReader implements RecordReader {
   private boolean hasNext;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     var url =
         "jdbc:postgresql://" + profile.host() + ":" + profile.port() + "/" + profile.database();
@@ -60,7 +59,7 @@ public final class PostgreSqlRecordReader implements RecordReader {
       conn.setAutoCommit(false);
       stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
       stmt.setFetchSize(FETCH_SIZE);
-      rs = stmt.executeQuery(buildSelectSql(table, mapping));
+      rs = stmt.executeQuery("SELECT * FROM " + table.qualifiedName());
       hasNext = rs.next();
       LOG.debug("Opened cursor on '{}', hasRows={}", table.qualifiedName(), hasNext);
     } catch (SQLException e) {
@@ -113,15 +112,4 @@ public final class PostgreSqlRecordReader implements RecordReader {
     return new DataRecord(fields);
   }
 
-  private String buildSelectSql(TableRef table, MappingDefinition mapping) {
-    var tableName = table.qualifiedName();
-    if (mapping.columnMappings().isEmpty()) {
-      return "SELECT * FROM " + tableName;
-    }
-    var cols =
-        mapping.columnMappings().stream()
-            .map(cm -> cm.sourceColumn())
-            .collect(Collectors.joining(", "));
-    return "SELECT " + cols + " FROM " + tableName;
-  }
 }

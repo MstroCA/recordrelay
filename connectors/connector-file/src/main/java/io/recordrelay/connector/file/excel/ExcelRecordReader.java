@@ -17,7 +17,7 @@ package io.recordrelay.connector.file.excel;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -40,7 +40,7 @@ public final class ExcelRecordReader implements RecordReader {
   private Iterator<Row> rowIterator;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     try {
       workbook = new XSSFWorkbook(new FileInputStream(profile.database()));

@@ -23,7 +23,6 @@ public class CliConfig {
 
   private Map<String, EnvironmentEntry> environments = new LinkedHashMap<>();
   private Map<String, ConnectionEntry> connections = new LinkedHashMap<>();
-  private Map<String, JobEntry> jobs = new LinkedHashMap<>();
 
   public CliConfig() {}
 
@@ -43,11 +42,4 @@ public class CliConfig {
     this.connections = connections;
   }
 
-  public Map<String, JobEntry> getJobs() {
-    return jobs;
-  }
-
-  public void setJobs(Map<String, JobEntry> jobs) {
-    this.jobs = jobs;
-  }
 }

@@ -17,7 +17,7 @@ package io.recordrelay.connector.template;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -27,7 +27,7 @@ import java.util.Optional;
 public final class TemplateRecordReader implements RecordReader {
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     throw new ConnectorException("TemplateRecordReader.open() not implemented");
   }

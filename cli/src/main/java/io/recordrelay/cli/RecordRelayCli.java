@@ -25,8 +25,6 @@ import io.recordrelay.cli.command.ExportPackageCommand;
 import io.recordrelay.cli.command.ImportPackageCommand;
 import io.recordrelay.cli.command.ReplayCommand;
 import io.recordrelay.cli.command.StatusCommand;
-import io.recordrelay.cli.command.TransferCommand;
-import io.recordrelay.cli.command.ValidateCommand;
 import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.output.OutputMode;
 import io.recordrelay.cli.output.Printer;
@@ -65,10 +63,7 @@ import picocli.CommandLine.Option;
       StatusCommand.class,
       // ── Discovery & analysis (secondary) ──
       DiscoverCommand.class,
-      AnalyzeCommand.class,
-      ValidateCommand.class,
-      // Internal only — not part of the public CLI surface.
-      TransferCommand.class
+      AnalyzeCommand.class
     })
 public final class RecordRelayCli implements Callable<Integer> {
 

@@ -24,13 +24,8 @@ import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ParentCommand;
 
-/**
- * Reports the current system status: registered connectors and saved job templates.
- *
- * <p>Transfer jobs in this phase run synchronously in-process and have no persistent runtime state.
- * This command shows configuration-level status rather than live execution monitoring.
- */
-@Command(name = "status", description = "Show registered connectors and saved job templates.")
+/** Reports the current system status: registered connectors and saved environments. */
+@Command(name = "status", description = "Show registered connectors and configured environments.")
 public final class StatusCommand implements Callable<Integer> {
 
   @ParentCommand private RecordRelayCli parent;
@@ -39,7 +34,7 @@ public final class StatusCommand implements Callable<Integer> {
   public Integer call() {
     try {
       printConnectors();
-      printJobs();
+      printEnvironments();
       return ExitCode.SUCCESS;
     } catch (Exception e) {
       return EnvCommand.handleError(parent, e, ExitCode.CONFIG_ERROR);
@@ -60,25 +55,15 @@ public final class StatusCommand implements Callable<Integer> {
     parent.printer().printTable(List.of("CONNECTOR ID", "CLASS"), rows);
   }
 
-  private void printJobs() throws Exception {
-    parent.printer().printLine("=== Saved Job Templates ===");
+  private void printEnvironments() throws Exception {
+    parent.printer().printLine("=== Configured Environments ===");
     var config = parent.configStore().load();
-    if (config.getJobs().isEmpty()) {
+    if (config.getEnvironments().isEmpty()) {
       parent.printer().printLine("(none)");
       return;
     }
     var rows = new ArrayList<List<String>>();
-    config
-        .getJobs()
-        .forEach(
-            (name, job) ->
-                rows.add(
-                    List.of(
-                        name,
-                        job.getSource() != null ? job.getSource() : "",
-                        job.getTarget() != null ? job.getTarget() : "",
-                        job.getMode() != null ? job.getMode() : "sync",
-                        job.getMappingFile() != null ? job.getMappingFile() : "")));
-    parent.printer().printTable(List.of("NAME", "SOURCE", "TARGET", "MODE", "MAPPING"), rows);
+    config.getEnvironments().forEach((name, env) -> rows.add(List.of(name)));
+    parent.printer().printTable(List.of("NAME"), rows);
   }
 }

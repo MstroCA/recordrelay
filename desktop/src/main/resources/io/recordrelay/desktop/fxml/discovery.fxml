@@ -7,9 +7,7 @@
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
@@ -18,77 +16,55 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
-            <Label text="Discovery &amp; Mapping" styleClass="screen-title"/>
-            <Label text="Browse schemas, then define and save column mappings."
+            <Label text="Schema Discovery" styleClass="screen-title"/>
+            <Label text="Browse databases and tables to understand data structure."
                    styleClass="screen-subtitle"/>
             <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
         </VBox>
     </top>
 
     <center>
-        <SplitPane dividerPositions="0.32">
+        <SplitPane dividerPositions="0.35">
 
-            <!-- ── Left: Discovery wizard ─────────────────────────────── -->
+            <!-- ── Left: connection / database / table selectors ──────── -->
             <VBox spacing="10" styleClass="discovery-panel" minWidth="240">
                 <padding><Insets top="12" right="16" bottom="16" left="16"/></padding>
 
-                <Label text="SOURCE" styleClass="section-label"/>
-                <Label text="Connection" styleClass="field-label"/>
+                <Label text="CONNECTION" styleClass="section-label"/>
                 <ComboBox fx:id="cmbSrcConn" maxWidth="Infinity" onAction="#onSrcConnChanged"/>
+
                 <Label text="Database" styleClass="field-label"/>
                 <ComboBox fx:id="cmbSrcDb" maxWidth="Infinity" onAction="#onSrcDbChanged"/>
+
                 <Label text="Table" styleClass="field-label"/>
                 <ComboBox fx:id="cmbSrcTable" maxWidth="Infinity"/>
 
+                <Region VBox.vgrow="ALWAYS"/>
                 <Separator/>
 
-                <Label text="TARGET" styleClass="section-label"/>
-                <Label text="Connection" styleClass="field-label"/>
-                <ComboBox fx:id="cmbTgtConn" maxWidth="Infinity" onAction="#onTgtConnChanged"/>
-                <Label text="Database" styleClass="field-label"/>
-                <ComboBox fx:id="cmbTgtDb" maxWidth="Infinity" onAction="#onTgtDbChanged"/>
-                <Label text="Table" styleClass="field-label"/>
-                <ComboBox fx:id="cmbTgtTable" maxWidth="Infinity"/>
-
-                <Region VBox.vgrow="ALWAYS"/>
-
-                <Button fx:id="btnDiscover" text="Analyze Compatibility"
+                <Button fx:id="btnDiscover" text="Inspect Columns"
                         maxWidth="Infinity" onAction="#onDiscover" styleClass="accent-btn"/>
                 <Label fx:id="lblDiscoveryStatus" text="● Ready" styleClass="status-label"/>
             </VBox>
 
-            <!-- ── Right: Mapping editor ─────────────────────────────── -->
+            <!-- ── Right: column list ──────────────────────────────────── -->
             <VBox spacing="8">
                 <padding><Insets top="12" right="16" bottom="16" left="12"/></padding>
 
-                <HBox alignment="CENTER_LEFT" spacing="16">
-                    <Label text="Column Mapping" styleClass="screen-subtitle-bold"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Label fx:id="lblMatchPct" text="Match: —" styleClass="match-label"/>
-                </HBox>
+                <Label text="Columns" styleClass="screen-subtitle-bold"/>
 
-                <TableView fx:id="tblMapping" VBox.vgrow="ALWAYS">
+                <TableView fx:id="tblColumns" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colSrc"   text="Source Column"  prefWidth="200" minWidth="100"/>
-                        <TableColumn fx:id="colTgt"   text="Target Column"  prefWidth="200" minWidth="100"/>
-                        <TableColumn fx:id="colXform" text="Transform"      prefWidth="160" minWidth="80"/>
-                        <TableColumn fx:id="colWarn"  text="Warning"        prefWidth="160" minWidth="80"/>
+                        <TableColumn fx:id="colName"      text="Column"    prefWidth="200" minWidth="100"/>
+                        <TableColumn fx:id="colType"      text="Type"      prefWidth="160" minWidth="80"/>
+                        <TableColumn fx:id="colNullable"  text="Nullable"  prefWidth="80"  minWidth="60"/>
+                        <TableColumn fx:id="colPk"        text="PK"        prefWidth="50"  minWidth="40"/>
                     </columns>
                     <placeholder>
-                        <Label text="Select source and target tables, then click Analyze."
+                        <Label text="Select a connection, database, and table, then click Inspect."
                                styleClass="placeholder-hint"/>
                     </placeholder>
                 </TableView>
-
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Label text="Format:"/>
-                    <ComboBox fx:id="cmbFormat" prefWidth="90"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="btnSave" text="Save Mapping…"
-                            onAction="#onSaveMapping" styleClass="accent-btn"/>
-                </HBox>
-
-                <TextArea fx:id="taPreview" prefHeight="150" styleClass="preview-area"/>
             </VBox>
 
         </SplitPane>

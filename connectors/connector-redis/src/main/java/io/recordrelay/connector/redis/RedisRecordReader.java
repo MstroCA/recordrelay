@@ -21,7 +21,7 @@ import io.lettuce.core.ScanCursor;
 import io.lettuce.core.api.sync.RedisCommands;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -51,7 +51,7 @@ public final class RedisRecordReader implements RecordReader {
   private boolean exhausted = false;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     this.pattern = table.tableName() + ":*";
     try {

@@ -17,7 +17,7 @@ package io.recordrelay.connector.template;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -26,7 +26,7 @@ import io.recordrelay.core.port.out.RecordWriter;
 public final class TemplateRecordWriter implements RecordWriter {
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     throw new ConnectorException("TemplateRecordWriter.open() not implemented");
   }

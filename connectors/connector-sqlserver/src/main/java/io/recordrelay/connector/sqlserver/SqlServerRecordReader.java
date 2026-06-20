@@ -18,7 +18,7 @@ package io.recordrelay.connector.sqlserver;
 import io.recordrelay.connector.sqlserver.internal.SqlServerDataSourceFactory;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -29,7 +29,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +44,7 @@ public final class SqlServerRecordReader implements RecordReader {
   private boolean hasNext;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     try {
       conn =
@@ -56,7 +55,7 @@ public final class SqlServerRecordReader implements RecordReader {
       conn.setAutoCommit(false);
       stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
       stmt.setFetchSize(FETCH_SIZE);
-      rs = stmt.executeQuery(buildSelect(table, mapping));
+      rs = stmt.executeQuery("SELECT * FROM " + table.qualifiedName());
       hasNext = rs.next();
       LOG.debug("Opened cursor on '{}', hasRows={}", table.qualifiedName(), hasNext);
     } catch (SQLException e) {
@@ -104,14 +103,4 @@ public final class SqlServerRecordReader implements RecordReader {
     }
   }
 
-  private String buildSelect(TableRef table, MappingDefinition mapping) {
-    if (mapping.columnMappings().isEmpty()) {
-      return "SELECT * FROM " + table.qualifiedName();
-    }
-    var cols =
-        mapping.columnMappings().stream()
-            .map(cm -> cm.sourceColumn())
-            .collect(Collectors.joining(", "));
-    return "SELECT " + cols + " FROM " + table.qualifiedName();
-  }
 }

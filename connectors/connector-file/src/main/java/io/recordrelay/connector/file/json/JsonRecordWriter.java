@@ -18,7 +18,7 @@ package io.recordrelay.connector.file.json;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -35,7 +35,7 @@ public final class JsonRecordWriter implements RecordWriter {
   private BufferedWriter writer;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     try {
       writer = new BufferedWriter(new FileWriter(profile.database()));

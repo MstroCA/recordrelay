@@ -17,7 +17,6 @@ package io.recordrelay.connector.jdbc;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -56,8 +55,7 @@ public abstract class AbstractJdbcRecordWriter implements RecordWriter {
   protected abstract String jdbcScheme();
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     this.qualifiedTable = table.qualifiedName();
     try {
       conn =

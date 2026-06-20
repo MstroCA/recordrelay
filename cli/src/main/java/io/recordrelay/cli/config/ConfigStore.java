@@ -100,20 +100,4 @@ public final class ConfigStore {
     return removed;
   }
 
-  /** Adds or replaces a job template and saves. */
-  public void addJob(String name, JobEntry entry) throws Exception {
-    var config = load();
-    config.getJobs().put(name, entry);
-    save(config);
-  }
-
-  /** Removes a job template; returns {@code true} when it existed. */
-  public boolean removeJob(String name) throws Exception {
-    var config = load();
-    boolean removed = config.getJobs().remove(name) != null;
-    if (removed) {
-      save(config);
-    }
-    return removed;
-  }
 }

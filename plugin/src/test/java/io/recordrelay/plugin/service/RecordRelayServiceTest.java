@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.engine.ConnProfileResolver;
-import io.recordrelay.plugin.editor.MappingValidator;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,23 +41,5 @@ class RecordRelayServiceTest {
     assertThatThrownBy(() -> resolver.resolve("nonexistent"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("nonexistent");
-  }
-
-  @Test
-  void mappingValidatorInfersJsonFormat() {
-    assertThat(MappingValidator.inferFormat("mappings.json")).isEqualTo("json");
-    assertThat(MappingValidator.inferFormat("MAPPINGS.JSON")).isEqualTo("json");
-  }
-
-  @Test
-  void mappingValidatorInfersYamlFormat() {
-    assertThat(MappingValidator.inferFormat("mappings.yaml")).isEqualTo("yaml");
-    assertThat(MappingValidator.inferFormat("mappings.yml")).isEqualTo("yaml");
-  }
-
-  @Test
-  void mappingValidatorReturnsNullForUnknownExtension() {
-    assertThat(MappingValidator.inferFormat("mappings.sql")).isNull();
-    assertThat(MappingValidator.inferFormat(null)).isNull();
   }
 }

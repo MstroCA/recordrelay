@@ -59,11 +59,6 @@ public final class MainController {
   }
 
   @FXML
-  void showTransfer() {
-    navigate("transfer");
-  }
-
-  @FXML
   void showMonitor() {
     navigate("monitor");
   }

@@ -20,14 +20,13 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +40,11 @@ public final class CassandraRecordReader implements RecordReader {
   private com.datastax.oss.driver.api.core.cql.ColumnDefinitions columnDefs;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     try {
       session = CassandraConnector.openSession(profile);
-      ResultSet rs = session.execute(buildSelect(table, mapping));
+      ResultSet rs = session.execute("SELECT * FROM " + table.qualifiedName());
       columnDefs = rs.getColumnDefinitions();
       rowIterator = rs.iterator();
       LOG.debug("Opened cursor on '{}'", table.qualifiedName());
@@ -79,15 +78,4 @@ public final class CassandraRecordReader implements RecordReader {
     }
   }
 
-  private String buildSelect(TableRef table, MappingDefinition mapping) {
-    String keyspace = table.schemaName().isBlank() ? "" : table.schemaName() + ".";
-    if (mapping.columnMappings().isEmpty()) {
-      return "SELECT * FROM " + keyspace + table.tableName();
-    }
-    var cols =
-        mapping.columnMappings().stream()
-            .map(cm -> cm.sourceColumn())
-            .collect(Collectors.joining(", "));
-    return "SELECT " + cols + " FROM " + keyspace + table.tableName();
-  }
 }

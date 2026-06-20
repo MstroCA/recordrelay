@@ -37,8 +37,6 @@ import io.recordrelay.core.domain.Credentials;
 import io.recordrelay.core.domain.DataRecord;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
-import io.recordrelay.core.domain.MappingDefinition;
-import io.recordrelay.core.domain.MappingFormat;
 import io.recordrelay.core.domain.TableRef;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -68,17 +66,15 @@ class FileConnectorTest {
     var profile = profile(DatabaseType.FILE_CSV, file);
     var db = new DatabaseRef(file, DatabaseType.FILE_CSV);
     var table = new TableRef(db, "", "data.csv");
-    var mapping =
-        new MappingDefinition("test", table, table, List.of(), MappingFormat.DIRECT, null);
 
     var writer = new CsvRecordWriter();
-    writer.open(profile, table, mapping);
+    writer.open(profile, table);
     writer.write(record("name", "Alice", "age", "30"));
     writer.write(record("name", "Bob", "age", "25"));
     writer.close();
 
     var reader = new CsvRecordReader();
-    reader.open(profile, table, mapping);
+    reader.open(profile, table);
     var records = drain(reader);
     assertThat(records).hasSize(2);
     assertThat(records.get(0).get("name")).isEqualTo("Alice");
@@ -100,17 +96,15 @@ class FileConnectorTest {
     var profile = profile(DatabaseType.FILE_JSON, file);
     var db = new DatabaseRef(file, DatabaseType.FILE_JSON);
     var table = new TableRef(db, "", "data.jsonl");
-    var mapping =
-        new MappingDefinition("test", table, table, List.of(), MappingFormat.DIRECT, null);
 
     var writer = new JsonRecordWriter();
-    writer.open(profile, table, mapping);
+    writer.open(profile, table);
     writer.write(record("id", "1", "value", "foo"));
     writer.write(record("id", "2", "value", "bar"));
     writer.close();
 
     var reader = new JsonRecordReader();
-    reader.open(profile, table, mapping);
+    reader.open(profile, table);
     var records = drain(reader);
     assertThat(records).hasSize(2);
     assertThat(records.get(0).get("id")).isEqualTo("1");
@@ -130,17 +124,15 @@ class FileConnectorTest {
     var profile = profile(DatabaseType.FILE_YAML, file);
     var db = new DatabaseRef(file, DatabaseType.FILE_YAML);
     var table = new TableRef(db, "", "data.yaml");
-    var mapping =
-        new MappingDefinition("test", table, table, List.of(), MappingFormat.DIRECT, null);
 
     var writer = new YamlRecordWriter();
-    writer.open(profile, table, mapping);
+    writer.open(profile, table);
     writer.write(record("key", "a", "val", "1"));
     writer.write(record("key", "b", "val", "2"));
     writer.close();
 
     var reader = new YamlRecordReader();
-    reader.open(profile, table, mapping);
+    reader.open(profile, table);
     var records = drain(reader);
     assertThat(records).hasSize(2);
     assertThat(records.get(0).get("key").toString()).isEqualTo("a");
@@ -160,16 +152,14 @@ class FileConnectorTest {
     var profile = profile(DatabaseType.FILE_EXCEL, file);
     var db = new DatabaseRef(file, DatabaseType.FILE_EXCEL);
     var table = new TableRef(db, "", "data.xlsx");
-    var mapping =
-        new MappingDefinition("test", table, table, List.of(), MappingFormat.DIRECT, null);
 
     var writer = new ExcelRecordWriter();
-    writer.open(profile, table, mapping);
+    writer.open(profile, table);
     writer.write(record("col1", "hello", "col2", "world"));
     writer.close();
 
     var reader = new ExcelRecordReader();
-    reader.open(profile, table, mapping);
+    reader.open(profile, table);
     var records = drain(reader);
     assertThat(records).hasSize(1);
     assertThat(records.get(0).get("col1")).isEqualTo("hello");
@@ -189,17 +179,15 @@ class FileConnectorTest {
     var profile = profile(DatabaseType.FILE_PARQUET, file);
     var db = new DatabaseRef(file, DatabaseType.FILE_PARQUET);
     var table = new TableRef(db, "", "data.parquet");
-    var mapping =
-        new MappingDefinition("test", table, table, List.of(), MappingFormat.DIRECT, null);
 
     var writer = new ParquetRecordWriter();
-    writer.open(profile, table, mapping);
+    writer.open(profile, table);
     writer.write(record("name", "Alice", "score", "95"));
     writer.write(record("name", "Bob", "score", "80"));
     writer.close();
 
     var reader = new ParquetRecordReader();
-    reader.open(profile, table, mapping);
+    reader.open(profile, table);
     var records = drain(reader);
     assertThat(records).hasSize(2);
     assertThat(records.get(0).get("name").toString()).isEqualTo("Alice");

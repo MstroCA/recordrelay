@@ -21,20 +21,15 @@ import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Factory that populates the RecordRelay tool window with four tabs: Connections, Discovery,
- * Transfer, and Monitor.
- */
+/** Factory that populates the RecordRelay tool window with tabs: Connections, Discovery, Monitor. */
 public final class RecordRelayToolWindowFactory implements ToolWindowFactory {
 
-  /** Creates the four-tab tool window content for the given project. */
   @Override
   public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
     var factory = ContentFactory.getInstance();
     var mgr = toolWindow.getContentManager();
     mgr.addContent(factory.createContent(new ConnectionsPanel(project), "Connections", false));
     mgr.addContent(factory.createContent(new DiscoveryPanel(project), "Discovery", false));
-    mgr.addContent(factory.createContent(new TransferPanel(project), "Transfer", false));
     mgr.addContent(factory.createContent(new MonitorPanel(project), "Monitor", false));
   }
 }

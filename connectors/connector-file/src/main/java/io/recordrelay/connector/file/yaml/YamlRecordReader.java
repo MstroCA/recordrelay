@@ -17,7 +17,7 @@ package io.recordrelay.connector.file.yaml;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -38,7 +38,7 @@ public final class YamlRecordReader implements RecordReader {
 
   @Override
   @SuppressWarnings("unchecked")
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     try {
       fileReader = new FileReader(profile.database());

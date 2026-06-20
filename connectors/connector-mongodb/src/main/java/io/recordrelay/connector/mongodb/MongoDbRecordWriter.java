@@ -24,7 +24,7 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-import io.recordrelay.core.domain.MappingDefinition;
+
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -52,7 +52,7 @@ public final class MongoDbRecordWriter implements RecordWriter {
   private final List<Document> buffer = new ArrayList<>(DEFAULT_BATCH_SIZE);
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table, MappingDefinition mapping)
+  public void open(ConnectionProfile profile, TableRef table)
       throws ConnectorException {
     try {
       client = buildClient(profile);

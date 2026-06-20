@@ -16,10 +16,12 @@
 package io.recordrelay.core.domain;
 
 /**
- * Compatibility assessment between a source and a target column.
+ * Represents the structural compatibility of a single column between a source and target schema.
  *
- * <p>When {@code sourceColumn} is {@code null} there is no matching source column for the given
- * target column. {@code warning} is {@code null} when the columns are fully compatible.
+ * @param sourceColumn name of the matching source column, or {@code null} if absent
+ * @param targetColumn name of the expected target column
+ * @param compatible {@code true} when the column exists in the source with a compatible type
+ * @param warning human-readable description of any mismatch, or {@code null} when compatible
  */
 public record ColumnCompatibility(
     String sourceColumn, String targetColumn, boolean typeCompatible, String warning) {}

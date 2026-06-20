@@ -92,67 +92,6 @@ class DomainModelTest {
     assertThat(col.primaryKey()).isTrue();
   }
 
-  // ── ColumnMapping ─────────────────────────────────────────────────────────
-
-  @Test
-  void passthroughMappingShouldEqualSourceAndTarget() {
-    var m = ColumnMapping.passthrough("email");
-    assertThat(m.isPassthrough()).isTrue();
-    assertThat(m.sourceColumn()).isEqualTo(m.targetColumn());
-  }
-
-  @Test
-  void aliasMappingShouldNotBePassthrough() {
-    var m = new ColumnMapping("user_name", "username");
-    assertThat(m.isPassthrough()).isFalse();
-  }
-
-  @Test
-  void columnMappingShouldRejectBlankSource() {
-    assertThatThrownBy(() -> new ColumnMapping("", "col"))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  // ── ValidationResult ─────────────────────────────────────────────────────
-
-  @Test
-  void validationResultOkShouldBeValid() {
-    var r = ValidationResult.ok();
-    assertThat(r.valid()).isTrue();
-    assertThat(r.errors()).isEmpty();
-    assertThat(r.warnings()).isEmpty();
-  }
-
-  @Test
-  void validationResultOkWithWarnings() {
-    var r = ValidationResult.ok(List.of("type mismatch"));
-    assertThat(r.valid()).isTrue();
-    assertThat(r.warnings()).hasSize(1);
-  }
-
-  @Test
-  void validationResultFailedShouldBeInvalid() {
-    var errors = List.of(ValidationError.error("col", "missing"));
-    var r = ValidationResult.failed(errors);
-    assertThat(r.valid()).isFalse();
-    assertThat(r.errors()).hasSize(1);
-  }
-
-  // ── ValidationError ───────────────────────────────────────────────────────
-
-  @Test
-  void validationErrorFactoriesShouldSetSeverity() {
-    assertThat(ValidationError.error("f", "msg").severity()).isEqualTo(ValidationSeverity.ERROR);
-    assertThat(ValidationError.warning("f", "msg").severity())
-        .isEqualTo(ValidationSeverity.WARNING);
-  }
-
-  @Test
-  void validationErrorShouldDefaultNullFieldToEmpty() {
-    var e = new ValidationError(null, "msg", ValidationSeverity.ERROR);
-    assertThat(e.field()).isEmpty();
-  }
-
   // ── DataRecord ────────────────────────────────────────────────────────────
 
   @Test
@@ -169,15 +108,6 @@ class DomainModelTest {
     var rec = DataRecord.of(Map.of("k", "v"));
     assertThatThrownBy(() -> rec.fields().put("k2", "v2"))
         .isInstanceOf(UnsupportedOperationException.class);
-  }
-
-  // ── TransferError ─────────────────────────────────────────────────────────
-
-  @Test
-  void batchErrorShouldHaveRowNumberMinusOne() {
-    var e = TransferError.batchError("flush failed", "users");
-    assertThat(e.rowNumber()).isEqualTo(-1L);
-    assertThat(e.tableName()).isEqualTo("users");
   }
 
   // ── SchemaMatchReport ─────────────────────────────────────────────────────
@@ -198,36 +128,5 @@ class DomainModelTest {
   void schemaMatchReportShouldRejectInvalidPercentage() {
     assertThatThrownBy(() -> new SchemaMatchReport(101.0, null, null))
         .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  // ── TransactionIsolation ──────────────────────────────────────────────────
-
-  @Test
-  void transactionIsolationJdbcConstantsShouldMatchJdbcSpec() {
-    assertThat(TransactionIsolation.READ_UNCOMMITTED.jdbcConstant()).isEqualTo(1);
-    assertThat(TransactionIsolation.READ_COMMITTED.jdbcConstant()).isEqualTo(2);
-    assertThat(TransactionIsolation.REPEATABLE_READ.jdbcConstant()).isEqualTo(4);
-    assertThat(TransactionIsolation.SERIALIZABLE.jdbcConstant()).isEqualTo(8);
-  }
-
-  // ── MappingDefinition ─────────────────────────────────────────────────────
-
-  @Test
-  void emptyMappingDefinitionShouldReportEmpty() {
-    var src = new TableRef(new DatabaseRef("s", DatabaseType.POSTGRESQL), "public", "a");
-    var tgt = new TableRef(new DatabaseRef("t", DatabaseType.MONGODB), "", "b");
-    var m = new MappingDefinition("m1", src, tgt, null, null, null);
-    assertThat(m.isEmpty()).isTrue();
-    assertThat(m.format()).isEqualTo(MappingFormat.DIRECT);
-  }
-
-  @Test
-  void mappingDefinitionWithColumnsShouldNotBeEmpty() {
-    var src = new TableRef(new DatabaseRef("s", DatabaseType.POSTGRESQL), "public", "a");
-    var tgt = new TableRef(new DatabaseRef("t", DatabaseType.MONGODB), "", "b");
-    var cols = List.of(ColumnMapping.passthrough("id"));
-    var m = new MappingDefinition("m2", src, tgt, cols, null, null);
-    assertThat(m.isEmpty()).isFalse();
-    assertThat(m.columnMappings()).hasSize(1);
   }
 }

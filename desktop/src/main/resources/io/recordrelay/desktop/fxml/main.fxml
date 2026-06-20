@@ -23,8 +23,6 @@
                     styleClass="nav-btn" onAction="#showConnections"/>
             <Button text="🔍  Discovery"    maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showDiscovery"/>
-            <Button text="▶   Transfer"      maxWidth="Infinity"
-                    styleClass="nav-btn" onAction="#showTransfer"/>
             <Button text="📊  Dashboard"    maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showMonitor"/>
 

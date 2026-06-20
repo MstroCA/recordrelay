@@ -46,9 +46,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class BuiltinEntityRegistry implements EntityRegistryPort {
 
-  /** Shared singleton pre-populated with all built-in entities. */
-  public static final BuiltinEntityRegistry INSTANCE = new BuiltinEntityRegistry();
-
   // Common entity constants for direct use in ContextClonePlan builders.
   public static final BusinessEntity CUSTOMER =
       BusinessEntity.of("customer", "customers", "id", "E-commerce or SaaS customer record");
@@ -70,6 +67,9 @@ public final class BuiltinEntityRegistry implements EntityRegistryPort {
       BusinessEntity.of("account", "accounts", "id", "Organisation or team account");
   public static final BusinessEntity SESSION =
       BusinessEntity.of("session", "sessions", "id", "User session or authentication token");
+
+  /** Shared singleton pre-populated with all built-in entities. */
+  public static final BuiltinEntityRegistry INSTANCE = new BuiltinEntityRegistry();
 
   private final ConcurrentHashMap<String, BusinessEntity> byName = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, BusinessEntity> byTable = new ConcurrentHashMap<>();

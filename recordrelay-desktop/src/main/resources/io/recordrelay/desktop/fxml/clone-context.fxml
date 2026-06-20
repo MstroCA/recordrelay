@@ -6,6 +6,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
@@ -20,7 +21,7 @@
         <VBox spacing="4">
             <padding><Insets top="28" right="28" bottom="12" left="28"/></padding>
             <Label text="Clone Context" styleClass="screen-title"/>
-            <Label text="Reproduce a business entity (customer, order, user…) from production to your local environment in minutes."
+            <Label text="Source database'den bir kaydı ve tüm bağlı tablolarını dakikalar içinde hedefe kopyalar."
                    styleClass="screen-subtitle"/>
             <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
         </VBox>
@@ -31,79 +32,68 @@
             <VBox spacing="16">
                 <padding><Insets top="4" right="28" bottom="16" left="28"/></padding>
 
-                <!-- Entity -->
+                <!-- Step 1: Connections -->
                 <VBox styleClass="card" spacing="10">
-                    <Label text="ENTITY" styleClass="section-label"/>
+                    <Label text="ADIM 1 — BAĞLANTI SEÇ" styleClass="section-label"/>
                     <HBox spacing="12" alignment="CENTER_LEFT">
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Entity type" styleClass="field-label"/>
-                            <ComboBox fx:id="cmbEntity" maxWidth="Infinity"/>
+                            <Label text="Source (Kaynak Veritabanı)" styleClass="field-label"/>
+                            <ComboBox fx:id="cmbSource" maxWidth="Infinity" onAction="#onSourceChanged"/>
                         </VBox>
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Entity ID" styleClass="field-label"/>
-                            <TextField fx:id="tfEntityId" promptText="e.g. 12345"/>
-                        </VBox>
-                    </HBox>
-                </VBox>
-
-                <!-- Connections -->
-                <VBox styleClass="card" spacing="10">
-                    <Label text="CONNECTIONS" styleClass="section-label"/>
-                    <CheckBox fx:id="chkExportMode" text="Export mode — save as .rrpkg file instead of live clone"/>
-                    <HBox spacing="12" alignment="CENTER_LEFT">
-                        <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Source" styleClass="field-label"/>
-                            <ComboBox fx:id="cmbSource" maxWidth="Infinity"/>
-                        </VBox>
-                        <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label fx:id="lblTargetOrDir" text="Target" styleClass="field-label"/>
+                            <Label fx:id="lblTargetHeader" text="Target (Hedef Veritabanı)" styleClass="field-label"/>
                             <ComboBox fx:id="cmbTarget" maxWidth="Infinity"/>
                             <HBox fx:id="hboxOutputDir" spacing="6" alignment="CENTER_LEFT" visible="false" managed="false">
-                                <TextField fx:id="tfOutputDir" HBox.hgrow="ALWAYS" promptText="Output directory…"/>
-                                <Button fx:id="btnBrowseDir" text="Browse…" onAction="#onBrowseDir"/>
+                                <TextField fx:id="tfOutputDir" HBox.hgrow="ALWAYS" promptText="Çıktı klasörü…"/>
+                                <Button fx:id="btnBrowseDir" text="Seç…" onAction="#onBrowseDir"/>
                             </HBox>
                         </VBox>
                     </HBox>
+                    <CheckBox fx:id="chkExportMode" text="Export modu — .rrpkg dosyası olarak kaydet (canlı kopyalama yapmaz)"/>
                 </VBox>
 
-                <!-- Options -->
+                <!-- Step 2: Tables -->
                 <VBox styleClass="card" spacing="10">
-                    <Label text="OPTIONS" styleClass="section-label"/>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="ADIM 2 — TABLO &amp; KAYIT" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="btnLoadTables" text="Tabloları Yükle ↻" onAction="#onLoadTables"
+                                disable="true"/>
+                        <Label fx:id="lblTableCount" text="" styleClass="hint-label"/>
+                    </HBox>
+                    <Label text="Source seçildiğinde tablolar otomatik yüklenir. Başlangıç tablosunu ve kayıt ID'sini girin."
+                           styleClass="screen-subtitle"/>
+                    <HBox spacing="12" alignment="BOTTOM_LEFT">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Başlangıç Tablosu (root table)" styleClass="field-label"/>
+                            <ComboBox fx:id="cmbRootTable" maxWidth="Infinity"
+                                      promptText="Source seçince dolar…" editable="true"/>
+                        </VBox>
+                        <VBox spacing="4" prefWidth="140">
+                            <Label text="Primary Key Kolonu" styleClass="field-label"/>
+                            <TextField fx:id="tfPkColumn" text="id" promptText="id"/>
+                        </VBox>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="Kayıt ID'si" styleClass="field-label"/>
+                            <TextField fx:id="tfEntityId" promptText="örn. 12345"/>
+                        </VBox>
+                    </HBox>
+                    <Label text="Sistem bu tablodan başlayarak FK ilişkilerini takip eder ve bağlı tüm kayıtları kopyalar."
+                           styleClass="hint-label"/>
+                </VBox>
+
+                <!-- Step 3: Options -->
+                <VBox styleClass="card" spacing="10">
+                    <Label text="ADIM 3 — SEÇENEKLER" styleClass="section-label"/>
                     <HBox spacing="24" alignment="CENTER_LEFT">
                         <VBox spacing="4">
-                            <Label text="Traversal depth" styleClass="field-label"/>
+                            <Label text="İlişki derinliği (kaç tablo atlayacak)" styleClass="field-label"/>
                             <HBox spacing="8" alignment="CENTER_LEFT">
-                                <Slider fx:id="sliderDepth" prefWidth="180"/>
+                                <Slider fx:id="sliderDepth" prefWidth="200"/>
                                 <Label fx:id="lblDepthValue" text="3" styleClass="hint-label"/>
                             </HBox>
                         </VBox>
-                        <CheckBox fx:id="chkMaskPii" text="Mask PII (email, phone, address, IBAN, national ID)"/>
-                    </HBox>
-                </VBox>
-
-                <!-- Bug context (visible in export mode) -->
-                <VBox fx:id="paneBugContext" styleClass="card" spacing="10" visible="false" managed="false">
-                    <Label text="BUG CONTEXT (OPTIONAL)" styleClass="section-label"/>
-                    <Label text="Attach a bug report to this reproduction package." styleClass="screen-subtitle"/>
-                    <HBox spacing="12">
-                        <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Bug / Ticket ID" styleClass="field-label"/>
-                            <TextField fx:id="tfBugId" promptText="JIRA-1234"/>
-                        </VBox>
-                        <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Title" styleClass="field-label"/>
-                            <TextField fx:id="tfBugTitle" promptText="Short description"/>
-                        </VBox>
-                    </HBox>
-                    <HBox spacing="12">
-                        <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Service" styleClass="field-label"/>
-                            <TextField fx:id="tfBugService" promptText="orders-service"/>
-                        </VBox>
-                        <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Environment" styleClass="field-label"/>
-                            <TextField fx:id="tfBugEnv" promptText="production"/>
-                        </VBox>
+                        <Separator orientation="VERTICAL"/>
+                        <CheckBox fx:id="chkMaskPii" text="PII Maskele (e-posta, telefon, adres, IBAN, TC kimlik)"/>
                     </HBox>
                 </VBox>
 
@@ -111,9 +101,9 @@
                 <VBox styleClass="card" spacing="8">
                     <Label text="LOG" styleClass="section-label"/>
                     <ProgressBar fx:id="progressBar" maxWidth="Infinity" prefHeight="14"/>
-                    <Label fx:id="lblStatus" text="Ready" styleClass="status-label"/>
-                    <TextArea fx:id="taLog" prefHeight="120" editable="false" wrapText="true"
-                              styleClass="log-area" promptText="Clone output appears here…"/>
+                    <Label fx:id="lblStatus" text="Hazır" styleClass="status-label"/>
+                    <TextArea fx:id="taLog" prefHeight="150" editable="false" wrapText="true"
+                              styleClass="log-area" promptText="Kopyalama çıktısı burada görünür…"/>
                     <Label fx:id="lblExportedPath" styleClass="hint-label" visible="false" managed="false"/>
                 </VBox>
 
@@ -124,8 +114,8 @@
     <bottom>
         <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
             <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
-            <Button fx:id="btnClone"  text="Clone Context" onAction="#onClone"  styleClass="accent-btn"/>
-            <Button fx:id="btnExport" text="Export Package" onAction="#onExport" disable="true"/>
+            <Button fx:id="btnClone"  text="▶  Context Kopyala" onAction="#onClone" styleClass="accent-btn"/>
+            <Button fx:id="btnExport" text="📦  Paket Dışa Aktar" onAction="#onExport" disable="true"/>
             <Region HBox.hgrow="ALWAYS"/>
         </HBox>
     </bottom>

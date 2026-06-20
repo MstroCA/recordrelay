@@ -12,17 +12,21 @@ application {
 
 javafx {
     version = libs.versions.javafx.get()
-    modules = listOf("javafx.controls", "javafx.fxml", "javafx.web")
+    modules = listOf("javafx.controls", "javafx.fxml")
 }
 
-// On Apple Silicon with only an x86_64 JDK 21 available, use the arm64 JDK 23
-// for the run task so JavaFX native libs match the JVM architecture.
+// Use the arm64 Oracle JDK for the run task on Apple Silicon so JavaFX
+// native libs (mac-aarch64) match the JVM architecture.
 tasks.named<JavaExec>("run") {
     javaLauncher.set(
         javaToolchains.launcherFor {
             languageVersion.set(JavaLanguageVersion.of(23))
             vendor.set(JvmVendorSpec.matching("Oracle"))
         })
+    // Allow ES2 (Metal/OpenGL) with software fallback — prevents
+    // QuantumRenderer "no suitable pipeline found" on some macOS setups.
+    // sw = software renderer, bypasses Metal/OpenGL entirely — guaranteed to work on any Mac.
+    jvmArgs("-Dprism.order=sw", "-Djava.awt.headless=false")
 }
 
 dependencies {

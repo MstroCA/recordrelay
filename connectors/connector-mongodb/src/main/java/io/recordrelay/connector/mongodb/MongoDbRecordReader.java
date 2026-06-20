@@ -24,7 +24,6 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCursor;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -47,8 +46,7 @@ public final class MongoDbRecordReader implements RecordReader {
   private boolean hasNext;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     try {
       client = buildClient(profile);
       var collection = client.getDatabase(profile.database()).getCollection(table.tableName());

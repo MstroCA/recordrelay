@@ -99,5 +99,4 @@ public final class ConfigStore {
     }
     return removed;
   }
-
 }

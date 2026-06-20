@@ -21,7 +21,6 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -43,8 +42,7 @@ public final class ElasticsearchRecordWriter implements RecordWriter {
   private final List<BulkOperation> buffer = new ArrayList<>(DEFAULT_BATCH);
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     this.index = table.tableName();
     try {
       transport = ElasticsearchConnector.buildTransport(profile);

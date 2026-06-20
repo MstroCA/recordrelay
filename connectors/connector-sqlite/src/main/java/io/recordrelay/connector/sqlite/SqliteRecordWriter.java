@@ -17,7 +17,6 @@ package io.recordrelay.connector.sqlite;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -44,8 +43,7 @@ public final class SqliteRecordWriter implements RecordWriter {
   private final List<DataRecord> buffer = new ArrayList<>(DEFAULT_BATCH);
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     this.tableName = table.tableName();
     try {
       conn = DriverManager.getConnection("jdbc:sqlite:" + profile.database());

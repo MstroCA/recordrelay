@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Driving port: schema discovery and compatibility analysis use cases.
  *
- * <p>Implementations orchestrate the {@link io.recordrelay.core.port.out.DataSourceConnector} and
+ * <p>Implementations orchestrate the {@link io.recordrelay.core.port.out.ContextProviderPort} and
  * {@link io.recordrelay.core.port.out.SchemaInspector} driven ports to fulfil UI and CLI requests.
  */
 public interface SchemaDiscoveryUseCase {
@@ -57,17 +57,17 @@ public interface SchemaDiscoveryUseCase {
   List<ColumnMeta> inspectColumns(ConnectionProfile profile, TableRef table);
 
   /**
-   * Analyses structural compatibility between a source and target table pair.
+   * Analyses structural compatibility between two environment tables.
    *
-   * @param sourceProfile connection to the source database
-   * @param sourceTable the source table
-   * @param targetProfile connection to the target database
-   * @param targetTable the target table
+   * @param envProfile connection to the reference environment
+   * @param envTable the reference table
+   * @param replicaProfile connection to the replica environment
+   * @param replicaTable the replica table
    * @return a report with match percentage and per-column compatibility details
    */
   SchemaMatchReport analyzeCompatibility(
-      ConnectionProfile sourceProfile,
-      TableRef sourceTable,
-      ConnectionProfile targetProfile,
-      TableRef targetTable);
+      ConnectionProfile envProfile,
+      TableRef envTable,
+      ConnectionProfile replicaProfile,
+      TableRef replicaTable);
 }

@@ -18,7 +18,6 @@ package io.recordrelay.connector.file.json;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -37,8 +36,7 @@ public final class JsonRecordReader implements RecordReader {
   private String nextLine;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     try {
       reader = new BufferedReader(new FileReader(profile.database()));
       advance();

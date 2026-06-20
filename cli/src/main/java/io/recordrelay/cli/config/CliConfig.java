@@ -41,5 +41,4 @@ public class CliConfig {
   public void setConnections(Map<String, ConnectionEntry> connections) {
     this.connections = connections;
   }
-
 }

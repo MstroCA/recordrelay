@@ -17,7 +17,6 @@ package io.recordrelay.connector.file.csv;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -34,8 +33,7 @@ public final class CsvRecordWriter implements RecordWriter {
   private List<String> headers;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     // Headers written lazily from first record.
     try {
       // We defer actual printer creation until we know the headers.

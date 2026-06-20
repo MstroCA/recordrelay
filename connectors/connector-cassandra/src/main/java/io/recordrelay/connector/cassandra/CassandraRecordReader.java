@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -40,8 +39,7 @@ public final class CassandraRecordReader implements RecordReader {
   private com.datastax.oss.driver.api.core.cql.ColumnDefinitions columnDefs;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     try {
       session = CassandraConnector.openSession(profile);
       ResultSet rs = session.execute("SELECT * FROM " + table.qualifiedName());
@@ -77,5 +75,4 @@ public final class CassandraRecordReader implements RecordReader {
       session.close();
     }
   }
-
 }

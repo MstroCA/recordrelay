@@ -24,7 +24,7 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
@@ -35,13 +35,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link DataSourceConnector} adapter for MongoDB.
+ * {@link ContextProviderPort} adapter for MongoDB.
  *
  * <p>Uses the synchronous MongoDB Java Driver. Connection pooling is managed by {@code
  * MongoClient}, which is created per-operation in Phase 1. A shared client pool keyed by profile
  * will be introduced when the transfer engine is implemented.
  */
-public final class MongoDbConnector implements DataSourceConnector {
+public final class MongoDbConnector implements ContextProviderPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(MongoDbConnector.class);
   private static final int CONNECT_TIMEOUT_MS = 10_000;

@@ -34,7 +34,7 @@ import java.util.function.Function;
  */
 public final class DiscoveryEngine implements SchemaDiscoveryUseCase {
 
-  private final Function<ConnectionProfile, io.recordrelay.core.port.out.DataSourceConnector>
+  private final Function<ConnectionProfile, io.recordrelay.core.port.out.ContextProviderPort>
       connectorLookup;
 
   public DiscoveryEngine() {
@@ -43,7 +43,7 @@ public final class DiscoveryEngine implements SchemaDiscoveryUseCase {
 
   /** Package-private for unit testing. */
   DiscoveryEngine(
-      Function<ConnectionProfile, io.recordrelay.core.port.out.DataSourceConnector>
+      Function<ConnectionProfile, io.recordrelay.core.port.out.ContextProviderPort>
           connectorLookup) {
     this.connectorLookup = connectorLookup;
   }

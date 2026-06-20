@@ -20,7 +20,7 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
@@ -31,12 +31,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link DataSourceConnector} adapter for PostgreSQL.
+ * {@link ContextProviderPort} adapter for PostgreSQL.
  *
  * <p>Registered via {@code META-INF/services} for ServiceLoader discovery. Supports {@link
  * DatabaseType#POSTGRESQL} profiles only.
  */
-public final class PostgreSqlConnector implements DataSourceConnector {
+public final class PostgreSqlConnector implements ContextProviderPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(PostgreSqlConnector.class);
 

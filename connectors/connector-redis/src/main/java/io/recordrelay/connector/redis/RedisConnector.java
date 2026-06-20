@@ -21,7 +21,7 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
@@ -30,11 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link DataSourceConnector} adapter for Redis via Lettuce.
+ * {@link ContextProviderPort} adapter for Redis via Lettuce.
  *
  * <p>Registered via {@code META-INF/services} for ServiceLoader discovery.
  */
-public final class RedisConnector implements DataSourceConnector {
+public final class RedisConnector implements ContextProviderPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(RedisConnector.class);
 

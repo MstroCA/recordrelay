@@ -111,5 +111,4 @@ public abstract class AbstractJdbcRecordReader implements RecordReader {
       throw new ConnectorException("Error closing reader", e);
     }
   }
-
 }

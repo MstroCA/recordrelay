@@ -23,7 +23,7 @@ import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
 
 /**
- * {@link io.recordrelay.core.port.out.DataSourceConnector} adapter for MySQL and MariaDB.
+ * {@link io.recordrelay.core.port.out.ContextProviderPort} adapter for MySQL and MariaDB.
  *
  * <p>Registered via {@code META-INF/services} for ServiceLoader discovery. Supports {@link
  * DatabaseType#MYSQL} and {@link DatabaseType#MARIADB} profiles.

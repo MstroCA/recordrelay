@@ -18,14 +18,14 @@ package io.recordrelay.connector.template;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
 import java.util.List;
 
 /**
- * Template connector — copy this module to implement a custom {@link DataSourceConnector}.
+ * Template connector — copy this module to implement a custom {@link ContextProviderPort}.
  *
  * <p>Steps:
  *
@@ -35,13 +35,13 @@ import java.util.List;
  *   <li>Override {@link #supports(ConnectionProfile)} to match your {@code DatabaseType}.
  *   <li>Implement {@link #testConnection}, {@link #listDatabases}, and the reader/writer/inspector.
  *   <li>Register your connector in {@code
- *       META-INF/services/io.recordrelay.core.port.out.DataSourceConnector}.
+ *       META-INF/services/io.recordrelay.core.port.out.ContextProviderPort}.
  * </ol>
  *
  * <p>This class intentionally returns {@code false} from {@link #supports} so it is never
  * accidentally selected by the registry.
  */
-public final class TemplateConnector implements DataSourceConnector {
+public final class TemplateConnector implements ContextProviderPort {
 
   @Override
   public String connectorId() {

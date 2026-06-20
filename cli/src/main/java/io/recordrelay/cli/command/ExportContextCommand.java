@@ -28,38 +28,40 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 /**
- * {@code rr export-package} — extracts a root record and all related data from the source and
- * writes a portable {@code .rrpkg} archive.
+ * {@code rr export} — extracts a root entity and its full relationship graph from an environment
+ * and writes a portable {@code .rrpkg} reproduction package.
  *
- * <p>Example:
+ * <p>Examples:
  *
  * <pre>
- * rr export-package --source staging --table customer --id 12345 --output ./exports
+ * rr export --entity customer --id 12345 --from staging --output ./exports
+ * rr export --entity order --id 99 --from prod --output ./exports
  * </pre>
  */
 @Command(
-    name = "export-package",
-    description = "Export a root record and its dependencies as a portable .rrpkg archive.")
-public final class ExportPackageCommand implements Callable<Integer> {
+    name = "export",
+    description =
+        "Export an entity and its full context graph as a portable .rrpkg reproduction package.")
+public final class ExportContextCommand implements Callable<Integer> {
 
   @ParentCommand private RecordRelayCli parent;
 
   @Option(
-      names = {"--source", "-s"},
+      names = {"--from", "-f"},
       required = true,
-      description = "Source connection profile name")
-  String source;
+      description = "Environment connection profile name")
+  String from;
 
   @Option(
-      names = {"--table"},
+      names = {"--entity", "-e"},
       required = true,
-      description = "Root table name")
-  String table;
+      description = "Entity type (e.g. customer, order, user)")
+  String entity;
 
   @Option(
       names = {"--id"},
       required = true,
-      description = "Root record primary key value")
+      description = "Root entity primary key value")
   String id;
 
   @Option(
@@ -79,19 +81,18 @@ public final class ExportPackageCommand implements Callable<Integer> {
       var printer = parent.printer();
       var store = parent.configStore();
       var resolver = new ConnProfileResolver(store);
-      var srcProfile = resolver.resolve(source);
+      var profile = resolver.resolve(from);
 
-      // Export does not require a real target — use source as placeholder target
-      var request = CloneRequest.builder(srcProfile, srcProfile, table, id).depth(depth).build();
+      var request = CloneRequest.builder(profile, profile, entity, id).depth(depth).build();
       var job = CloneJob.of(request);
 
       printer.printLine(
-          String.format("Exporting %s:%s from '%s' to %s", table, id, source, outputDir));
+          String.format("Exporting context: %s #%s from '%s' → %s", entity, id, from, outputDir));
 
       var engine = DefaultCloneEngine.createDefault();
       var pkgPath = engine.exportPackage(job, outputDir);
 
-      printer.printSuccess("Package exported: " + pkgPath.toAbsolutePath());
+      printer.printSuccess("Context exported: " + pkgPath.toAbsolutePath());
       return ExitCode.SUCCESS;
     } catch (Exception e) {
       return EnvCommand.handleError(parent, e, ExitCode.CLONE_FAILED);

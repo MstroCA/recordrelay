@@ -17,7 +17,6 @@ package io.recordrelay.connector.postgresql;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -50,8 +49,7 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
   private int batchSize = DEFAULT_BATCH_SIZE;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     this.qualifiedTable = table.qualifiedName();
     var url =
         "jdbc:postgresql://" + profile.host() + ":" + profile.port() + "/" + profile.database();

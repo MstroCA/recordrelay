@@ -21,8 +21,8 @@ import io.recordrelay.cli.command.ConnCommand;
 import io.recordrelay.cli.command.DiffCommand;
 import io.recordrelay.cli.command.DiscoverCommand;
 import io.recordrelay.cli.command.EnvCommand;
-import io.recordrelay.cli.command.ExportPackageCommand;
-import io.recordrelay.cli.command.ImportPackageCommand;
+import io.recordrelay.cli.command.ExportContextCommand;
+import io.recordrelay.cli.command.ImportContextCommand;
 import io.recordrelay.cli.command.ReplayCommand;
 import io.recordrelay.cli.command.StatusCommand;
 import io.recordrelay.cli.config.ConfigStore;
@@ -40,22 +40,24 @@ import picocli.CommandLine.Option;
     mixinStandardHelpOptions = true,
     version = "0.2.0-SNAPSHOT",
     description = {
-      "RecordRelay — Universal Data Reproduction Platform",
+      "RecordRelay — Universal Data Reproduction & Debug Platform",
       "",
-      "Reproduce production issues locally in under 5 minutes.",
+      "Reproduce production business context locally in minutes.",
       "",
       "Quick start:",
-      "  rr clone --customer-id 123 --source prod --target local",
-      "  rr clone --order-id 987654 --source prod --export --bug-title \"Price bug\"",
+      "  rr clone --entity customer --id 123 --from prod --target local",
+      "  rr clone --entity order --id 987654 --from prod --export --bug-title \"Price bug\"",
       "  rr replay bug-1234.rrpkg --target local",
+      "  rr export --entity customer --id 123 --from prod --output ./exports",
+      "  rr import customer-123.rrpkg --target local",
     },
     subcommands = {
       CommandLine.HelpCommand.class,
       // ── Reproduction commands (primary) ──
       CloneCommand.class,
       ReplayCommand.class,
-      ExportPackageCommand.class,
-      ImportPackageCommand.class,
+      ExportContextCommand.class,
+      ImportContextCommand.class,
       DiffCommand.class,
       // ── Environment management ──
       EnvCommand.class,

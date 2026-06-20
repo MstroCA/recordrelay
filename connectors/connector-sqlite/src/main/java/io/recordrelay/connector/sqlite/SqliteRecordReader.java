@@ -17,7 +17,6 @@ package io.recordrelay.connector.sqlite;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -42,8 +41,7 @@ public final class SqliteRecordReader implements RecordReader {
   private boolean hasNext;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     try {
       conn = DriverManager.getConnection("jdbc:sqlite:" + profile.database());
       stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
@@ -94,5 +92,4 @@ public final class SqliteRecordReader implements RecordReader {
       throw new ConnectorException("Error closing reader", e);
     }
   }
-
 }

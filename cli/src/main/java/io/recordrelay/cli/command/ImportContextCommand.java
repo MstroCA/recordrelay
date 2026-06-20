@@ -24,34 +24,36 @@ import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
 /**
- * {@code rr import-package} — reads a {@code .rrpkg} archive and imports all records into the
- * target database.
+ * {@code rr import} — reads a {@code .rrpkg} archive and reproduces all context records into the
+ * target environment.
  *
- * <p>Example:
+ * <p>Examples:
  *
  * <pre>
- * rr import-package --target local --file ./exports/customer-12345-1234567890.rrpkg
+ * rr import customer-12345-1234567890.rrpkg --target local
+ * rr import ./exports/order-99.rrpkg --target dev
  * </pre>
  */
-@Command(name = "import-package", description = "Import a .rrpkg archive into a target database.")
-public final class ImportPackageCommand implements Callable<Integer> {
+@Command(name = "import", description = "Import a .rrpkg reproduction package into an environment.")
+public final class ImportContextCommand implements Callable<Integer> {
 
   @ParentCommand private RecordRelayCli parent;
+
+  @Parameters(
+      index = "0",
+      paramLabel = "<file>",
+      description = "Path to the .rrpkg archive to import")
+  Path packageFile;
 
   @Option(
       names = {"--target", "-t"},
       required = true,
-      description = "Target connection profile name")
+      description = "Target environment connection profile name")
   String target;
-
-  @Option(
-      names = {"--file", "-f"},
-      required = true,
-      description = "Path to the .rrpkg archive to import")
-  Path packageFile;
 
   @Override
   public Integer call() {

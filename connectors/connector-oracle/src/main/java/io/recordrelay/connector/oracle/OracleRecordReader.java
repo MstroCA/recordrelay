@@ -18,7 +18,6 @@ package io.recordrelay.connector.oracle;
 import io.recordrelay.connector.oracle.internal.OracleDataSourceFactory;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -43,8 +42,7 @@ public final class OracleRecordReader implements RecordReader {
   private boolean hasNext;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     try {
       conn = OracleDataSourceFactory.create(profile).getConnection();
       conn.setAutoCommit(false);
@@ -97,5 +95,4 @@ public final class OracleRecordReader implements RecordReader {
       throw new ConnectorException("Error closing reader", e);
     }
   }
-
 }

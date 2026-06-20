@@ -17,7 +17,6 @@ package io.recordrelay.connector.file.excel;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -36,8 +35,7 @@ public final class ExcelRecordWriter implements RecordWriter {
   private String path;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     this.path = profile.database();
     workbook = new SXSSFWorkbook(100);
     sheet = workbook.createSheet("Sheet1");

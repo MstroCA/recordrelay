@@ -18,7 +18,6 @@ package io.recordrelay.connector.sqlserver;
 import io.recordrelay.connector.sqlserver.internal.SqlServerDataSourceFactory;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -44,8 +43,7 @@ public final class SqlServerRecordReader implements RecordReader {
   private boolean hasNext;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     try {
       conn =
           DriverManager.getConnection(
@@ -102,5 +100,4 @@ public final class SqlServerRecordReader implements RecordReader {
       throw new ConnectorException("Error closing reader", e);
     }
   }
-
 }

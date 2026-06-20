@@ -18,7 +18,6 @@ package io.recordrelay.connector.oracle;
 import io.recordrelay.connector.oracle.internal.OracleDataSourceFactory;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -44,8 +43,7 @@ public final class OracleRecordWriter implements RecordWriter {
   private final List<DataRecord> buffer = new ArrayList<>(DEFAULT_BATCH);
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     this.qualifiedTable = table.qualifiedName();
     try {
       conn = OracleDataSourceFactory.create(profile).getConnection();

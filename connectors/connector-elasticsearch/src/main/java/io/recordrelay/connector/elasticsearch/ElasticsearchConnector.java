@@ -22,7 +22,7 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
@@ -37,11 +37,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link DataSourceConnector} adapter for Elasticsearch.
+ * {@link ContextProviderPort} adapter for Elasticsearch.
  *
  * <p>Registered via {@code META-INF/services} for ServiceLoader discovery.
  */
-public final class ElasticsearchConnector implements DataSourceConnector {
+public final class ElasticsearchConnector implements ContextProviderPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchConnector.class);
 

@@ -22,7 +22,6 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordWriter;
@@ -45,8 +44,7 @@ public final class CassandraRecordWriter implements RecordWriter {
   private final List<BoundStatement> buffer = new ArrayList<>(DEFAULT_BATCH);
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     String keyspace = table.schemaName().isBlank() ? "" : table.schemaName() + ".";
     this.qualifiedTable = keyspace + table.tableName();
     try {

@@ -17,7 +17,6 @@ package io.recordrelay.connector.file.csv;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -37,8 +36,7 @@ public final class CsvRecordReader implements RecordReader {
   private Iterator<CSVRecord> iterator;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     try {
       parser =
           CSVFormat.DEFAULT

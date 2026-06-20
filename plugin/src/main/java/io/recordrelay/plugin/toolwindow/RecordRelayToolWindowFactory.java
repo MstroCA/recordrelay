@@ -21,7 +21,9 @@ import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
 
-/** Factory that populates the RecordRelay tool window with tabs: Connections, Discovery, Monitor. */
+/**
+ * Factory that populates the RecordRelay tool window with tabs: Connections, Discovery, Monitor.
+ */
 public final class RecordRelayToolWindowFactory implements ToolWindowFactory {
 
   @Override

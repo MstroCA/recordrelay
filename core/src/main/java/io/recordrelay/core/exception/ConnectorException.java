@@ -16,12 +16,12 @@
 package io.recordrelay.core.exception;
 
 /**
- * Unchecked exception thrown at connector boundaries to wrap DB driver checked exceptions.
+ * Unchecked exception thrown at context-provider boundaries to wrap storage-engine exceptions.
  *
- * <p>All {@link io.recordrelay.core.port.out.DataSourceConnector} and {@link
- * io.recordrelay.core.port.out.SchemaInspector} implementations must catch driver-specific checked
+ * <p>All {@link io.recordrelay.core.port.out.ContextProviderPort} and {@link
+ * io.recordrelay.core.port.out.SchemaInspector} implementations must catch engine-specific checked
  * exceptions and re-throw them as {@code ConnectorException} so callers do not need to be aware of
- * driver-specific exception hierarchies.
+ * engine-specific exception hierarchies.
  */
 public final class ConnectorException extends RuntimeException {
 

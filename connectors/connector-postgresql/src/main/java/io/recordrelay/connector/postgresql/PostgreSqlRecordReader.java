@@ -17,7 +17,6 @@ package io.recordrelay.connector.postgresql;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
-
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.RecordReader;
@@ -48,8 +47,7 @@ public final class PostgreSqlRecordReader implements RecordReader {
   private boolean hasNext;
 
   @Override
-  public void open(ConnectionProfile profile, TableRef table)
-      throws ConnectorException {
+  public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     var url =
         "jdbc:postgresql://" + profile.host() + ":" + profile.port() + "/" + profile.database();
     try {
@@ -111,5 +109,4 @@ public final class PostgreSqlRecordReader implements RecordReader {
     }
     return new DataRecord(fields);
   }
-
 }

@@ -163,9 +163,7 @@ public final class DiscoveryController implements Refreshable {
     cmbSrcTable.setItems(discoveryVm.sourceTablesProperty());
     applyDbRefCells(cmbSrcDb);
     applyTableRefCells(cmbSrcTable);
-    btnDiscover
-        .disableProperty()
-        .bind(cmbSrcTable.valueProperty().isNull());
+    btnDiscover.disableProperty().bind(cmbSrcTable.valueProperty().isNull());
     lblError.textProperty().bind(discoveryVm.errorProperty());
     lblError.visibleProperty().bind(discoveryVm.errorProperty().isNotEmpty());
     lblError.managedProperty().bind(discoveryVm.errorProperty().isNotEmpty());

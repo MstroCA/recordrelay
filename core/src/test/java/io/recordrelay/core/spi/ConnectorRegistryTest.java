@@ -25,7 +25,7 @@ import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.exception.NoConnectorFoundException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConnectorRegistryTest {
 
-  @Mock private DataSourceConnector connector;
+  @Mock private ContextProviderPort connector;
 
   private static ConnectionProfile profile(DatabaseType type) {
     return new ConnectionProfile(

@@ -40,18 +40,19 @@ import picocli.CommandLine.ParentCommand;
 /**
  * {@code rr clone} — reproduces a production business context locally.
  *
- * <p>Semantic shortcuts resolve entity names to the correct table + ID column automatically:
+ * <p>Entity form (recommended) — resolves entity names to the correct table and ID column:
  *
  * <pre>
- * rr clone --customer-id 123 --source prod --target local
- * rr clone --order-id 987654 --source staging --target local --mask
- * rr clone --user-id 42 --source prod --target local --export --bug-title "Login fails"
+ * rr clone --entity customer --id 123 --from prod --target local
+ * rr clone --entity order --id 987654 --from staging --target local --mask
+ * rr clone --entity user --id 42 --from prod --export --bug-title "Login fails"
  * </pre>
  *
- * <p>Generic form (any table):
+ * <p>Semantic shortcuts (convenience aliases):
  *
  * <pre>
- * rr clone --table invoices --id 55 --source prod --target local --depth 5
+ * rr clone --customer-id 123 --from prod --target local
+ * rr clone --order-id 987654 --from staging --target local --mask
  * </pre>
  */
 @Command(
@@ -64,9 +65,9 @@ public final class CloneCommand implements Callable<Integer> {
   // ── Connection profiles ───────────────────────────────────────────────────
 
   @Option(
-      names = {"--source", "-s"},
+      names = {"--from", "-f"},
       required = true,
-      description = "Source connection profile name")
+      description = "Environment connection profile name to clone from")
   String source;
 
   @Option(
@@ -94,12 +95,14 @@ public final class CloneCommand implements Callable<Integer> {
   @Option(names = "--account-id", description = "Account ID (resolves to the accounts table)")
   String accountId;
 
-  // ── Generic form ──────────────────────────────────────────────────────────
+  // ── Entity / generic form ─────────────────────────────────────────────────
 
-  @Option(names = "--table", description = "Root table name (generic form)")
+  @Option(
+      names = {"--entity", "--table"},
+      description = "Entity or table name (e.g. customer, order, invoices)")
   String table;
 
-  @Option(names = "--id", description = "Root record primary key value (generic form)")
+  @Option(names = "--id", description = "Root entity primary key value")
   String id;
 
   // ── Clone options ─────────────────────────────────────────────────────────
@@ -246,8 +249,9 @@ public final class CloneCommand implements Callable<Integer> {
       return new String[] {table, id};
     }
     throw new IllegalArgumentException(
-        "Specify an entity shortcut (--customer-id, --order-id, etc.) "
-            + "or use --table <name> --id <value>");
+        "Specify an entity (--entity <type> --id <value>), "
+            + "a shortcut (--customer-id, --order-id, etc.), "
+            + "or a table directly (--table <name> --id <value>)");
   }
 
   private BugReport buildBugReport() {

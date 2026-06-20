@@ -55,23 +55,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Orchestrates the Smart Data Clone workflow.
+ * Orchestrates the business-context reproduction workflow.
  *
- * <p>Implements all three clone-related use cases:
+ * <p>Implements all three context-reproduction use cases:
  *
  * <ul>
  *   <li>{@link CloneUseCase} — {@code rr clone}
- *   <li>{@link ExportPackageUseCase} — {@code rr export-package}
- *   <li>{@link ImportPackageUseCase} — {@code rr import-package}
+ *   <li>{@link ExportPackageUseCase} — {@code rr export}
+ *   <li>{@link ImportPackageUseCase} — {@code rr import}
  * </ul>
  *
- * <p>Clone execution sequence:
+ * <p>Context clone execution sequence:
  *
  * <ol>
- *   <li>Resolve relationship graph from source
- *   <li>BFS extraction of root record + all transitive dependencies
- *   <li>Apply optional field masking (deterministic, preserves referential integrity)
- *   <li>Write all records to target via {@link io.recordrelay.core.port.out.RecordWriter}
+ *   <li>Resolve relationship graph for the root entity
+ *   <li>BFS extraction of root record + all transitive context records
+ *   <li>Allocate new identities (REGENERATE_IDENTITIES by default)
+ *   <li>Remap all foreign keys using the identity mapping
+ *   <li>Apply optional deterministic masking (preserves referential integrity)
+ *   <li>Write context records into the reproduction environment
  *   <li>Emit {@link CloneReport}
  * </ol>
  */
@@ -387,7 +389,7 @@ public final class DefaultCloneEngine
   }
 
   private void writeTable(
-      io.recordrelay.core.port.out.DataSourceConnector connector,
+      io.recordrelay.core.port.out.ContextProviderPort connector,
       ConnectionProfile target,
       DatabaseRef dbRef,
       String tableName,

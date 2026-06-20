@@ -19,7 +19,7 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
@@ -30,11 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link DataSourceConnector} adapter for YAML files via SnakeYAML.
+ * {@link ContextProviderPort} adapter for YAML files via SnakeYAML.
  *
  * <p>The file is treated as a YAML stream of mapping documents; each document is one record.
  */
-public final class YamlConnector implements DataSourceConnector {
+public final class YamlConnector implements ContextProviderPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(YamlConnector.class);
 

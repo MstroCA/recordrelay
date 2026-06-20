@@ -18,7 +18,7 @@ package io.recordrelay.connector.jdbc;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,12 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Base class for JDBC-based {@link DataSourceConnector} implementations.
+ * Base class for JDBC-based {@link ContextProviderPort} implementations.
  *
  * <p>Subclasses provide the JDBC scheme and the database-listing SQL. Reader, writer, and schema
  * inspector creation are delegated to subclasses.
  */
-public abstract class AbstractJdbcConnector implements DataSourceConnector {
+public abstract class AbstractJdbcConnector implements ContextProviderPort {
 
   /** Logger available to subclasses. */
   protected final Logger log = LoggerFactory.getLogger(getClass());

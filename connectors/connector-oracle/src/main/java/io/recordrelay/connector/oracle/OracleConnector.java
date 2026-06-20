@@ -20,7 +20,7 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
@@ -30,12 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link DataSourceConnector} adapter for Oracle Database.
+ * {@link ContextProviderPort} adapter for Oracle Database.
  *
  * <p>Registered via {@code META-INF/services} for ServiceLoader discovery. Uses Oracle thin driver
  * URL format: {@code jdbc:oracle:thin:@//host:port/service}.
  */
-public final class OracleConnector implements DataSourceConnector {
+public final class OracleConnector implements ContextProviderPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(OracleConnector.class);
 

@@ -17,7 +17,7 @@ package io.recordrelay.core.spi;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.exception.NoConnectorFoundException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.StreamSupport;
@@ -25,11 +25,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Discovers and provides access to registered {@link DataSourceConnector} implementations via
+ * Discovers and provides access to registered {@link ContextProviderPort} implementations via
  * {@link ServiceLoader}.
  *
  * <p>Connectors register themselves by placing their fully-qualified class name in {@code
- * META-INF/services/io.recordrelay.core.port.out.DataSourceConnector} within their JAR.
+ * META-INF/services/io.recordrelay.core.port.out.ContextProviderPort} within their JAR.
  *
  * <p><strong>IntelliJ plugin note:</strong> the plugin sandbox isolates classloaders, so {@link
  * #loadFrom(ClassLoader)} must be used instead of the static registry methods to discover
@@ -39,8 +39,8 @@ public final class ConnectorRegistry {
 
   private static final Logger LOG = LoggerFactory.getLogger(ConnectorRegistry.class);
 
-  private static volatile ServiceLoader<DataSourceConnector> loader =
-      ServiceLoader.load(DataSourceConnector.class);
+  private static volatile ServiceLoader<ContextProviderPort> loader =
+      ServiceLoader.load(ContextProviderPort.class);
 
   private ConnectorRegistry() {}
 
@@ -51,7 +51,7 @@ public final class ConnectorRegistry {
    * @return a matching connector
    * @throws NoConnectorFoundException if no registered connector matches the profile's type
    */
-  public static DataSourceConnector findConnector(ConnectionProfile profile) {
+  public static ContextProviderPort findConnector(ConnectionProfile profile) {
     return StreamSupport.stream(loader.spliterator(), false)
         .filter(c -> c.supports(profile))
         .findFirst()
@@ -63,7 +63,7 @@ public final class ConnectorRegistry {
    *
    * @return all registered connectors
    */
-  public static List<DataSourceConnector> allConnectors() {
+  public static List<ContextProviderPort> allConnectors() {
     return StreamSupport.stream(loader.spliterator(), false)
         .collect(java.util.stream.Collectors.toUnmodifiableList());
   }
@@ -75,7 +75,7 @@ public final class ConnectorRegistry {
    * present on the classpath at startup.
    */
   public static synchronized void reload() {
-    loader = ServiceLoader.load(DataSourceConnector.class);
+    loader = ServiceLoader.load(ContextProviderPort.class);
     LOG.debug("ConnectorRegistry reloaded; {} connector(s) available", allConnectors().size());
   }
 
@@ -88,8 +88,8 @@ public final class ConnectorRegistry {
    * @param classLoader the classloader to search for connector implementations
    * @return all connectors discoverable via the given classloader
    */
-  public static List<DataSourceConnector> loadFrom(ClassLoader classLoader) {
-    var pluginLoader = ServiceLoader.load(DataSourceConnector.class, classLoader);
+  public static List<ContextProviderPort> loadFrom(ClassLoader classLoader) {
+    var pluginLoader = ServiceLoader.load(ContextProviderPort.class, classLoader);
     return StreamSupport.stream(pluginLoader.spliterator(), false)
         .collect(java.util.stream.Collectors.toUnmodifiableList());
   }

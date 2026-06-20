@@ -20,7 +20,7 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.exception.ConnectorException;
-import io.recordrelay.core.port.out.DataSourceConnector;
+import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
@@ -31,12 +31,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link DataSourceConnector} adapter for Microsoft SQL Server.
+ * {@link ContextProviderPort} adapter for Microsoft SQL Server.
  *
  * <p>Registered via {@code META-INF/services} for ServiceLoader discovery. Uses semicolon-based
  * JDBC URL format specific to the SQL Server JDBC driver.
  */
-public final class SqlServerConnector implements DataSourceConnector {
+public final class SqlServerConnector implements ContextProviderPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(SqlServerConnector.class);
 

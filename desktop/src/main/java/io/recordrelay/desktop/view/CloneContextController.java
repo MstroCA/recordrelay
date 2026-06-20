@@ -39,6 +39,7 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 
@@ -59,6 +60,7 @@ public final class CloneContextController implements Refreshable {
   @FXML private ComboBox<String> cmbTarget;
   @FXML private CheckBox chkExportMode;
   @FXML private Label lblTargetOrDir;
+  @FXML private HBox hboxOutputDir;
   @FXML private TextField tfOutputDir;
   @FXML private Button btnBrowseDir;
 
@@ -146,20 +148,16 @@ public final class CloneContextController implements Refreshable {
             (obs, o, v) -> {
               cmbTarget.setDisable(v);
               lblTargetOrDir.setText(v ? "Output Directory:" : "Target:");
-              tfOutputDir.setVisible(v);
-              tfOutputDir.setManaged(v);
-              btnBrowseDir.setVisible(v);
-              btnBrowseDir.setManaged(v);
+              hboxOutputDir.setVisible(v);
+              hboxOutputDir.setManaged(v);
               btnClone.setDisable(v);
               btnExport.setDisable(!v);
               paneBugContext.setVisible(v);
               paneBugContext.setManaged(v);
             });
     // Initial state: live clone mode
-    tfOutputDir.setVisible(false);
-    tfOutputDir.setManaged(false);
-    btnBrowseDir.setVisible(false);
-    btnBrowseDir.setManaged(false);
+    hboxOutputDir.setVisible(false);
+    hboxOutputDir.setManaged(false);
     btnExport.setDisable(true);
     paneBugContext.setVisible(false);
     paneBugContext.setManaged(false);

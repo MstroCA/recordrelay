@@ -30,6 +30,7 @@ public final class RecordRelayToolWindowFactory implements ToolWindowFactory {
   public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
     var factory = ContentFactory.getInstance();
     var mgr = toolWindow.getContentManager();
+    mgr.addContent(factory.createContent(new CloneContextPanel(project), "Clone", false));
     mgr.addContent(factory.createContent(new ConnectionsPanel(project), "Connections", false));
     mgr.addContent(factory.createContent(new DiscoveryPanel(project), "Discovery", false));
     mgr.addContent(factory.createContent(new MonitorPanel(project), "Monitor", false));

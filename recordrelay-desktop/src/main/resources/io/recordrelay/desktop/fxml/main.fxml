@@ -17,13 +17,16 @@
             <Label text="RecordRelay" styleClass="sidebar-title"/>
             <Separator/>
 
+            <Button text="⚡  Clone Context" maxWidth="Infinity"
+                    styleClass="nav-btn-accent" onAction="#showCloneContext"/>
+            <Separator/>
             <Button text="🌐  Environments" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showEnvironments"/>
             <Button text="🔌  Connections"  maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showConnections"/>
             <Button text="🔍  Discovery"    maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showDiscovery"/>
-            <Button text="📊  Dashboard"    maxWidth="Infinity"
+            <Button text="📊  Monitor"      maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showMonitor"/>
 
             <Region VBox.vgrow="ALWAYS"/>

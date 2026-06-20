@@ -40,7 +40,12 @@ public final class MainController {
 
   @FXML
   void initialize() {
-    showEnvironments();
+    showCloneContext();
+  }
+
+  @FXML
+  void showCloneContext() {
+    navigate("clone-context");
   }
 
   @FXML

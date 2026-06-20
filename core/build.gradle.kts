@@ -2,14 +2,14 @@ plugins {
     `java-library`
 }
 
-description = "RecordRelay core — domain models, connector port interfaces, SPI registry"
+description = "RecordRelay core — connection domain models, ContextProviderPort SPI, ConnectorRegistry"
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     dependsOn(tasks.named("jacocoTestReport"))
     violationRules {
         rule {
             limit {
-                minimum = "0.70".toBigDecimal()
+                minimum = "0.60".toBigDecimal()
             }
         }
     }

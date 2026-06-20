@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay SQLite connector — DataSourceConnector adapter"
 
 dependencies {
-    api(project(":connectors:connector-jdbc-base"))
+    api(project(":recordrelay-adapter-jdbc-base"))
     implementation(libs.sqlite.jdbc)
     compileOnly(libs.spotbugs.annotations)
 

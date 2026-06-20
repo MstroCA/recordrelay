@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay MongoDB connector — DataSourceConnector + SchemaInspector adapter"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.mongodb.driver.sync)
     compileOnly(libs.spotbugs.annotations)
 

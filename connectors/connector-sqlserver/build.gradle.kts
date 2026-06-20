@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay SQL Server connector — DataSourceConnector adapter"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.mssql.jdbc)
     implementation(libs.hikaricp)
     compileOnly(libs.spotbugs.annotations)

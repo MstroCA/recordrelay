@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay Elasticsearch connector — DataSourceConnector adapter"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.elasticsearch.java)
     implementation(libs.jakarta.json.api)
     // Jackson as JSON-P provider (transitive from elasticsearch-java, explicit for clarity)

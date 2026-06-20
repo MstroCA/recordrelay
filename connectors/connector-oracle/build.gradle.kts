@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay Oracle connector — DataSourceConnector adapter"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.oracle.jdbc)
     implementation(libs.hikaricp)
     compileOnly(libs.spotbugs.annotations)

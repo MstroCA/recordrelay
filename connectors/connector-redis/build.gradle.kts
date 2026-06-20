@@ -5,7 +5,7 @@ plugins {
 description = "RecordRelay Redis connector — DataSourceConnector adapter"
 
 dependencies {
-    api(project(":core"))
+    api(project(":recordrelay-core"))
     implementation(libs.lettuce.core)
     compileOnly(libs.spotbugs.annotations)
 

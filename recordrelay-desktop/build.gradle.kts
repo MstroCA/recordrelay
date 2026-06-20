@@ -15,6 +15,16 @@ javafx {
     modules = listOf("javafx.controls", "javafx.fxml", "javafx.web")
 }
 
+// On Apple Silicon with only an x86_64 JDK 21 available, use the arm64 JDK 23
+// for the run task so JavaFX native libs match the JVM architecture.
+tasks.named<JavaExec>("run") {
+    javaLauncher.set(
+        javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(23))
+            vendor.set(JvmVendorSpec.matching("Oracle"))
+        })
+}
+
 dependencies {
     implementation(project(":recordrelay-core"))
     implementation(project(":recordrelay-domain"))

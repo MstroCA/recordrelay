@@ -102,7 +102,8 @@ public final class DefaultContextCloneEngine implements ContextCloneUseCase {
                 plan.depth(),
                 plan.masking(),
                 plan.outputDirectory(),
-                plan.bugReport());
+                plan.bugReport(),
+                plan.fieldOverrides());
 
     var request = resolver.resolve(exportPlan);
     var job = CloneJob.of(request);

@@ -20,30 +20,37 @@ import io.recordrelay.cli.engine.ConnProfileResolver;
 import io.recordrelay.core.spi.ConnectorRegistry;
 import io.recordrelay.desktop.viewmodel.MonitorViewModel;
 import io.recordrelay.desktop.viewmodel.MonitorViewModel.HealthEntry;
+import io.recordrelay.engine.clone.CloneHistoryStore;
+import io.recordrelay.engine.clone.CloneHistorySummary;
 import java.util.ArrayList;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.chart.LineChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
-/** Controller for the Dashboard screen — shows live transfer metrics and DB health. */
+/** Controller for the Dashboard screen — shows clone history and DB health. */
 public final class MonitorController implements Refreshable {
 
   @FXML private Label lblTransferred;
+  @FXML private Label lblOperations;
   @FXML private Label lblFailed;
-  @FXML private Label lblThroughput;
   @FXML private Label lblDuration;
-  @FXML private Label lblP50;
-  @FXML private Label lblP95;
-  @FXML private Label lblP99;
 
-  @FXML private LineChart<Number, Number> chart;
+  @FXML private TableView<CloneHistorySummary> tblHistory;
+  @FXML private TableColumn<CloneHistorySummary, String> colTime;
+  @FXML private TableColumn<CloneHistorySummary, String> colHTable;
+  @FXML private TableColumn<CloneHistorySummary, String> colHId;
+  @FXML private TableColumn<CloneHistorySummary, String> colHSource;
+  @FXML private TableColumn<CloneHistorySummary, String> colHTarget;
+  @FXML private TableColumn<CloneHistorySummary, String> colHRecords;
+  @FXML private TableColumn<CloneHistorySummary, String> colHDur;
+  @FXML private TableColumn<CloneHistorySummary, String> colHStatus;
 
   @FXML private TableView<HealthEntry> tblHealth;
   @FXML private TableColumn<HealthEntry, String> colConnName;
@@ -53,6 +60,8 @@ public final class MonitorController implements Refreshable {
   @FXML private Label lblHealthStatus;
   @FXML private Button btnRefresh;
 
+  private final ObservableList<CloneHistorySummary> historyItems =
+      FXCollections.observableArrayList();
   private MonitorViewModel vm;
   private ConfigStore store;
 
@@ -65,14 +74,15 @@ public final class MonitorController implements Refreshable {
       lblHealthStatus.setText("Config unavailable: " + e.getMessage());
       btnRefresh.setDisable(true);
     }
-    bindKpis();
-    bindChart();
-    bindHealthTable();
+    setupHistoryTable();
+    setupHealthTable();
+    refreshHistory();
   }
 
-  /** No-op — the dashboard is push-only; data arrives from the Transfer screen. */
   @Override
-  public void refresh() {}
+  public void refresh() {
+    refreshHistory();
+  }
 
   @FXML
   void onRefreshHealth() {
@@ -87,8 +97,55 @@ public final class MonitorController implements Refreshable {
 
   @FXML
   void onClear() {
-    vm.reset();
+    CloneHistoryStore.getInstance().clear();
+    refreshHistory();
     lblHealthStatus.setText("● Ready");
+  }
+
+  private void refreshHistory() {
+    var store = CloneHistoryStore.getInstance();
+    var recent = store.recent(50);
+    historyItems.setAll(recent);
+
+    long transferred = recent.stream().filter(CloneHistorySummary::success).mapToLong(CloneHistorySummary::totalRecords).sum();
+    lblTransferred.setText(String.format("%,d", transferred));
+    lblOperations.setText(String.format("%,d", store.operationCount()));
+    lblFailed.setText(String.format("%,d", store.sessionFailedTotal()));
+    if (!recent.isEmpty()) {
+      lblDuration.setText(recent.get(0).formattedDuration());
+    } else {
+      lblDuration.setText("—");
+    }
+  }
+
+  private void setupHistoryTable() {
+    colTime.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(r.getValue().formattedTime()));
+    colHTable.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(r.getValue().rootTable()));
+    colHId.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(r.getValue().rootId()));
+    colHSource.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(r.getValue().sourceProfile()));
+    colHTarget.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(r.getValue().targetProfile()));
+    colHRecords.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(String.format("%,d", r.getValue().totalRecords())));
+    colHDur.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(r.getValue().formattedDuration()));
+    colHStatus.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(r.getValue().success() ? "✓ OK" : "✗ Error"));
+    colHStatus.setCellFactory(col -> new HistoryStatusCell());
+    tblHistory.setItems(historyItems);
+  }
+
+  private void setupHealthTable() {
+    colConnName.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().name()));
+    colStatus.setCellValueFactory(
+        r -> new ReadOnlyStringWrapper(r.getValue().reachable() ? "✓  OK" : "✗  Error"));
+    colStatus.setCellFactory(col -> new HealthStatusCell());
+    colDetail.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().detail()));
+    tblHealth.setItems(vm.healthIndicators());
   }
 
   private void runHealthCheck() {
@@ -125,28 +182,21 @@ public final class MonitorController implements Refreshable {
     }
   }
 
-  private void bindKpis() {
-    lblTransferred.textProperty().bind(Bindings.format("%,d", vm.transferredCountProperty()));
-    lblFailed.textProperty().bind(Bindings.format("%,d", vm.failedCountProperty()));
-    lblThroughput.textProperty().bind(Bindings.format("%,d rec/s", vm.throughputNowProperty()));
-    lblDuration.textProperty().bind(vm.durationProperty());
-    lblP50.textProperty().bind(vm.latencyP50Property());
-    lblP95.textProperty().bind(vm.latencyP95Property());
-    lblP99.textProperty().bind(vm.latencyP99Property());
-  }
-
-  private void bindChart() {
-    chart.setAnimated(false);
-    chart.getData().add(vm.throughputSeries());
-  }
-
-  private void bindHealthTable() {
-    colConnName.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().name()));
-    colStatus.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().reachable() ? "✓  OK" : "✗  Error"));
-    colStatus.setCellFactory(col -> new HealthStatusCell());
-    colDetail.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().detail()));
-    tblHealth.setItems(vm.healthIndicators());
+  private static final class HistoryStatusCell extends TableCell<CloneHistorySummary, String> {
+    @Override
+    protected void updateItem(String item, boolean empty) {
+      super.updateItem(item, empty);
+      if (item == null || empty) {
+        setText(null);
+        setStyle("");
+      } else if (item.startsWith("✓")) {
+        setText(item);
+        setStyle("-fx-text-fill: -color-success-fg; -fx-font-weight: bold;");
+      } else {
+        setText(item);
+        setStyle("-fx-text-fill: -color-danger-fg; -fx-font-weight: bold;");
+      }
+    }
   }
 
   private static final class HealthStatusCell extends TableCell<HealthEntry, String> {

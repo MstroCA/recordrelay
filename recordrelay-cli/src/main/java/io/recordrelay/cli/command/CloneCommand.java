@@ -23,6 +23,8 @@ import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
 import io.recordrelay.core.clone.domain.CloneRequest;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
+import io.recordrelay.core.clone.domain.FieldOverride;
+import io.recordrelay.core.clone.domain.FieldOverrideConfig;
 import io.recordrelay.core.clone.domain.MaskerType;
 import io.recordrelay.core.clone.domain.MaskingConfig;
 import io.recordrelay.core.clone.domain.MaskingRule;
@@ -31,6 +33,7 @@ import io.recordrelay.engine.clone.BuiltinEntityRegistry;
 import io.recordrelay.engine.clone.DefaultCloneEngine;
 import io.recordrelay.engine.clone.DefaultContextCloneEngine;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
@@ -141,6 +144,16 @@ public final class CloneCommand implements Callable<Integer> {
   @Option(names = "--bug-env", description = "Source environment (e.g. production, staging)")
   String bugEnv;
 
+  // ── Field overrides ───────────────────────────────────────────────────────
+
+  @Option(
+      names = {"--override", "-o"},
+      description =
+          "Override a field in the target. Format: 'column=value' (global) or 'table:column=value'."
+              + " Can be specified multiple times.",
+      arity = "0..*")
+  List<String> fieldOverrides;
+
   @Override
   public Integer call() {
     try {
@@ -149,6 +162,7 @@ public final class CloneCommand implements Callable<Integer> {
       var resolver = new ConnProfileResolver(store);
       var srcProfile = resolver.resolve(source);
       var masking = buildMaskingConfig();
+      var overrides = buildFieldOverrideConfig();
       var resolved = resolveEntityAndId();
       var entityName = resolved[0];
       var rootId = resolved[1];
@@ -156,7 +170,7 @@ public final class CloneCommand implements Callable<Integer> {
       if (export || target == null) {
         return performExport(printer, srcProfile, entityName, rootId, masking);
       }
-      return performLiveClone(printer, resolver, srcProfile, entityName, rootId, masking);
+      return performLiveClone(printer, resolver, srcProfile, entityName, rootId, masking, overrides);
 
     } catch (Exception e) {
       return EnvCommand.handleError(parent, e, ExitCode.CLONE_FAILED);
@@ -194,7 +208,8 @@ public final class CloneCommand implements Callable<Integer> {
       io.recordrelay.core.domain.ConnectionProfile srcProfile,
       String entityName,
       String rootId,
-      MaskingConfig masking)
+      MaskingConfig masking,
+      FieldOverrideConfig overrides)
       throws Exception {
     var tgtProfile = resolver.resolve(target);
     printer.printLine(
@@ -206,14 +221,15 @@ public final class CloneCommand implements Callable<Integer> {
     var registryEntity = BuiltinEntityRegistry.INSTANCE.findByName(entityName);
     if (registryEntity.isPresent()) {
       var plan =
-          ContextClonePlan.liveClone(
-              registryEntity.get(), rootId, srcProfile, tgtProfile, depth, masking);
+          ContextClonePlan.liveCloneWithOverrides(
+              registryEntity.get(), rootId, srcProfile, tgtProfile, depth, masking, overrides);
       report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener(printer));
     } else {
       var request =
           CloneRequest.builder(srcProfile, tgtProfile, table, id)
               .depth(depth)
               .masking(masking)
+              .fieldOverrides(overrides)
               .build();
       report =
           DefaultCloneEngine.createDefault().clone(CloneJob.of(request), buildListener(printer));
@@ -261,6 +277,33 @@ public final class CloneCommand implements Callable<Integer> {
     var id = bugId != null ? bugId : "UNKNOWN";
     var title = bugTitle != null ? bugTitle : "Bug reproduction";
     return BugReport.of(id, title, bugService, bugEnv, null);
+  }
+
+  private FieldOverrideConfig buildFieldOverrideConfig() {
+    if (fieldOverrides == null || fieldOverrides.isEmpty()) {
+      return FieldOverrideConfig.none();
+    }
+    var list = new ArrayList<FieldOverride>();
+    for (var raw : fieldOverrides) {
+      int colonIdx = raw.indexOf(':');
+      int eqIdx = raw.indexOf('=');
+      if (eqIdx < 0) {
+        continue; // malformed — skip
+      }
+      if (colonIdx > 0 && colonIdx < eqIdx) {
+        // table:column=value
+        var tableName = raw.substring(0, colonIdx).trim();
+        var column = raw.substring(colonIdx + 1, eqIdx).trim();
+        var value = raw.substring(eqIdx + 1);
+        list.add(FieldOverride.forTable(tableName, column, value));
+      } else {
+        // column=value (global)
+        var column = raw.substring(0, eqIdx).trim();
+        var value = raw.substring(eqIdx + 1);
+        list.add(FieldOverride.global(column, value));
+      }
+    }
+    return new FieldOverrideConfig(list);
   }
 
   private MaskingConfig buildMaskingConfig() {

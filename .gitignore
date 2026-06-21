@@ -12,6 +12,8 @@ gradle-app.setting
 *.iws
 *.ipr
 out/
+!**/port/out/
+!**/port/out/**
 
 # Eclipse
 .classpath

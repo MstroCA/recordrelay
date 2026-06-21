@@ -24,6 +24,8 @@ import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.ui.components.JBTextField;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
+import io.recordrelay.core.clone.domain.FieldOverride;
+import io.recordrelay.core.clone.domain.FieldOverrideConfig;
 import io.recordrelay.core.clone.domain.MaskerType;
 import io.recordrelay.core.clone.domain.MaskingConfig;
 import io.recordrelay.core.clone.domain.MaskingRule;
@@ -36,7 +38,9 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.ArrayList;
 import java.util.List;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -56,6 +60,7 @@ public final class CloneContextPanel extends JPanel {
   private final ComboBox<String> cmbTarget = new ComboBox<>();
   private final JSpinner spinDepth = new JSpinner(new SpinnerNumberModel(3, 1, 10, 1));
   private final JCheckBox chkMaskPii = new JCheckBox("Mask PII");
+  private final JBTextArea taOverrides = new JBTextArea(4, 40);
   private final JButton btnClone = new JButton("Clone Context");
   private final JBTextArea taLog = new JBTextArea(8, 40);
   private final JLabel lblStatus = new JLabel("Ready");
@@ -66,9 +71,18 @@ public final class CloneContextPanel extends JPanel {
     this.project = project;
     taLog.setEditable(false);
     taLog.setLineWrap(true);
+    taOverrides.setLineWrap(false);
+    taOverrides.setToolTipText("One override per line: column=value  or  table:column=value");
     populateEntityCombo();
     add(buildForm(), BorderLayout.NORTH);
-    add(new JBScrollPane(taLog), BorderLayout.CENTER);
+
+    var centerPanel = new JPanel(new BorderLayout(0, 4));
+    var overridesScroll = new JBScrollPane(taOverrides);
+    overridesScroll.setBorder(
+        BorderFactory.createTitledBorder("Field Overrides (column=value / table:column=value)"));
+    centerPanel.add(overridesScroll, BorderLayout.NORTH);
+    centerPanel.add(new JBScrollPane(taLog), BorderLayout.CENTER);
+    add(centerPanel, BorderLayout.CENTER);
     add(buildButtonBar(), BorderLayout.SOUTH);
     loadConnections();
   }
@@ -177,7 +191,8 @@ public final class CloneContextPanel extends JPanel {
                           entityName, entityName + "s"));
 
       var plan =
-          ContextClonePlan.liveClone(entity, entityId, srcProfile, tgtProfile, depth, masking);
+          ContextClonePlan.liveCloneWithOverrides(
+              entity, entityId, srcProfile, tgtProfile, depth, masking, buildFieldOverrides());
 
       appendLog(
           "Cloning "
@@ -212,6 +227,24 @@ public final class CloneContextPanel extends JPanel {
       return "record";
     }
     return selected.toLowerCase();
+  }
+
+  private FieldOverrideConfig buildFieldOverrides() {
+    var list = new ArrayList<FieldOverride>();
+    for (var line : taOverrides.getText().lines().toList()) {
+      var raw = line.trim();
+      if (raw.isBlank() || raw.startsWith("#")) continue;
+      int colonIdx = raw.indexOf(':');
+      int eqIdx = raw.indexOf('=');
+      if (eqIdx < 0) continue;
+      if (colonIdx > 0 && colonIdx < eqIdx) {
+        list.add(FieldOverride.forTable(raw.substring(0, colonIdx).trim(),
+            raw.substring(colonIdx + 1, eqIdx).trim(), raw.substring(eqIdx + 1)));
+      } else {
+        list.add(FieldOverride.global(raw.substring(0, eqIdx).trim(), raw.substring(eqIdx + 1)));
+      }
+    }
+    return new FieldOverrideConfig(list);
   }
 
   private MaskingConfig buildMasking() {

@@ -28,6 +28,8 @@
                     styleClass="nav-btn" onAction="#showDiscovery"/>
             <Button text="📊  Monitor"      maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showMonitor"/>
+            <Button text="🕸  Graph View"   maxWidth="Infinity"
+                    styleClass="nav-btn" onAction="#showGraphView"/>
 
             <Region VBox.vgrow="ALWAYS"/>
             <Separator/>

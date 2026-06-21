@@ -8,6 +8,8 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
@@ -95,6 +97,27 @@
                         <Separator orientation="VERTICAL"/>
                         <CheckBox fx:id="chkMaskPii" text="PII Maskele (e-posta, telefon, adres, IBAN, TC kimlik)"/>
                     </HBox>
+                </VBox>
+
+                <!-- Step 4: Field Overrides -->
+                <VBox styleClass="card" spacing="10">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="ADIM 4 — ALAN DEĞİŞTİRME (İSTEĞE BAĞLI)" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                        <Button text="+ Ekle" onAction="#onAddOverride"/>
+                        <Button text="Sil" onAction="#onRemoveOverride"/>
+                    </HBox>
+                    <Label text="Hedef ortamda bazı alanların değerini değiştir (örn. created_by, mukellef_vkn). Tablo boş bırakılırsa tüm tablolara uygulanır."
+                           styleClass="hint-label"/>
+                    <TableView fx:id="tblOverrides" prefHeight="130" editable="true">
+                        <columns>
+                            <TableColumn fx:id="colOvrTable"  text="Tablo (boş=hepsi)" prefWidth="160"/>
+                            <TableColumn fx:id="colOvrColumn" text="Kolon"              prefWidth="160"/>
+                            <TableColumn fx:id="colOvrValue"  text="Yeni Değer"         prefWidth="200"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="Override yok — kayıtlar orijinal değerleriyle yazılır." styleClass="placeholder-hint"/>
+                        </placeholder>
+                    </TableView>
                 </VBox>
 
                 <!-- Log -->

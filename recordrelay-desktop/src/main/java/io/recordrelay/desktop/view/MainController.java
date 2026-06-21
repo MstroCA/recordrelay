@@ -69,6 +69,11 @@ public final class MainController {
   }
 
   @FXML
+  void showGraphView() {
+    navigate("graph-view");
+  }
+
+  @FXML
   void toggleTheme() {
     darkMode = !darkMode;
     ThemeManager.apply(darkMode);

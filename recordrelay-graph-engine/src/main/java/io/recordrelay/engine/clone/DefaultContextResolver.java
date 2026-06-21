@@ -56,6 +56,7 @@ public final class DefaultContextResolver implements ContextResolverPort {
     return CloneRequest.builder(plan.source(), target, entity.tableName(), plan.entityId())
         .depth(plan.depth())
         .masking(plan.masking())
+        .fieldOverrides(plan.fieldOverrides())
         .build();
   }
 }

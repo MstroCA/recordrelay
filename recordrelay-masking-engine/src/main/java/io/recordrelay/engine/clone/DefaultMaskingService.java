@@ -129,6 +129,16 @@ public final class DefaultMaskingService implements MaskingServicePort {
     }
   }
 
+  @Override
+  public long countMaskedFields(DataRecord record, MaskingConfig config) {
+    if (config.isEmpty()) {
+      return 0L;
+    }
+    return record.fields().entrySet().stream()
+        .filter(e -> config.ruleFor(e.getKey()).isPresent() && e.getValue() != null)
+        .count();
+  }
+
   /** Exposes masking for a raw value + type without a DataRecord wrapper (useful for testing). */
   public String maskValue(String value, MaskerType type) {
     var hash = sha256Hex(value);

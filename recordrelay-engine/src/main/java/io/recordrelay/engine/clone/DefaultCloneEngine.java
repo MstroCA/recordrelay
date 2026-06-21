@@ -20,6 +20,7 @@ import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
 import io.recordrelay.core.clone.domain.CloneRequest;
 import io.recordrelay.core.clone.domain.ClonedTableSummary;
+import io.recordrelay.core.clone.domain.FieldOverrideConfig;
 import io.recordrelay.core.clone.domain.IdentityMapping;
 import io.recordrelay.core.clone.domain.ImportedPackage;
 import io.recordrelay.core.clone.domain.PackageManifest;
@@ -128,47 +129,69 @@ public final class DefaultCloneEngine
 
     LOG.info("Clone job {} starting: {}.{}", job.id(), request.rootTable(), request.rootId());
 
-    // Phase 1: Build relationship graph
-    var graph = relationshipResolver.resolve(request.source(), request.rootTable());
-    listener.onRelationshipsDiscovered(graph.edgeCount());
+    CloneReport report;
+    try {
+      // Phase 1: Build relationship graph
+      var graph = relationshipResolver.resolve(request.source(), request.rootTable());
+      listener.onRelationshipsDiscovered(graph.edgeCount());
 
-    // Phase 2: Extract all records (raw, no masking yet — masking happens after FK remapping)
-    var rawRecords = bfsExtractRaw(request, graph, warnings, listener);
+      // Phase 2: Extract all records (raw, no masking yet — masking happens after FK remapping)
+      var rawRecords = bfsExtractRaw(request, graph, warnings, listener);
 
-    // Phase 3: Allocate new identities (CRITICAL — no direct PK copying)
-    var identityMapping =
-        identityMapper.allocate(
-            request.target(), request.rootTable(), rawRecords, request.conflictResolution());
-    listener.onIdentitiesAllocated(identityMapping.totalMappings());
+      // Phase 3: Allocate new identities (CRITICAL — no direct PK copying)
+      var identityMapping =
+          identityMapper.allocate(
+              request.target(), request.rootTable(), rawRecords, request.conflictResolution());
+      listener.onIdentitiesAllocated(identityMapping.totalMappings());
 
-    // Phase 4: Remap all FK columns using the identity mapping
-    var remappedRecords = FkRemapper.remap(rawRecords, identityMapping, graph, request.rootTable());
+      // Phase 4: Remap all FK columns using the identity mapping
+      var remappedRecords =
+          FkRemapper.remap(rawRecords, identityMapping, graph, request.rootTable());
 
-    // Phase 5: Apply masking on the remapped records
-    var finalRecords = applyMaskingAll(remappedRecords, request);
+      // Phase 5: Apply masking on the remapped records
+      var finalRecords = applyMaskingAll(remappedRecords, request);
 
-    // Phase 6: Write remapped+masked records to target
-    writeToTarget(request, finalRecords, listener, warnings);
+      // Phase 6: Write remapped+masked records to target (with field overrides applied)
+      writeToTarget(request, finalRecords, listener, warnings);
 
-    // Phase 7: Advance database sequences past the highest allocated ID (best-effort)
-    sequenceSyncer.synchronize(request.target(), identityMapping);
+      // Phase 7: Advance database sequences past the highest allocated ID (best-effort)
+      sequenceSyncer.synchronize(request.target(), identityMapping);
 
-    long maskedFieldCount = countMaskedFieldsAll(rawRecords, request);
-    var report =
-        new CloneReport(
-            request.rootTable(),
-            request.rootId(),
-            buildSummaries(finalRecords),
-            System.currentTimeMillis() - startMs,
-            List.copyOf(warnings),
-            maskedFieldCount);
+      long maskedFieldCount = countMaskedFieldsAll(rawRecords, request);
+      report =
+          new CloneReport(
+              request.rootTable(),
+              request.rootId(),
+              buildSummaries(finalRecords),
+              System.currentTimeMillis() - startMs,
+              List.copyOf(warnings),
+              maskedFieldCount);
 
-    LOG.info(
-        "Clone job {} done: {} tables, {} records, {} identity mappings",
-        job.id(),
-        report.tableCount(),
-        report.totalRecords(),
-        identityMapping.totalMappings());
+      LOG.info(
+          "Clone job {} done: {} tables, {} records, {} identity mappings",
+          job.id(),
+          report.tableCount(),
+          report.totalRecords(),
+          identityMapping.totalMappings());
+
+      CloneHistoryStore.getInstance()
+          .record(
+              CloneHistorySummary.ofSuccess(
+                  report,
+                  request.source().name(),
+                  request.target().name()));
+    } catch (CloneException e) {
+      CloneHistoryStore.getInstance()
+          .record(
+              CloneHistorySummary.ofFailure(
+                  request.rootTable(),
+                  request.rootId(),
+                  request.source().name(),
+                  request.target().name(),
+                  System.currentTimeMillis() - startMs,
+                  e.getMessage()));
+      throw e;
+    }
     return report;
   }
 
@@ -366,6 +389,7 @@ public final class DefaultCloneEngine
             dbRef,
             entry.getKey(),
             entry.getValue(),
+            request.fieldOverrides(),
             listener,
             warnings);
       }
@@ -383,7 +407,14 @@ public final class DefaultCloneEngine
     for (var entry : pkg.records().entrySet()) {
       if (!entry.getValue().isEmpty()) {
         writeTable(
-            targetConnector, target, dbRef, entry.getKey(), entry.getValue(), listener, warnings);
+            targetConnector,
+            target,
+            dbRef,
+            entry.getKey(),
+            entry.getValue(),
+            FieldOverrideConfig.none(),
+            listener,
+            warnings);
       }
     }
   }
@@ -394,6 +425,7 @@ public final class DefaultCloneEngine
       DatabaseRef dbRef,
       String tableName,
       List<DataRecord> records,
+      FieldOverrideConfig overrides,
       CloneProgressListener listener,
       List<String> warnings)
       throws CloneException {
@@ -402,7 +434,7 @@ public final class DefaultCloneEngine
     try (var writer = connector.createWriter()) {
       writer.open(target, tableRef);
       for (var record : records) {
-        writer.write(record);
+        writer.write(applyFieldOverrides(record, tableName, overrides));
       }
       writer.flush();
     } catch (ConnectorException e) {
@@ -413,6 +445,24 @@ public final class DefaultCloneEngine
       throw new CloneException("Unexpected error writing " + tableName, e);
     }
     listener.onImportCompleted(tableName, records.size());
+  }
+
+  private DataRecord applyFieldOverrides(
+      DataRecord record, String tableName, FieldOverrideConfig overrides) {
+    if (overrides.isEmpty()) {
+      return record;
+    }
+    var applicable = overrides.getOverridesFor(tableName);
+    if (applicable.isEmpty()) {
+      return record;
+    }
+    var fields = new LinkedHashMap<>(record.fields());
+    for (var override : applicable) {
+      if (fields.containsKey(override.column())) {
+        fields.put(override.column(), override.value());
+      }
+    }
+    return new DataRecord(fields);
   }
 
   private long countMaskedFieldsAll(

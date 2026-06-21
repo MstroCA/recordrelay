@@ -23,6 +23,7 @@ import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.table.JBTable;
 import io.recordrelay.core.spi.ConnectorRegistry;
+import io.recordrelay.engine.clone.CloneHistoryStore;
 import io.recordrelay.plugin.service.RecordRelayService;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -43,17 +44,25 @@ import org.jetbrains.annotations.NotNull;
 public final class MonitorPanel extends JPanel {
 
   private static final String[] HEALTH_COLS = {"Connection", "Status", "Detail"};
+  private static final String[] HISTORY_COLS = {"Time", "Table", "ID", "Source", "Target", "Records", "Duration", "Status"};
 
   private final Project project;
   private final JLabel lblTransferred = kpiLabel("0");
   private final JLabel lblFailed = kpiLabel("0");
-  private final JLabel lblThroughput = kpiLabel("0 rec/s");
+  private final JLabel lblOperations = kpiLabel("0");
   private final JLabel lblDuration = kpiLabel("—");
   private final JLabel lblStatus = new JLabel("● Ready");
   private final JButton btnRefresh = new JButton("Check Health");
-  private final JButton btnClear = new JButton("Clear");
+  private final JButton btnClear = new JButton("Clear History");
   private final DefaultTableModel healthModel =
       new DefaultTableModel(HEALTH_COLS, 0) {
+        @Override
+        public boolean isCellEditable(int r, int c) {
+          return false;
+        }
+      };
+  private final DefaultTableModel historyModel =
+      new DefaultTableModel(HISTORY_COLS, 0) {
         @Override
         public boolean isCellEditable(int r, int c) {
           return false;
@@ -67,8 +76,9 @@ public final class MonitorPanel extends JPanel {
     btnRefresh.addActionListener(e -> onRefreshHealth());
     btnClear.addActionListener(e -> onClear());
     add(buildKpiPanel(), BorderLayout.NORTH);
-    add(buildHealthTable(), BorderLayout.CENTER);
+    add(buildTablesPanel(), BorderLayout.CENTER);
     add(buildButtonBar(), BorderLayout.SOUTH);
+    refreshHistory();
   }
 
   private static JLabel kpiLabel(String text) {
@@ -81,8 +91,24 @@ public final class MonitorPanel extends JPanel {
     var panel = new JPanel(new GridLayout(1, 4, 8, 0));
     panel.add(kpiCard("Transferred", lblTransferred));
     panel.add(kpiCard("Failed", lblFailed));
-    panel.add(kpiCard("Throughput", lblThroughput));
-    panel.add(kpiCard("Duration", lblDuration));
+    panel.add(kpiCard("Operations", lblOperations));
+    panel.add(kpiCard("Last Duration", lblDuration));
+    return panel;
+  }
+
+  private JPanel buildTablesPanel() {
+    var panel = new JPanel(new GridLayout(2, 1, 0, 6));
+    var historyTable = new JBTable(historyModel);
+    historyTable.getColumnModel().getColumn(7).setCellRenderer(new StatusCellRenderer());
+    var historyScroll = new JBScrollPane(historyTable);
+    historyScroll.setBorder(javax.swing.BorderFactory.createTitledBorder("Clone History"));
+    panel.add(historyScroll);
+
+    var healthTable = new JBTable(healthModel);
+    healthTable.getColumnModel().getColumn(1).setCellRenderer(new StatusCellRenderer());
+    var healthScroll = new JBScrollPane(healthTable);
+    healthScroll.setBorder(javax.swing.BorderFactory.createTitledBorder("Connection Health"));
+    panel.add(healthScroll);
     return panel;
   }
 
@@ -96,12 +122,6 @@ public final class MonitorPanel extends JPanel {
     return card;
   }
 
-  private JBScrollPane buildHealthTable() {
-    var table = new JBTable(healthModel);
-    table.getColumnModel().getColumn(1).setCellRenderer(new StatusCellRenderer());
-    return new JBScrollPane(table);
-  }
-
   private JPanel buildButtonBar() {
     var panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
     panel.add(btnRefresh);
@@ -110,32 +130,34 @@ public final class MonitorPanel extends JPanel {
     return panel;
   }
 
-  /** Updates the transferred-record KPI label (call from any thread via Swing EDT). */
-  public void setTransferred(long count) {
-    lblTransferred.setText(String.format("%,d", count));
-  }
-
-  /** Updates the failed-record KPI label. */
-  public void setFailed(long count) {
-    lblFailed.setText(String.format("%,d", count));
-  }
-
-  /** Updates the throughput KPI label. */
-  public void setThroughput(long recsPerSec) {
-    lblThroughput.setText(String.format("%,d rec/s", recsPerSec));
-  }
-
-  /** Updates the duration KPI label. */
-  public void setDuration(String duration) {
-    lblDuration.setText(duration);
+  /** Refreshes the clone history table from the in-memory store. */
+  public void refreshHistory() {
+    historyModel.setRowCount(0);
+    var store = CloneHistoryStore.getInstance();
+    for (var entry : store.recent(20)) {
+      historyModel.addRow(new Object[]{
+          entry.formattedTime(),
+          entry.rootTable(),
+          entry.rootId(),
+          entry.sourceProfile(),
+          entry.targetProfile(),
+          String.format("%,d", entry.totalRecords()),
+          entry.formattedDuration(),
+          entry.success() ? "✓ OK" : "✗ Error"
+      });
+    }
+    lblTransferred.setText(String.format("%,d",
+        store.recent(200).stream().filter(e -> e.success()).mapToLong(e -> e.totalRecords()).sum()));
+    lblFailed.setText(String.format("%,d", store.sessionFailedTotal()));
+    lblOperations.setText(String.format("%,d", store.operationCount()));
+    var recent = store.recent(1);
+    lblDuration.setText(recent.isEmpty() ? "—" : recent.get(0).formattedDuration());
   }
 
   private void onClear() {
+    CloneHistoryStore.getInstance().clear();
     healthModel.setRowCount(0);
-    lblTransferred.setText("0");
-    lblFailed.setText("0");
-    lblThroughput.setText("0 rec/s");
-    lblDuration.setText("—");
+    refreshHistory();
     lblStatus.setText("● Ready");
   }
 

@@ -184,3 +184,43 @@
     -fx-font-size: 12px;
     -fx-text-fill: -color-fg-default;
 }
+
+/* ── Hint / helper text ──────────────────────────────────────────────── */
+.hint-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+/* ── Log TextArea ────────────────────────────────────────────────────── */
+.log-area {
+    -fx-font-family: "Menlo", "Consolas", "Courier New", monospace;
+    -fx-font-size: 12px;
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+
+/* ── Nav accent button (Clone Context highlight) ─────────────────────── */
+.nav-btn-accent {
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 9 12 9 12;
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.nav-btn-accent:hover {
+    -fx-opacity: 0.88;
+}
+
+/* ── Graph view scroll pane ──────────────────────────────────────────── */
+.graph-scroll {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: transparent;
+}

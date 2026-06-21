@@ -19,6 +19,8 @@ import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.engine.ConnProfileResolver;
 import io.recordrelay.core.clone.domain.BusinessEntity;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
+import io.recordrelay.core.clone.domain.FieldOverride;
+import io.recordrelay.core.clone.domain.FieldOverrideConfig;
 import io.recordrelay.core.clone.domain.MaskerType;
 import io.recordrelay.core.clone.domain.MaskingConfig;
 import io.recordrelay.core.clone.domain.MaskingRule;
@@ -28,9 +30,13 @@ import io.recordrelay.core.spi.ConnectorRegistry;
 import io.recordrelay.desktop.viewmodel.CloneContextViewModel;
 import io.recordrelay.engine.clone.DefaultContextCloneEngine;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -38,8 +44,11 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Slider;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 
@@ -67,6 +76,14 @@ public final class CloneContextController implements Refreshable {
   @FXML private Label lblDepthValue;
   @FXML private CheckBox chkMaskPii;
 
+  // ── Step 4: Field Overrides ────────────────────────────────────────────────
+  @FXML private TableView<OverrideRow> tblOverrides;
+  @FXML private TableColumn<OverrideRow, String> colOvrTable;
+  @FXML private TableColumn<OverrideRow, String> colOvrColumn;
+  @FXML private TableColumn<OverrideRow, String> colOvrValue;
+
+  private final ObservableList<OverrideRow> overrideRows = FXCollections.observableArrayList();
+
   // ── Actions & Progress ─────────────────────────────────────────────────────
   @FXML private Button btnClone;
   @FXML private Button btnExport;
@@ -93,6 +110,7 @@ public final class CloneContextController implements Refreshable {
 
     setupDepthSlider();
     setupExportModeToggle();
+    setupOverrideTable();
     bindViewModel();
     loadConnections();
   }
@@ -161,6 +179,20 @@ public final class CloneContextController implements Refreshable {
     } catch (Exception e) {
       showError("Bağlantılar yüklenemedi: " + e.getMessage());
     }
+  }
+
+  private void setupOverrideTable() {
+    tblOverrides.setEditable(true);
+    colOvrTable.setCellValueFactory(r -> r.getValue().tableNameProperty());
+    colOvrColumn.setCellValueFactory(r -> r.getValue().columnProperty());
+    colOvrValue.setCellValueFactory(r -> r.getValue().valueProperty());
+    colOvrTable.setCellFactory(TextFieldTableCell.forTableColumn());
+    colOvrColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+    colOvrValue.setCellFactory(TextFieldTableCell.forTableColumn());
+    colOvrTable.setOnEditCommit(e -> e.getRowValue().tableNameProperty().set(e.getNewValue()));
+    colOvrColumn.setOnEditCommit(e -> e.getRowValue().columnProperty().set(e.getNewValue()));
+    colOvrValue.setOnEditCommit(e -> e.getRowValue().valueProperty().set(e.getNewValue()));
+    tblOverrides.setItems(overrideRows);
   }
 
   // ── Table loading ──────────────────────────────────────────────────────────
@@ -241,6 +273,17 @@ public final class CloneContextController implements Refreshable {
   }
 
   @FXML
+  void onAddOverride() {
+    overrideRows.add(new OverrideRow("", "", ""));
+  }
+
+  @FXML
+  void onRemoveOverride() {
+    var sel = tblOverrides.getSelectionModel().getSelectedItem();
+    if (sel != null) overrideRows.remove(sel);
+  }
+
+  @FXML
   void onBrowseDir() {
     var dc = new DirectoryChooser();
     dc.setTitle("Çıktı Klasörü Seç");
@@ -261,8 +304,9 @@ public final class CloneContextController implements Refreshable {
       int depth = (int) sliderDepth.getValue();
 
       var plan =
-          ContextClonePlan.liveClone(
-              entity, tfEntityId.getText().trim(), srcProfile, tgtProfile, depth, masking);
+          ContextClonePlan.liveCloneWithOverrides(
+              entity, tfEntityId.getText().trim(), srcProfile, tgtProfile, depth, masking,
+              buildFieldOverrides());
 
       vm.appendLog(
           "Kopyalanıyor: "
@@ -386,6 +430,18 @@ public final class CloneContextController implements Refreshable {
     };
   }
 
+  private FieldOverrideConfig buildFieldOverrides() {
+    var list = new ArrayList<FieldOverride>();
+    for (var row : overrideRows) {
+      var col = row.columnProperty().get().trim();
+      var val = row.valueProperty().get().trim();
+      if (col.isBlank()) continue;
+      var tbl = row.tableNameProperty().get().trim();
+      list.add(tbl.isBlank() ? FieldOverride.global(col, val) : FieldOverride.forTable(tbl, col, val));
+    }
+    return new FieldOverrideConfig(list);
+  }
+
   private String validate(boolean exportMode) {
     if (cmbSource.getValue() == null || cmbSource.getValue().isBlank()) {
       return "Source bağlantı seçilmedi.";
@@ -411,6 +467,23 @@ public final class CloneContextController implements Refreshable {
             lblError.setManaged(true);
           });
     }
+  }
+
+  /** Editable row model for the field-override table. */
+  public static final class OverrideRow {
+    private final SimpleStringProperty tableName;
+    private final SimpleStringProperty column;
+    private final SimpleStringProperty value;
+
+    public OverrideRow(String tableName, String column, String value) {
+      this.tableName = new SimpleStringProperty(tableName);
+      this.column = new SimpleStringProperty(column);
+      this.value = new SimpleStringProperty(value);
+    }
+
+    public StringProperty tableNameProperty() { return tableName; }
+    public StringProperty columnProperty() { return column; }
+    public StringProperty valueProperty() { return value; }
   }
 
   private void showAlert(String msg) {

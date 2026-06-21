@@ -31,7 +31,8 @@ public record CloneRequest(
     String rootId,
     int depth,
     MaskingConfig masking,
-    ConflictResolution conflictResolution) {
+    ConflictResolution conflictResolution,
+    FieldOverrideConfig fieldOverrides) {
 
   /** Default traversal depth when none is specified. */
   public static final int DEFAULT_DEPTH = 3;
@@ -58,6 +59,7 @@ public record CloneRequest(
     masking = masking == null ? MaskingConfig.none() : masking;
     conflictResolution =
         conflictResolution == null ? ConflictResolution.REGENERATE_IDENTITIES : conflictResolution;
+    fieldOverrides = fieldOverrides == null ? FieldOverrideConfig.none() : fieldOverrides;
   }
 
   /** Returns a builder pre-populated with required fields. */
@@ -75,6 +77,7 @@ public record CloneRequest(
     private int depth = DEFAULT_DEPTH;
     private MaskingConfig masking = MaskingConfig.none();
     private ConflictResolution conflictResolution = ConflictResolution.REGENERATE_IDENTITIES;
+    private FieldOverrideConfig fieldOverrides = FieldOverrideConfig.none();
 
     private Builder(
         ConnectionProfile source, ConnectionProfile target, String rootTable, String rootId) {
@@ -119,13 +122,25 @@ public record CloneRequest(
     }
 
     /**
+     * Sets the field overrides to apply when writing records to the target.
+     *
+     * @param fieldOverrides override config; {@code null} is treated as {@link
+     *     FieldOverrideConfig#none()}
+     * @return this builder
+     */
+    public Builder fieldOverrides(FieldOverrideConfig fieldOverrides) {
+      this.fieldOverrides = fieldOverrides;
+      return this;
+    }
+
+    /**
      * Builds and returns an immutable {@link CloneRequest}.
      *
      * @return the constructed request
      */
     public CloneRequest build() {
       return new CloneRequest(
-          source, target, rootTable, rootId, depth, masking, conflictResolution);
+          source, target, rootTable, rootId, depth, masking, conflictResolution, fieldOverrides);
     }
   }
 }

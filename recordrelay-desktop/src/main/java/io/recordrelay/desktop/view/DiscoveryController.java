@@ -30,7 +30,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.beans.property.SimpleObjectProperty;
 
 /** Controller for the Schema Discovery screen. */
 public final class DiscoveryController implements Refreshable {
@@ -170,10 +170,10 @@ public final class DiscoveryController implements Refreshable {
   }
 
   private void bindColumnsTable() {
-    colName.setCellValueFactory(new PropertyValueFactory<>("name"));
-    colType.setCellValueFactory(new PropertyValueFactory<>("nativeType"));
-    colNullable.setCellValueFactory(new PropertyValueFactory<>("nullable"));
-    colPk.setCellValueFactory(new PropertyValueFactory<>("primaryKey"));
+    colName.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().name()));
+    colType.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().nativeType()));
+    colNullable.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().nullable()));
+    colPk.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().primaryKey()));
   }
 
   private static void applyDbRefCells(ComboBox<DatabaseRef> cb) {

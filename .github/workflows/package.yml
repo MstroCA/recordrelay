@@ -57,7 +57,7 @@ jobs:
           echo "APP_VERSION=$APP_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build installDist
-        run: ./gradlew :desktop:installDist -Pversion=${{ steps.ver.outputs.VERSION }}
+        run: ./gradlew :recordrelay-desktop:installDist -Pversion=${{ steps.ver.outputs.VERSION }}
 
       - name: Install deb tools
         if: runner.os == 'Linux'
@@ -66,54 +66,54 @@ jobs:
       - name: Package (macOS)
         if: runner.os == 'macOS'
         run: |
-          MAIN_JAR=$(find desktop/build/install/desktop/lib -maxdepth 1 -name "desktop-*.jar" | head -1 | xargs basename)
+          MAIN_JAR=$(find recordrelay-desktop/build/install/recordrelay-desktop/lib -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
           jpackage \
             --type dmg \
             --name "RecordRelay" \
             --app-version "${{ steps.ver.outputs.APP_VERSION }}" \
-            --input desktop/build/install/desktop/lib \
+            --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
             --java-options "-Xmx512m" \
-            --dest desktop/build/packages
+            --dest recordrelay-desktop/build/packages
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          MAIN_JAR=$(find desktop/build/install/desktop/lib -maxdepth 1 -name "desktop-*.jar" | head -1 | xargs basename)
+          MAIN_JAR=$(find recordrelay-desktop/build/install/recordrelay-desktop/lib -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
           jpackage \
             --type exe \
             --name "RecordRelay" \
             --app-version "${{ steps.ver.outputs.APP_VERSION }}" \
-            --input desktop/build/install/desktop/lib \
+            --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
             --java-options "-Xmx512m" \
             --win-dir-chooser \
             --win-shortcut \
-            --dest desktop/build/packages
+            --dest recordrelay-desktop/build/packages
 
       - name: Package (Linux)
         if: runner.os == 'Linux'
         run: |
-          MAIN_JAR=$(find desktop/build/install/desktop/lib -maxdepth 1 -name "desktop-*.jar" | head -1 | xargs basename)
+          MAIN_JAR=$(find recordrelay-desktop/build/install/recordrelay-desktop/lib -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
           jpackage \
             --type deb \
             --name "recordrelay" \
             --app-version "${{ steps.ver.outputs.APP_VERSION }}" \
-            --input desktop/build/install/desktop/lib \
+            --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
             --java-options "-Xmx512m" \
             --linux-shortcut \
-            --dest desktop/build/packages
+            --dest recordrelay-desktop/build/packages
 
       - name: Upload desktop artifact
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.os }}-${{ steps.ver.outputs.VERSION }}
-          path: desktop/build/packages/*.${{ matrix.pkg_ext }}
+          path: recordrelay-desktop/build/packages/*.${{ matrix.pkg_ext }}
           retention-days: 7
 
   package-cli:
@@ -145,13 +145,13 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build fat JAR
-        run: ./gradlew :cli:shadowJar -Pversion=${{ steps.ver.outputs.VERSION }}
+        run: ./gradlew :recordrelay-cli:shadowJar -Pversion=${{ steps.ver.outputs.VERSION }}
 
       - name: Create archive
         run: |
           DIST="rr-cli-${{ steps.ver.outputs.VERSION }}"
           mkdir -p "$DIST/bin" "$DIST/lib"
-          cp cli/build/libs/rr-cli-${{ steps.ver.outputs.VERSION }}.jar "$DIST/lib/"
+          cp recordrelay-cli/build/libs/rr-cli-${{ steps.ver.outputs.VERSION }}.jar "$DIST/lib/"
           printf '#!/usr/bin/env bash\nDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"\nexec java -jar "$DIR/lib/rr-cli-${{ steps.ver.outputs.VERSION }}.jar" "$@"\n' \
             > "$DIST/bin/rr"
           chmod +x "$DIST/bin/rr"
@@ -195,7 +195,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build plugin
-        run: ./gradlew :plugin:buildPlugin -Pversion=${{ steps.ver.outputs.VERSION }}
+        run: ./gradlew :recordrelay-plugin:buildPlugin -Pversion=${{ steps.ver.outputs.VERSION }}
 
       - name: Sign plugin
         if: env.CERTIFICATE_CHAIN != ''
@@ -203,13 +203,13 @@ jobs:
           CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
-        run: ./gradlew :plugin:signPlugin -Pversion=${{ steps.ver.outputs.VERSION }}
+        run: ./gradlew :recordrelay-plugin:signPlugin -Pversion=${{ steps.ver.outputs.VERSION }}
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
         with:
           name: plugin-${{ steps.ver.outputs.VERSION }}
           path: |
-            plugin/build/distributions/*.zip
-            plugin/build/distributions/*.sig
+            recordrelay-plugin/build/distributions/*.zip
+            recordrelay-plugin/build/distributions/*.sig
           retention-days: 7

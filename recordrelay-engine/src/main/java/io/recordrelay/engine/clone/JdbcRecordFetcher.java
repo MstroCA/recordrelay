@@ -51,7 +51,7 @@ public final class JdbcRecordFetcher implements RecordFetcherPort, AutoCloseable
     var sql = "SELECT * FROM " + quoteName(tableName) + " WHERE " + quoteName(idColumn) + " = ?";
     try (var conn = pool(profile).getConnection();
         var stmt = conn.prepareStatement(sql)) {
-      stmt.setString(1, idValue);
+      setParam(stmt, 1, idValue);
       try (var rs = stmt.executeQuery()) {
         if (rs.next()) {
           return Optional.of(mapRow(rs));
@@ -71,7 +71,7 @@ public final class JdbcRecordFetcher implements RecordFetcherPort, AutoCloseable
     var sql = "SELECT * FROM " + quoteName(tableName) + " WHERE " + quoteName(fkColumn) + " = ?";
     try (var conn = pool(profile).getConnection();
         var stmt = conn.prepareStatement(sql)) {
-      stmt.setString(1, fkValue);
+      setParam(stmt, 1, fkValue);
       try (var rs = stmt.executeQuery()) {
         var results = new ArrayList<DataRecord>();
         while (rs.next()) {
@@ -123,6 +123,15 @@ public final class JdbcRecordFetcher implements RecordFetcherPort, AutoCloseable
       fields.put(meta.getColumnLabel(i), rs.getObject(i));
     }
     return new DataRecord(fields);
+  }
+
+  private static void setParam(java.sql.PreparedStatement stmt, int idx, String value)
+      throws SQLException {
+    try {
+      stmt.setLong(idx, Long.parseLong(value));
+    } catch (NumberFormatException e) {
+      stmt.setString(idx, value);
+    }
   }
 
   private String quoteName(String name) {

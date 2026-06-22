@@ -20,6 +20,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.engine.ConnProfileResolver;
+import io.recordrelay.core.spi.ConnectorRegistry;
 
 /**
  * Application-level service holding shared RecordRelay infrastructure.
@@ -32,6 +33,16 @@ public final class RecordRelayService implements Disposable {
 
   private ConfigStore configStore;
   private ConnProfileResolver resolver;
+
+  /**
+   * Called by IntelliJ when the service is first instantiated.
+   *
+   * <p>Reloads {@link ConnectorRegistry} with the plugin classloader so that adapter JARs bundled
+   * inside the plugin sandbox are discoverable via {@link java.util.ServiceLoader}.
+   */
+  public RecordRelayService() {
+    ConnectorRegistry.reloadFrom(RecordRelayService.class.getClassLoader());
+  }
 
   /** Returns the application-level singleton. */
   public static RecordRelayService getInstance() {

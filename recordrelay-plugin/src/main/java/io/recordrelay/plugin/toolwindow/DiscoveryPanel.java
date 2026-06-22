@@ -25,40 +25,57 @@ import com.intellij.ui.SimpleListCellRenderer;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.table.JBTable;
 import io.recordrelay.cli.engine.DiscoveryEngine;
+import io.recordrelay.core.domain.ColumnMeta;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.SchemaMatchReport;
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.plugin.service.RecordRelayService;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSplitPane;
 import javax.swing.table.DefaultTableModel;
 import org.jetbrains.annotations.NotNull;
 
-/** Tool-window panel for schema discovery and column mapping analysis. */
+/** Tool-window panel for schema discovery: column inspection and cross-DB compatibility mapping. */
 public final class DiscoveryPanel extends JPanel {
 
-  private static final String[] MAP_COLS = {
-    "Source Column", "Target Column", "Compatible", "Warning"
-  };
+  private static final String[] COL_COLS = {"Column", "Type", "Nullable", "PK"};
+  private static final String[] MAP_COLS = {"Source Column", "Target Column", "Compatible", "Warning"};
 
   private final Project project;
+
+  // Source selectors
   private final ComboBox<String> cmbSrcConn = new ComboBox<>();
   private final ComboBox<DatabaseRef> cmbSrcDb = new ComboBox<>();
   private final ComboBox<TableRef> cmbSrcTable = new ComboBox<>();
+
+  // Target selectors (for compatibility analysis)
   private final ComboBox<String> cmbTgtConn = new ComboBox<>();
   private final ComboBox<DatabaseRef> cmbTgtDb = new ComboBox<>();
   private final ComboBox<TableRef> cmbTgtTable = new ComboBox<>();
-  private final JButton btnDiscover = new JButton("Discover & Map");
+
+  private final JButton btnInspect = new JButton("Inspect Columns");
+  private final JButton btnCompare = new JButton("Compare Tables");
   private final JLabel lblStatus = new JLabel(" ");
-  private final DefaultTableModel mappingModel =
+
+  private final DefaultTableModel colModel =
+      new DefaultTableModel(COL_COLS, 0) {
+        @Override
+        public boolean isCellEditable(int r, int c) {
+          return false;
+        }
+      };
+  private final DefaultTableModel mapModel =
       new DefaultTableModel(MAP_COLS, 0) {
         @Override
         public boolean isCellEditable(int r, int c) {
@@ -71,17 +88,32 @@ public final class DiscoveryPanel extends JPanel {
     super(new BorderLayout(0, 6));
     this.project = project;
     applyRenderers();
+
+    var colTable = new JBTable(colModel);
+    var colScroll = new JBScrollPane(colTable);
+    colScroll.setBorder(BorderFactory.createTitledBorder("Columns"));
+
+    var mapTable = new JBTable(mapModel);
+    var mapScroll = new JBScrollPane(mapTable);
+    mapScroll.setBorder(BorderFactory.createTitledBorder("Compatibility Map"));
+
+    var split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, colScroll, mapScroll);
+    split.setResizeWeight(0.5);
+
     add(buildSelectionPanel(), BorderLayout.NORTH);
-    add(new JBScrollPane(new JBTable(mappingModel)), BorderLayout.CENTER);
+    add(split, BorderLayout.CENTER);
     add(buildButtonBar(), BorderLayout.SOUTH);
     loadConnectionNames();
   }
+
+  // ── Setup ──────────────────────────────────────────────────────────────────
 
   private void applyRenderers() {
     cmbSrcDb.setRenderer(SimpleListCellRenderer.create("— select database —", DatabaseRef::name));
     cmbTgtDb.setRenderer(SimpleListCellRenderer.create("— select database —", DatabaseRef::name));
     cmbSrcTable.setRenderer(SimpleListCellRenderer.create("— select table —", TableRef::tableName));
     cmbTgtTable.setRenderer(SimpleListCellRenderer.create("— select table —", TableRef::tableName));
+
     cmbSrcConn.addActionListener(e -> onConnSelected(true));
     cmbTgtConn.addActionListener(e -> onConnSelected(false));
     cmbSrcDb.addActionListener(e -> onDbSelected(true));
@@ -93,14 +125,16 @@ public final class DiscoveryPanel extends JPanel {
     panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
     panel.add(buildConnGroup("Source", cmbSrcConn, cmbSrcDb, cmbSrcTable));
     panel.add(Box.createHorizontalStrut(16));
-    panel.add(buildConnGroup("Target", cmbTgtConn, cmbTgtDb, cmbTgtTable));
+    panel.add(buildConnGroup("Target (for comparison)", cmbTgtConn, cmbTgtDb, cmbTgtTable));
     return panel;
   }
 
   private JPanel buildConnGroup(
       String label, ComboBox<String> conn, ComboBox<DatabaseRef> db, ComboBox<TableRef> table) {
     var grid = new JPanel(new GridLayout(4, 1, 0, 4));
-    grid.add(new JLabel(label));
+    var lbl = new JLabel(label);
+    lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
+    grid.add(lbl);
     grid.add(conn);
     grid.add(db);
     grid.add(table);
@@ -109,11 +143,15 @@ public final class DiscoveryPanel extends JPanel {
 
   private JPanel buildButtonBar() {
     var panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-    btnDiscover.addActionListener(e -> onDiscover());
-    panel.add(btnDiscover);
+    btnInspect.addActionListener(e -> onInspect());
+    btnCompare.addActionListener(e -> onCompare());
+    panel.add(btnInspect);
+    panel.add(btnCompare);
     panel.add(lblStatus);
     return panel;
   }
+
+  // ── Data loading ───────────────────────────────────────────────────────────
 
   private void loadConnectionNames() {
     try {
@@ -126,28 +164,20 @@ public final class DiscoveryPanel extends JPanel {
   }
 
   private void onConnSelected(boolean isSrc) {
-    String conn =
-        isSrc ? (String) cmbSrcConn.getSelectedItem() : (String) cmbTgtConn.getSelectedItem();
-    if (conn == null || conn.isBlank()) {
-      return;
-    }
+    String conn = (String) (isSrc ? cmbSrcConn : cmbTgtConn).getSelectedItem();
+    if (conn == null || conn.isBlank()) return;
     var dbCombo = isSrc ? cmbSrcDb : cmbTgtDb;
+    var tblCombo = isSrc ? cmbSrcTable : cmbTgtTable;
     dbCombo.removeAllItems();
-    var tableCombo = isSrc ? cmbSrcTable : cmbTgtTable;
-    tableCombo.removeAllItems();
+    tblCombo.removeAllItems();
     loadDatabases(conn, isSrc);
   }
 
   private void onDbSelected(boolean isSrc) {
-    var dbRef =
-        isSrc ? (DatabaseRef) cmbSrcDb.getSelectedItem() : (DatabaseRef) cmbTgtDb.getSelectedItem();
-    if (dbRef == null) {
-      return;
-    }
-    String conn =
-        isSrc ? (String) cmbSrcConn.getSelectedItem() : (String) cmbTgtConn.getSelectedItem();
-    var tableCombo = isSrc ? cmbSrcTable : cmbTgtTable;
-    tableCombo.removeAllItems();
+    var dbRef = (DatabaseRef) (isSrc ? cmbSrcDb : cmbTgtDb).getSelectedItem();
+    String conn = (String) (isSrc ? cmbSrcConn : cmbTgtConn).getSelectedItem();
+    if (dbRef == null || conn == null) return;
+    (isSrc ? cmbSrcTable : cmbTgtTable).removeAllItems();
     loadTables(conn, dbRef, isSrc);
   }
 
@@ -171,9 +201,7 @@ public final class DiscoveryPanel extends JPanel {
                 var combo = isSrc ? cmbSrcDb : cmbTgtDb;
                 combo.removeAllItems();
                 var dbs = resultRef.get();
-                if (dbs != null) {
-                  dbs.forEach(combo::addItem);
-                }
+                if (dbs != null) dbs.forEach(combo::addItem);
               }
             });
   }
@@ -198,28 +226,77 @@ public final class DiscoveryPanel extends JPanel {
                 var combo = isSrc ? cmbSrcTable : cmbTgtTable;
                 combo.removeAllItems();
                 var tables = resultRef.get();
-                if (tables != null) {
-                  tables.forEach(combo::addItem);
-                }
+                if (tables != null) tables.forEach(combo::addItem);
               }
             });
   }
 
-  private void onDiscover() {
+  // ── Actions ────────────────────────────────────────────────────────────────
+
+  private void onInspect() {
     var srcTable = (TableRef) cmbSrcTable.getSelectedItem();
-    var tgtTable = (TableRef) cmbTgtTable.getSelectedItem();
-    if (srcTable == null || tgtTable == null) {
-      Messages.showInfoMessage(project, "Select source and target tables first.", "RecordRelay");
+    String srcConn = (String) cmbSrcConn.getSelectedItem();
+    if (srcTable == null || srcConn == null) {
+      Messages.showInfoMessage(project, "Select a source table first.", "RecordRelay");
       return;
     }
-    String srcConn = (String) cmbSrcConn.getSelectedItem();
-    String tgtConn = (String) cmbTgtConn.getSelectedItem();
-    runDiscover(srcConn, tgtConn, srcTable, tgtTable);
+    btnInspect.setEnabled(false);
+    colModel.setRowCount(0);
+    mapModel.setRowCount(0);
+    lblStatus.setText("Inspecting…");
+
+    var resultRef = new AtomicReference<List<ColumnMeta>>();
+    ProgressManager.getInstance()
+        .run(
+            new Task.Backgroundable(project, "Inspecting columns…", false) {
+              @Override
+              public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                  var profile = RecordRelayService.getInstance().resolver().resolve(srcConn);
+                  resultRef.set(new DiscoveryEngine().inspectColumns(profile, srcTable));
+                } catch (Exception ex) {
+                  resultRef.set(null);
+                }
+              }
+
+              @Override
+              public void onSuccess() {
+                btnInspect.setEnabled(true);
+                var cols = resultRef.get();
+                if (cols == null) {
+                  lblStatus.setText("Inspection failed.");
+                  return;
+                }
+                for (var col : cols) {
+                  colModel.addRow(
+                      new Object[] {
+                        col.name(),
+                        col.nativeType(),
+                        col.nullable() ? "Yes" : "No",
+                        col.primaryKey() ? "Yes" : ""
+                      });
+                }
+                lblStatus.setText(
+                    srcTable.tableName() + " — " + cols.size() + " column(s)");
+              }
+            });
   }
 
-  private void runDiscover(String srcConn, String tgtConn, TableRef srcRef, TableRef tgtRef) {
+  private void onCompare() {
+    var srcTable = (TableRef) cmbSrcTable.getSelectedItem();
+    var tgtTable = (TableRef) cmbTgtTable.getSelectedItem();
+    String srcConn = (String) cmbSrcConn.getSelectedItem();
+    String tgtConn = (String) cmbTgtConn.getSelectedItem();
+    if (srcTable == null || tgtTable == null || srcConn == null || tgtConn == null) {
+      Messages.showInfoMessage(
+          project, "Select source and target tables first.", "RecordRelay");
+      return;
+    }
+    btnCompare.setEnabled(false);
+    mapModel.setRowCount(0);
+    lblStatus.setText("Comparing…");
+
     var reportRef = new AtomicReference<SchemaMatchReport>();
-    btnDiscover.setEnabled(false);
     ProgressManager.getInstance()
         .run(
             new Task.Backgroundable(project, "Analyzing schema compatibility…", false) {
@@ -230,7 +307,7 @@ public final class DiscoveryPanel extends JPanel {
                   var tgtProfile = RecordRelayService.getInstance().resolver().resolve(tgtConn);
                   reportRef.set(
                       new DiscoveryEngine()
-                          .analyzeCompatibility(srcProfile, srcRef, tgtProfile, tgtRef));
+                          .analyzeCompatibility(srcProfile, srcTable, tgtProfile, tgtTable));
                 } catch (Exception ex) {
                   reportRef.set(null);
                 }
@@ -238,29 +315,26 @@ public final class DiscoveryPanel extends JPanel {
 
               @Override
               public void onSuccess() {
-                btnDiscover.setEnabled(true);
+                btnCompare.setEnabled(true);
                 var report = reportRef.get();
-                if (report != null) {
-                  buildMapping(report);
-                } else {
-                  lblStatus.setText("Discovery failed.");
+                if (report == null) {
+                  lblStatus.setText("Comparison failed.");
+                  return;
                 }
+                for (var cc : report.columnCompatibilities()) {
+                  mapModel.addRow(
+                      new Object[] {
+                        cc.sourceColumn() != null ? cc.sourceColumn() : "(none)",
+                        cc.targetColumn(),
+                        cc.typeCompatible() ? "Yes" : "No",
+                        cc.warning() != null ? cc.warning() : ""
+                      });
+                }
+                String summary =
+                    report.isFullyCompatible() ? "Fully compatible" : "Compatibility issues found";
+                lblStatus.setText(
+                    summary + " — " + report.columnCompatibilities().size() + " column(s)");
               }
             });
-  }
-
-  private void buildMapping(SchemaMatchReport report) {
-    mappingModel.setRowCount(0);
-    for (var cc : report.columnCompatibilities()) {
-      mappingModel.addRow(
-          new Object[] {
-            cc.sourceColumn() != null ? cc.sourceColumn() : "(none)",
-            cc.targetColumn(),
-            cc.typeCompatible() ? "Yes" : "No",
-            cc.warning() != null ? cc.warning() : ""
-          });
-    }
-    String summary = report.isFullyCompatible() ? "Fully compatible" : "Compatibility issues found";
-    lblStatus.setText(summary + " — " + report.columnCompatibilities().size() + " column(s)");
   }
 }

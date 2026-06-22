@@ -43,9 +43,13 @@ tasks.shadowJar {
     archiveBaseName = "rr-cli"
     archiveClassifier = ""
     isZip64 = true
-    // Merge SPI descriptors so ServiceLoader-based connectors are discoverable in the fat JAR
+    // Merge SPI descriptors so ServiceLoader-based connectors are discoverable in the fat JAR.
     mergeServiceFiles()
+    // dnsjava ships as a multi-release jar: its InetAddressResolverProvider is only under
+    // META-INF/versions/18/. Without Multi-Release:true in the manifest the JVM cannot find
+    // the class and throws a fatal ServiceConfigurationError before any connection is opened.
     manifest {
         attributes["Main-Class"] = application.mainClass.get()
+        attributes["Multi-Release"] = "true"
     }
 }

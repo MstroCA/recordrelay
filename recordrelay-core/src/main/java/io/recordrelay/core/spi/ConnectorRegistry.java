@@ -80,6 +80,22 @@ public final class ConnectorRegistry {
   }
 
   /**
+   * Reloads the ServiceLoader using the given classloader.
+   *
+   * <p>Required in IntelliJ plugin context: the plugin classloader is isolated from the platform
+   * classloader, so the default static {@code loader} cannot discover connector JARs bundled inside
+   * the plugin. Call this once at plugin startup with {@code MyService.class.getClassLoader()}.
+   *
+   * @param classLoader the classloader that can see the connector JARs
+   */
+  public static synchronized void reloadFrom(ClassLoader classLoader) {
+    loader = ServiceLoader.load(ContextProviderPort.class, classLoader);
+    LOG.debug(
+        "ConnectorRegistry reloaded from classloader; {} connector(s) available",
+        allConnectors().size());
+  }
+
+  /**
    * Discovers connectors from the given classloader.
    *
    * <p>Required in IntelliJ plugin context where the plugin classloader is isolated from the

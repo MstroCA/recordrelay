@@ -1,0 +1,13 @@
+# Force LF line endings in the working tree for all text files.
+# This prevents Spotless lineEndings=UNIX from failing on Windows runners
+# where git.core.autocrlf would otherwise convert to CRLF on checkout.
+* text=auto eol=lf
+
+# Binaries — no conversion
+*.jar binary
+*.zip binary
+*.gz  binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.class binary

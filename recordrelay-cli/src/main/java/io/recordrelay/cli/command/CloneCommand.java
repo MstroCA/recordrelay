@@ -347,6 +347,11 @@ public final class CloneCommand implements Callable<Integer> {
       }
 
       @Override
+      public void onImportCompleted(String tableName, long recordCount) {
+        printer.printLine("    └─ " + recordCount + " record(s) imported");
+      }
+
+      @Override
       public void onWarning(String message) {
         printer.printLine("  WARN: " + message);
       }

@@ -362,7 +362,10 @@ public final class CloneContextPanel extends JPanel {
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener());
 
       appendLog(
-          "Clone complete — " + report.totalRecords() + " records in " + report.formattedDuration());
+          "Clone complete — "
+              + report.totalRecords()
+              + " records in "
+              + report.formattedDuration());
       SwingUtilities.invokeLater(
           () -> lblStatus.setText("Done — " + report.totalRecords() + " records"));
     } catch (Exception ex) {
@@ -481,8 +484,7 @@ public final class CloneContextPanel extends JPanel {
   }
 
   private String validate(boolean exportMode) {
-    if (cmbSource.getSelectedItem() == null
-        || ((String) cmbSource.getSelectedItem()).isBlank()) {
+    if (cmbSource.getSelectedItem() == null || ((String) cmbSource.getSelectedItem()).isBlank()) {
       return "Select a source connection.";
     }
     if (!exportMode

@@ -22,5 +22,6 @@ import io.recordrelay.core.domain.ConnectionProfile;
 /** Builds the FK-based relationship graph for a given root table. */
 public interface RelationshipResolverPort {
 
+  /** Builds the FK relationship graph rooted at {@code rootTable} by inspecting {@code source}. */
   RelationshipGraph resolve(ConnectionProfile source, String rootTable) throws CloneException;
 }

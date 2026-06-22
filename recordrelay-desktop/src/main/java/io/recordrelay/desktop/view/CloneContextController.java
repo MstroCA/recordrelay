@@ -200,7 +200,9 @@ public final class CloneContextController implements Refreshable {
   @FXML
   void onSourceChanged() {
     var connName = cmbSource.getValue();
-    if (connName == null || connName.isBlank()) return;
+    if (connName == null || connName.isBlank()) {
+      return;
+    }
     btnLoadTables.setDisable(false);
     onLoadTables();
   }
@@ -279,7 +281,9 @@ public final class CloneContextController implements Refreshable {
   @FXML
   void onRemoveOverride() {
     var sel = tblOverrides.getSelectionModel().getSelectedItem();
-    if (sel != null) overrideRows.remove(sel);
+    if (sel != null) {
+      overrideRows.remove(sel);
+    }
   }
 
   @FXML
@@ -381,12 +385,16 @@ public final class CloneContextController implements Refreshable {
       rootTable = "records";
     }
     var pk = tfPkColumn.getText().trim();
-    if (pk.isBlank()) pk = "id";
+    if (pk.isBlank()) {
+      pk = "id";
+    }
     return BusinessEntity.of(rootTable, rootTable, pk, "");
   }
 
   private MaskingConfig buildMasking() {
-    if (!chkMaskPii.isSelected()) return MaskingConfig.none();
+    if (!chkMaskPii.isSelected()) {
+      return MaskingConfig.none();
+    }
     return new MaskingConfig(
         List.of(
             new MaskingRule("email", MaskerType.EMAIL),
@@ -439,7 +447,9 @@ public final class CloneContextController implements Refreshable {
     for (var row : overrideRows) {
       var col = row.columnProperty().get().trim();
       var val = row.valueProperty().get().trim();
-      if (col.isBlank()) continue;
+      if (col.isBlank()) {
+        continue;
+      }
       var tbl = row.tableNameProperty().get().trim();
       list.add(
           tbl.isBlank() ? FieldOverride.global(col, val) : FieldOverride.forTable(tbl, col, val));
@@ -486,14 +496,17 @@ public final class CloneContextController implements Refreshable {
       this.value = new SimpleStringProperty(value);
     }
 
+    /** Returns the table-name property (empty string means global override). */
     public StringProperty tableNameProperty() {
       return tableName;
     }
 
+    /** Returns the column-name property. */
     public StringProperty columnProperty() {
       return column;
     }
 
+    /** Returns the override value property. */
     public StringProperty valueProperty() {
       return value;
     }

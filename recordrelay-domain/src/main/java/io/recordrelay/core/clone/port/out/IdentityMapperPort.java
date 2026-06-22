@@ -26,6 +26,7 @@ import java.util.Map;
 /** Allocates new primary key identities for records being written to the target. */
 public interface IdentityMapperPort {
 
+  /** Allocates new primary key values in the target and returns the old-to-new identity mapping. */
   IdentityMapping allocate(
       ConnectionProfile target,
       String rootTable,

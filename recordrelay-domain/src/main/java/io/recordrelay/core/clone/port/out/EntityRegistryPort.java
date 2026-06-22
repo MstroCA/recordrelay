@@ -22,11 +22,15 @@ import java.util.Optional;
 /** Registry of known business entities and their database mappings. */
 public interface EntityRegistryPort {
 
+  /** Returns the entity registered under the given logical name, if any. */
   Optional<BusinessEntity> findByName(String name);
 
+  /** Returns the entity whose root table matches {@code tableName}, if any. */
   Optional<BusinessEntity> findByTableName(String tableName);
 
+  /** Returns all registered entities. */
   List<BusinessEntity> listAll();
 
+  /** Registers a new entity or replaces the existing registration for the same name. */
   void register(BusinessEntity entity);
 }

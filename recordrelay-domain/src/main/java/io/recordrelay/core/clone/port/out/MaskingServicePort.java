@@ -21,7 +21,11 @@ import io.recordrelay.core.domain.DataRecord;
 /** Applies deterministic masking to sensitive record fields. */
 public interface MaskingServicePort {
 
+  /**
+   * Returns a copy of {@code record} with sensitive fields replaced by deterministic masked values.
+   */
   DataRecord mask(DataRecord record, MaskingConfig config);
 
+  /** Returns the number of fields that would be masked in {@code record} under {@code config}. */
   long countMaskedFields(DataRecord record, MaskingConfig config);
 }

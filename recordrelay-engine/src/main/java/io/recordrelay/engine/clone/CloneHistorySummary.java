@@ -36,11 +36,13 @@ public record CloneHistorySummary(
   private static final DateTimeFormatter FMT =
       DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
+  /** Returns a human-readable duration string, e.g. {@code "3s"} or {@code "1m 5s"}. */
   public String formattedDuration() {
     long s = durationMillis / 1_000;
     return s < 60 ? s + "s" : (s / 60) + "m " + (s % 60) + "s";
   }
 
+  /** Returns the completion time formatted as {@code HH:mm:ss} in the system timezone. */
   public String formattedTime() {
     return FMT.format(completedAt);
   }

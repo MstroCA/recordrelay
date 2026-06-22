@@ -22,5 +22,6 @@ import java.nio.file.Path;
 /** Deserializes a context package from a portable archive file. */
 public interface PackageImporterPort {
 
+  /** Deserialises a context archive from {@code packagePath} and returns its contents. */
   ImportedPackage importFrom(Path packagePath) throws CloneException;
 }

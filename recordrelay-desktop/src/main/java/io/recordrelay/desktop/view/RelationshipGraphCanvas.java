@@ -104,18 +104,20 @@ public final class RelationshipGraphCanvas extends Pane {
       var current = queue.poll();
       var children = new ArrayList<String>();
       for (var edge : graph.edges()) {
-        String from = edge.fromNode().tableName();
-        String to = edge.toNode().tableName();
-        if (from.equalsIgnoreCase(current) && !visited.contains(to.toLowerCase())) {
-          visited.add(to.toLowerCase());
-          children.add(to);
-          queue.add(to.toLowerCase());
-        }
-        if (to.equalsIgnoreCase(current) && !visited.contains(from.toLowerCase())) {
-          visited.add(from.toLowerCase());
-          children.add(from);
-          queue.add(from.toLowerCase());
-        }
+        collectNeighbor(
+            edge.toNode().tableName(),
+            edge.fromNode().tableName(),
+            current,
+            visited,
+            children,
+            queue);
+        collectNeighbor(
+            edge.fromNode().tableName(),
+            edge.toNode().tableName(),
+            current,
+            visited,
+            children,
+            queue);
       }
       if (!children.isEmpty()) {
         layers.add(children);
@@ -134,6 +136,20 @@ public final class RelationshipGraphCanvas extends Pane {
     }
 
     return layers;
+  }
+
+  private static void collectNeighbor(
+      String candidate,
+      String anchor,
+      String current,
+      java.util.Set<String> visited,
+      List<String> children,
+      java.util.Deque<String> queue) {
+    if (anchor.equalsIgnoreCase(current) && !visited.contains(candidate.toLowerCase())) {
+      visited.add(candidate.toLowerCase());
+      children.add(candidate);
+      queue.add(candidate.toLowerCase());
+    }
   }
 
   private Map<String, Point2D> assignPositions(List<List<String>> layers) {

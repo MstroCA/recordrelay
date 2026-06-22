@@ -21,5 +21,8 @@ import io.recordrelay.core.domain.ConnectionProfile;
 /** Advances database sequences past the highest allocated identity value. */
 public interface SequenceSyncPort {
 
+  /**
+   * Advances sequences in {@code target} so they are above the highest value in {@code mapping}.
+   */
   void synchronize(ConnectionProfile target, IdentityMapping mapping);
 }

@@ -22,5 +22,6 @@ import io.recordrelay.core.clone.exception.CloneException;
 /** Resolves a business-context plan to a table-level clone request. */
 public interface ContextResolverPort {
 
+  /** Translates a semantic context plan into a low-level table-scoped clone request. */
   CloneRequest resolve(ContextClonePlan plan) throws CloneException;
 }

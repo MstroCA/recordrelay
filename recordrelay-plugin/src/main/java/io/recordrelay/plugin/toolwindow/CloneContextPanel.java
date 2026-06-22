@@ -233,10 +233,14 @@ public final class CloneContextPanel extends JPanel {
     var list = new ArrayList<FieldOverride>();
     for (var line : taOverrides.getText().lines().toList()) {
       var raw = line.trim();
-      if (raw.isBlank() || raw.startsWith("#")) continue;
+      if (raw.isBlank() || raw.startsWith("#")) {
+        continue;
+      }
       int colonIdx = raw.indexOf(':');
       int eqIdx = raw.indexOf('=');
-      if (eqIdx < 0) continue;
+      if (eqIdx < 0) {
+        continue;
+      }
       if (colonIdx > 0 && colonIdx < eqIdx) {
         list.add(
             FieldOverride.forTable(

@@ -24,10 +24,14 @@ import java.util.Optional;
 /** Fetches records from a source database during the extraction phase. */
 public interface RecordFetcherPort {
 
+  /**
+   * Fetches the single record whose {@code idColumn} equals {@code idValue}, or empty if not found.
+   */
   Optional<DataRecord> fetchById(
       ConnectionProfile source, String tableName, String idColumn, String idValue)
       throws CloneException;
 
+  /** Fetches all records whose {@code fkColumn} equals {@code fkValue}. */
   List<DataRecord> fetchByForeignKey(
       ConnectionProfile source, String tableName, String fkColumn, String fkValue)
       throws CloneException;

@@ -26,6 +26,10 @@ import java.util.Map;
 /** Serializes a context package to a portable archive file. */
 public interface PackageExporterPort {
 
+  /**
+   * Serialises the context snapshot to an archive under {@code outputDirectory} and returns the
+   * archive path.
+   */
   Path export(
       PackageManifest manifest,
       RelationshipGraph graph,

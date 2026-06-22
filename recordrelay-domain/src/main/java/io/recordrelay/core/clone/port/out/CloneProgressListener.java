@@ -23,19 +23,27 @@ package io.recordrelay.core.clone.port.out;
  */
 public interface CloneProgressListener {
 
+  /** Called once the root record has been fetched from the source. */
   default void onRootRecordLoaded(String tableName, String idValue) {}
 
+  /** Called after the FK relationship graph has been resolved. */
   default void onRelationshipsDiscovered(int edgeCount) {}
 
+  /** Called after new primary key identities have been allocated in the target. */
   default void onIdentitiesAllocated(int totalMappings) {}
 
+  /** Called when row extraction begins for the given table. */
   default void onTableExtractionStarted(String tableName) {}
 
+  /** Called when row extraction completes for the given table. */
   default void onTableExtractionCompleted(String tableName, long recordCount) {}
 
+  /** Called when the import phase begins writing rows for the given table. */
   default void onImportStarted(String tableName) {}
 
+  /** Called when the import phase finishes writing rows for the given table. */
   default void onImportCompleted(String tableName, long recordCount) {}
 
+  /** Called when a non-fatal issue is detected during cloning. */
   default void onWarning(String message) {}
 }

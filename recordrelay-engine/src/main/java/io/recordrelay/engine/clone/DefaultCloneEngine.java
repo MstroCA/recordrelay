@@ -177,9 +177,7 @@ public final class DefaultCloneEngine
       CloneHistoryStore.getInstance()
           .record(
               CloneHistorySummary.ofSuccess(
-                  report,
-                  request.source().name(),
-                  request.target().name()));
+                  report, request.source().name(), request.target().name()));
     } catch (CloneException e) {
       CloneHistoryStore.getInstance()
           .record(

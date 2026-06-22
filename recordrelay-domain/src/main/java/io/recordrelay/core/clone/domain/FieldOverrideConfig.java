@@ -22,8 +22,8 @@ import java.util.Objects;
  * Collection of field overrides applied after FK remapping and before writing to the target.
  *
  * <p>Overrides let each company/team specify which fields carry tenant-context values that must be
- * replaced in the target environment. Common examples: {@code created_by} (user code),
- * {@code mukellef_vkn} (tax identity), {@code tenant_id}.
+ * replaced in the target environment. Common examples: {@code created_by} (user code), {@code
+ * mukellef_vkn} (tax identity), {@code tenant_id}.
  */
 public record FieldOverrideConfig(List<FieldOverride> overrides) {
 

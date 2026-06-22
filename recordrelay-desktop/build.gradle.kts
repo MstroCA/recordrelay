@@ -22,7 +22,8 @@ tasks.named<JavaExec>("run") {
         javaToolchains.launcherFor {
             languageVersion.set(JavaLanguageVersion.of(23))
             vendor.set(JvmVendorSpec.matching("Oracle"))
-        })
+        },
+    )
     // Allow ES2 (Metal/OpenGL) with software fallback — prevents
     // QuantumRenderer "no suitable pipeline found" on some macOS setups.
     // sw = software renderer, bypasses Metal/OpenGL entirely — guaranteed to work on any Mac.

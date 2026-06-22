@@ -18,10 +18,8 @@ package io.recordrelay.desktop.view;
 import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.engine.ConnProfileResolver;
 import io.recordrelay.core.clone.domain.RelationshipGraph;
-import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.spi.ConnectorRegistry;
 import io.recordrelay.engine.clone.JdbcRelationshipResolver;
-import java.util.List;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -99,28 +97,26 @@ public final class GraphViewController implements Refreshable {
       return;
     }
     new Thread(
-        () -> {
-          try {
-            var profile = resolver.resolve(connName);
-            var connector = ConnectorRegistry.findConnector(profile);
-            var dbRef = new io.recordrelay.core.domain.DatabaseRef(profile.database(), profile.type());
-            var tables = connector.schemaInspector().listTables(profile, dbRef);
-            var tableNames = tables.stream()
-                .map(t -> t.tableName())
-                .sorted()
-                .toList();
-            Platform.runLater(
-                () -> {
-                  cboRootTable.setItems(FXCollections.observableArrayList(tableNames));
-                  if (!tableNames.isEmpty()) {
-                    cboRootTable.setValue(tableNames.get(0));
-                  }
-                });
-          } catch (Exception e) {
-            Platform.runLater(() -> lblStatus.setText("Table load failed: " + e.getMessage()));
-          }
-        },
-        "rr-table-load")
+            () -> {
+              try {
+                var profile = resolver.resolve(connName);
+                var connector = ConnectorRegistry.findConnector(profile);
+                var dbRef =
+                    new io.recordrelay.core.domain.DatabaseRef(profile.database(), profile.type());
+                var tables = connector.schemaInspector().listTables(profile, dbRef);
+                var tableNames = tables.stream().map(t -> t.tableName()).sorted().toList();
+                Platform.runLater(
+                    () -> {
+                      cboRootTable.setItems(FXCollections.observableArrayList(tableNames));
+                      if (!tableNames.isEmpty()) {
+                        cboRootTable.setValue(tableNames.get(0));
+                      }
+                    });
+              } catch (Exception e) {
+                Platform.runLater(() -> lblStatus.setText("Table load failed: " + e.getMessage()));
+              }
+            },
+            "rr-table-load")
         .start();
   }
 
@@ -138,8 +134,7 @@ public final class GraphViewController implements Refreshable {
             lblStatus.setText(
                 String.format(
                     "Graph ready — %d tables, %d relationships",
-                    finalGraph.nodeCount(),
-                    finalGraph.edgeCount()));
+                    finalGraph.nodeCount(), finalGraph.edgeCount()));
             btnDiscover.setDisable(false);
           });
     } catch (Exception e) {

@@ -107,7 +107,11 @@ public final class MonitorController implements Refreshable {
     var recent = store.recent(50);
     historyItems.setAll(recent);
 
-    long transferred = recent.stream().filter(CloneHistorySummary::success).mapToLong(CloneHistorySummary::totalRecords).sum();
+    long transferred =
+        recent.stream()
+            .filter(CloneHistorySummary::success)
+            .mapToLong(CloneHistorySummary::totalRecords)
+            .sum();
     lblTransferred.setText(String.format("%,d", transferred));
     lblOperations.setText(String.format("%,d", store.operationCount()));
     lblFailed.setText(String.format("%,d", store.sessionFailedTotal()));
@@ -119,20 +123,14 @@ public final class MonitorController implements Refreshable {
   }
 
   private void setupHistoryTable() {
-    colTime.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().formattedTime()));
-    colHTable.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().rootTable()));
-    colHId.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().rootId()));
-    colHSource.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().sourceProfile()));
-    colHTarget.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().targetProfile()));
+    colTime.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().formattedTime()));
+    colHTable.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().rootTable()));
+    colHId.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().rootId()));
+    colHSource.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().sourceProfile()));
+    colHTarget.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().targetProfile()));
     colHRecords.setCellValueFactory(
         r -> new ReadOnlyStringWrapper(String.format("%,d", r.getValue().totalRecords())));
-    colHDur.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().formattedDuration()));
+    colHDur.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().formattedDuration()));
     colHStatus.setCellValueFactory(
         r -> new ReadOnlyStringWrapper(r.getValue().success() ? "✓ OK" : "✗ Error"));
     colHStatus.setCellFactory(col -> new HistoryStatusCell());

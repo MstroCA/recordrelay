@@ -223,8 +223,7 @@ public final class CloneContextController implements Refreshable {
                 var connector = ConnectorRegistry.findConnector(profile);
                 var dbRef = new DatabaseRef(profile.database(), profile.type());
                 var tables = connector.schemaInspector().listTables(profile, dbRef);
-                var tableNames =
-                    tables.stream().map(t -> t.tableName()).sorted().toList();
+                var tableNames = tables.stream().map(t -> t.tableName()).sorted().toList();
 
                 Platform.runLater(
                     () -> {
@@ -305,7 +304,12 @@ public final class CloneContextController implements Refreshable {
 
       var plan =
           ContextClonePlan.liveCloneWithOverrides(
-              entity, tfEntityId.getText().trim(), srcProfile, tgtProfile, depth, masking,
+              entity,
+              tfEntityId.getText().trim(),
+              srcProfile,
+              tgtProfile,
+              depth,
+              masking,
               buildFieldOverrides());
 
       vm.appendLog(
@@ -437,7 +441,8 @@ public final class CloneContextController implements Refreshable {
       var val = row.valueProperty().get().trim();
       if (col.isBlank()) continue;
       var tbl = row.tableNameProperty().get().trim();
-      list.add(tbl.isBlank() ? FieldOverride.global(col, val) : FieldOverride.forTable(tbl, col, val));
+      list.add(
+          tbl.isBlank() ? FieldOverride.global(col, val) : FieldOverride.forTable(tbl, col, val));
     }
     return new FieldOverrideConfig(list);
   }
@@ -481,9 +486,17 @@ public final class CloneContextController implements Refreshable {
       this.value = new SimpleStringProperty(value);
     }
 
-    public StringProperty tableNameProperty() { return tableName; }
-    public StringProperty columnProperty() { return column; }
-    public StringProperty valueProperty() { return value; }
+    public StringProperty tableNameProperty() {
+      return tableName;
+    }
+
+    public StringProperty columnProperty() {
+      return column;
+    }
+
+    public StringProperty valueProperty() {
+      return value;
+    }
   }
 
   private void showAlert(String msg) {

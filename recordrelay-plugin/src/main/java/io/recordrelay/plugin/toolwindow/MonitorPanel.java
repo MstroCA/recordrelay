@@ -44,7 +44,9 @@ import org.jetbrains.annotations.NotNull;
 public final class MonitorPanel extends JPanel {
 
   private static final String[] HEALTH_COLS = {"Connection", "Status", "Detail"};
-  private static final String[] HISTORY_COLS = {"Time", "Table", "ID", "Source", "Target", "Records", "Duration", "Status"};
+  private static final String[] HISTORY_COLS = {
+    "Time", "Table", "ID", "Source", "Target", "Records", "Duration", "Status"
+  };
 
   private final Project project;
   private final JLabel lblTransferred = kpiLabel("0");
@@ -135,19 +137,25 @@ public final class MonitorPanel extends JPanel {
     historyModel.setRowCount(0);
     var store = CloneHistoryStore.getInstance();
     for (var entry : store.recent(20)) {
-      historyModel.addRow(new Object[]{
-          entry.formattedTime(),
-          entry.rootTable(),
-          entry.rootId(),
-          entry.sourceProfile(),
-          entry.targetProfile(),
-          String.format("%,d", entry.totalRecords()),
-          entry.formattedDuration(),
-          entry.success() ? "✓ OK" : "✗ Error"
-      });
+      historyModel.addRow(
+          new Object[] {
+            entry.formattedTime(),
+            entry.rootTable(),
+            entry.rootId(),
+            entry.sourceProfile(),
+            entry.targetProfile(),
+            String.format("%,d", entry.totalRecords()),
+            entry.formattedDuration(),
+            entry.success() ? "✓ OK" : "✗ Error"
+          });
     }
-    lblTransferred.setText(String.format("%,d",
-        store.recent(200).stream().filter(e -> e.success()).mapToLong(e -> e.totalRecords()).sum()));
+    lblTransferred.setText(
+        String.format(
+            "%,d",
+            store.recent(200).stream()
+                .filter(e -> e.success())
+                .mapToLong(e -> e.totalRecords())
+                .sum()));
     lblFailed.setText(String.format("%,d", store.sessionFailedTotal()));
     lblOperations.setText(String.format("%,d", store.operationCount()));
     var recent = store.recent(1);

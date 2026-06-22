@@ -19,7 +19,6 @@ import io.recordrelay.core.clone.domain.RelationshipEdge;
 import io.recordrelay.core.clone.domain.RelationshipGraph;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -79,8 +78,16 @@ public final class RelationshipGraphCanvas extends Pane {
       drawNode(entry.getKey(), entry.getValue(), isRoot);
     }
 
-    double maxX = positions.values().stream().mapToDouble(p -> p.getX() + NODE_W + MARGIN_X).max().orElse(400);
-    double maxY = positions.values().stream().mapToDouble(p -> p.getY() + NODE_H + MARGIN_Y).max().orElse(300);
+    double maxX =
+        positions.values().stream()
+            .mapToDouble(p -> p.getX() + NODE_W + MARGIN_X)
+            .max()
+            .orElse(400);
+    double maxY =
+        positions.values().stream()
+            .mapToDouble(p -> p.getY() + NODE_H + MARGIN_Y)
+            .max()
+            .orElse(300);
     setPrefSize(maxX, maxY);
   }
 
@@ -215,10 +222,14 @@ public final class RelationshipGraphCanvas extends Pane {
     double size = 8;
     double px = -uy * size / 2;
     double py = ux * size / 2;
-    var arrow = new Polygon(
-        tipX, tipY,
-        tipX - ux * size + px, tipY - uy * size + py,
-        tipX - ux * size - px, tipY - uy * size - py);
+    var arrow =
+        new Polygon(
+            tipX,
+            tipY,
+            tipX - ux * size + px,
+            tipY - uy * size + py,
+            tipX - ux * size - px,
+            tipY - uy * size - py);
     arrow.setFill(EDGE_COLOR);
     return arrow;
   }

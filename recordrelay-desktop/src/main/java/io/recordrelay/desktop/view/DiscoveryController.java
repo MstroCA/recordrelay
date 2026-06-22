@@ -23,6 +23,7 @@ import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.desktop.viewmodel.DiscoveryViewModel;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -30,7 +31,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.beans.property.SimpleObjectProperty;
 
 /** Controller for the Schema Discovery screen. */
 public final class DiscoveryController implements Refreshable {

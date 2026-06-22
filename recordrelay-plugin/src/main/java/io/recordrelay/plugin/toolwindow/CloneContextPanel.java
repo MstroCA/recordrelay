@@ -238,8 +238,11 @@ public final class CloneContextPanel extends JPanel {
       int eqIdx = raw.indexOf('=');
       if (eqIdx < 0) continue;
       if (colonIdx > 0 && colonIdx < eqIdx) {
-        list.add(FieldOverride.forTable(raw.substring(0, colonIdx).trim(),
-            raw.substring(colonIdx + 1, eqIdx).trim(), raw.substring(eqIdx + 1)));
+        list.add(
+            FieldOverride.forTable(
+                raw.substring(0, colonIdx).trim(),
+                raw.substring(colonIdx + 1, eqIdx).trim(),
+                raw.substring(eqIdx + 1)));
       } else {
         list.add(FieldOverride.global(raw.substring(0, eqIdx).trim(), raw.substring(eqIdx + 1)));
       }

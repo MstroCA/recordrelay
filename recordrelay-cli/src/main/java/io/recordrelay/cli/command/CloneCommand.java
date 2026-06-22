@@ -170,7 +170,8 @@ public final class CloneCommand implements Callable<Integer> {
       if (export || target == null) {
         return performExport(printer, srcProfile, entityName, rootId, masking);
       }
-      return performLiveClone(printer, resolver, srcProfile, entityName, rootId, masking, overrides);
+      return performLiveClone(
+          printer, resolver, srcProfile, entityName, rootId, masking, overrides);
 
     } catch (Exception e) {
       return EnvCommand.handleError(parent, e, ExitCode.CLONE_FAILED);

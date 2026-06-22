@@ -78,7 +78,8 @@ class CloneRequestTest {
   void blankRootIdThrowsException() {
     assertThatThrownBy(
             () ->
-                new CloneRequest(profile("src"), profile("tgt"), "customers", "  ", 3, null, null, null))
+                new CloneRequest(
+                    profile("src"), profile("tgt"), "customers", "  ", 3, null, null, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("rootId");
   }
@@ -87,7 +88,8 @@ class CloneRequestTest {
   void depthZeroThrowsException() {
     assertThatThrownBy(
             () ->
-                new CloneRequest(profile("src"), profile("tgt"), "customers", "42", 0, null, null, null))
+                new CloneRequest(
+                    profile("src"), profile("tgt"), "customers", "42", 0, null, null, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("depth");
   }

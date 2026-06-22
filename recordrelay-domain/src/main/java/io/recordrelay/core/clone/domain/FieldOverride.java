@@ -20,9 +20,9 @@ import java.util.Objects;
 /**
  * Overrides a column value in cloned records.
  *
- * <p>Solves the tenant-isolation problem where user-context fields (e.g. {@code created_by},
- * {@code mukellef_vkn}) must match the target environment user rather than the original source
- * values. Without overrides, cloned records may be invisible to the logged-in user in the target.
+ * <p>Solves the tenant-isolation problem where user-context fields (e.g. {@code created_by}, {@code
+ * mukellef_vkn}) must match the target environment user rather than the original source values.
+ * Without overrides, cloned records may be invisible to the logged-in user in the target.
  *
  * <pre>
  * // Apply to ALL tables containing this column:

@@ -48,22 +48,27 @@ public interface SchemaInspector {
       List<ColumnMeta> sourceCols, List<ColumnMeta> targetCols) {
     Map<String, ColumnMeta> sourceByName =
         sourceCols.stream()
-            .collect(Collectors.toMap(c -> c.name().toLowerCase(), Function.identity(),
-                (a, b) -> a));
+            .collect(
+                Collectors.toMap(c -> c.name().toLowerCase(), Function.identity(), (a, b) -> a));
     var compatibilities = new ArrayList<ColumnCompatibility>();
     var warnings = new ArrayList<String>();
 
     for (var tgt : targetCols) {
       var src = sourceByName.get(tgt.name().toLowerCase());
       if (src == null) {
-        compatibilities.add(new ColumnCompatibility(null, tgt.name(), false,
-            "Column '" + tgt.name() + "' missing in source"));
+        compatibilities.add(
+            new ColumnCompatibility(
+                null, tgt.name(), false, "Column '" + tgt.name() + "' missing in source"));
         warnings.add("Missing source column: " + tgt.name());
       } else if (!src.nativeType().equalsIgnoreCase(tgt.nativeType())) {
-        compatibilities.add(new ColumnCompatibility(src.name(), tgt.name(), false,
-            "Type mismatch: source=" + src.nativeType() + " target=" + tgt.nativeType()));
-        warnings.add("Type mismatch on " + tgt.name() + ": " + src.nativeType()
-            + " vs " + tgt.nativeType());
+        compatibilities.add(
+            new ColumnCompatibility(
+                src.name(),
+                tgt.name(),
+                false,
+                "Type mismatch: source=" + src.nativeType() + " target=" + tgt.nativeType()));
+        warnings.add(
+            "Type mismatch on " + tgt.name() + ": " + src.nativeType() + " vs " + tgt.nativeType());
       } else {
         compatibilities.add(new ColumnCompatibility(src.name(), tgt.name(), true, null));
       }

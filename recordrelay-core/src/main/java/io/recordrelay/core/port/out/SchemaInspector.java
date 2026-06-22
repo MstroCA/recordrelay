@@ -31,9 +31,11 @@ import java.util.stream.Collectors;
 /** Reads schema metadata from a storage engine. */
 public interface SchemaInspector {
 
+  /** Returns all tables (or collections / indices) visible in {@code database}. */
   List<TableRef> listTables(ConnectionProfile profile, DatabaseRef database)
       throws ConnectorException;
 
+  /** Returns column (or field) metadata for the given {@code table}. */
   List<ColumnMeta> inspectColumns(ConnectionProfile profile, TableRef table)
       throws ConnectorException;
 

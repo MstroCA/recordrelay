@@ -24,12 +24,16 @@ import java.util.Optional;
 /** Streams records from a storage engine table. */
 public interface RecordReader extends AutoCloseable {
 
+  /** Opens a cursor on {@code table} using {@code profile}. */
   void open(ConnectionProfile profile, TableRef table) throws ConnectorException;
 
+  /** Returns the next record, or empty when the cursor is exhausted. */
   Optional<DataRecord> readNext() throws ConnectorException;
 
+  /** Returns {@code true} if at least one more record is available. */
   boolean hasMore();
 
+  /** Closes the cursor and releases any underlying resources. */
   @Override
   void close() throws ConnectorException;
 }

@@ -23,12 +23,16 @@ import io.recordrelay.core.exception.ConnectorException;
 /** Writes records to a storage engine table. */
 public interface RecordWriter extends AutoCloseable {
 
+  /** Opens a writer targeting {@code table} using {@code profile}. */
   void open(ConnectionProfile profile, TableRef table) throws ConnectorException;
 
+  /** Writes a single record to the target table. */
   void write(DataRecord record) throws ConnectorException;
 
+  /** Flushes any buffered writes to the underlying storage. */
   void flush() throws ConnectorException;
 
+  /** Flushes, commits, and releases any underlying resources. */
   @Override
   void close() throws ConnectorException;
 }

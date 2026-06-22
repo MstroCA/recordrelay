@@ -50,7 +50,9 @@ import org.jetbrains.annotations.NotNull;
 public final class DiscoveryPanel extends JPanel {
 
   private static final String[] COL_COLS = {"Column", "Type", "Nullable", "PK"};
-  private static final String[] MAP_COLS = {"Source Column", "Target Column", "Compatible", "Warning"};
+  private static final String[] MAP_COLS = {
+    "Source Column", "Target Column", "Compatible", "Warning"
+  };
 
   private final Project project;
 
@@ -276,8 +278,7 @@ public final class DiscoveryPanel extends JPanel {
                         col.primaryKey() ? "Yes" : ""
                       });
                 }
-                lblStatus.setText(
-                    srcTable.tableName() + " — " + cols.size() + " column(s)");
+                lblStatus.setText(srcTable.tableName() + " — " + cols.size() + " column(s)");
               }
             });
   }
@@ -288,8 +289,7 @@ public final class DiscoveryPanel extends JPanel {
     String srcConn = (String) cmbSrcConn.getSelectedItem();
     String tgtConn = (String) cmbTgtConn.getSelectedItem();
     if (srcTable == null || tgtTable == null || srcConn == null || tgtConn == null) {
-      Messages.showInfoMessage(
-          project, "Select source and target tables first.", "RecordRelay");
+      Messages.showInfoMessage(project, "Select source and target tables first.", "RecordRelay");
       return;
     }
     btnCompare.setEnabled(false);

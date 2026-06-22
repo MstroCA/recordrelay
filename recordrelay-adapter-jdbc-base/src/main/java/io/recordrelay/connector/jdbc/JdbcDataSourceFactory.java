@@ -49,6 +49,16 @@ public final class JdbcDataSourceFactory {
     config.setConnectionTimeout(CONNECTION_TIMEOUT_MS);
     config.setValidationTimeout(VALIDATION_TIMEOUT_MS);
     profile.properties().forEach(config::addDataSourceProperty);
-    return new HikariDataSource(config);
+    // HikariCP resolves the JDBC driver via DriverManager using the thread context classloader.
+    // In an IntelliJ plugin the TCCL is the platform CL, which cannot see driver JARs bundled
+    // inside the plugin sandbox. Swap to our own CL so DriverManager can find the driver.
+    var cl = JdbcDataSourceFactory.class.getClassLoader();
+    var tccl = Thread.currentThread().getContextClassLoader();
+    try {
+      Thread.currentThread().setContextClassLoader(cl);
+      return new HikariDataSource(config);
+    } finally {
+      Thread.currentThread().setContextClassLoader(tccl);
+    }
   }
 }

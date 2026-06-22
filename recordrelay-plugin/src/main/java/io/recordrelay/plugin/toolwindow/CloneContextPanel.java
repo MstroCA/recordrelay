@@ -408,9 +408,13 @@ public final class CloneContextPanel extends JPanel {
 
   private BusinessEntity buildEntity() {
     String rootTable = (String) cmbRootTable.getSelectedItem();
-    if (rootTable == null || rootTable.isBlank()) rootTable = "records";
+    if (rootTable == null || rootTable.isBlank()) {
+      rootTable = "records";
+    }
     String pk = tfPkColumn.getText().trim();
-    if (pk.isBlank()) pk = "id";
+    if (pk.isBlank()) {
+      pk = "id";
+    }
     return BusinessEntity.of(rootTable, rootTable, pk, "");
   }
 
@@ -418,10 +422,14 @@ public final class CloneContextPanel extends JPanel {
     var list = new ArrayList<FieldOverride>();
     for (var line : taOverrides.getText().lines().toList()) {
       var raw = line.trim();
-      if (raw.isBlank() || raw.startsWith("#")) continue;
+      if (raw.isBlank() || raw.startsWith("#")) {
+        continue;
+      }
       int colonIdx = raw.indexOf(':');
       int eqIdx = raw.indexOf('=');
-      if (eqIdx < 0) continue;
+      if (eqIdx < 0) {
+        continue;
+      }
       if (colonIdx > 0 && colonIdx < eqIdx) {
         list.add(
             FieldOverride.forTable(

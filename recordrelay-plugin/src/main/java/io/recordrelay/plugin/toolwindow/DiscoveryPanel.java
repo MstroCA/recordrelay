@@ -167,7 +167,9 @@ public final class DiscoveryPanel extends JPanel {
 
   private void onConnSelected(boolean isSrc) {
     String conn = (String) (isSrc ? cmbSrcConn : cmbTgtConn).getSelectedItem();
-    if (conn == null || conn.isBlank()) return;
+    if (conn == null || conn.isBlank()) {
+      return;
+    }
     var dbCombo = isSrc ? cmbSrcDb : cmbTgtDb;
     var tblCombo = isSrc ? cmbSrcTable : cmbTgtTable;
     dbCombo.removeAllItems();
@@ -178,7 +180,9 @@ public final class DiscoveryPanel extends JPanel {
   private void onDbSelected(boolean isSrc) {
     var dbRef = (DatabaseRef) (isSrc ? cmbSrcDb : cmbTgtDb).getSelectedItem();
     String conn = (String) (isSrc ? cmbSrcConn : cmbTgtConn).getSelectedItem();
-    if (dbRef == null || conn == null) return;
+    if (dbRef == null || conn == null) {
+      return;
+    }
     (isSrc ? cmbSrcTable : cmbTgtTable).removeAllItems();
     loadTables(conn, dbRef, isSrc);
   }
@@ -203,7 +207,9 @@ public final class DiscoveryPanel extends JPanel {
                 var combo = isSrc ? cmbSrcDb : cmbTgtDb;
                 combo.removeAllItems();
                 var dbs = resultRef.get();
-                if (dbs != null) dbs.forEach(combo::addItem);
+                if (dbs != null) {
+                  dbs.forEach(combo::addItem);
+                }
               }
             });
   }
@@ -228,7 +234,9 @@ public final class DiscoveryPanel extends JPanel {
                 var combo = isSrc ? cmbSrcTable : cmbTgtTable;
                 combo.removeAllItems();
                 var tables = resultRef.get();
-                if (tables != null) tables.forEach(combo::addItem);
+                if (tables != null) {
+                  tables.forEach(combo::addItem);
+                }
               }
             });
   }

@@ -1,6 +1,6 @@
 # RecordRelay
 
-**Universal Data Reproduction & Debug Platform** — Gerçek üretim veya test sistemi durumunu dakikalar içinde yerel ortamda yeniden üret.
+**Universal Data Reproduction & Debug Platform** — Reproduce real production or test system state locally in minutes.
 
 [![CI](https://github.com/MstroCA/recordrelay/actions/workflows/ci.yml/badge.svg)](https://github.com/MstroCA/recordrelay/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/MstroCA/recordrelay?label=release)](https://github.com/MstroCA/recordrelay/releases/latest)
@@ -11,43 +11,43 @@
 
 ---
 
-## Vizyon
+## Vision
 
-RecordRelay bir ETL aracı değildir. Geliştiriciler ve SRE'ler için **business context reproduction** platformudur: bir müşteri, sipariş veya kullanıcı gibi gerçek bir varlığı tüm ilişkileriyle birlikte production'dan yerel ortama dakikalar içinde yeniden üretir — veya bir `.rrpkg` paketi olarak başkalarıyla paylaşır.
+RecordRelay is not an ETL tool. It is a **business context reproduction** platform for developers and SREs: it reproduces a real entity — a customer, order, or user — along with all its relationships, from production to a local environment in minutes, or packages it as a `.rrpkg` file to share with others.
 
-**Üç dağıtım hedefi:**
-- **Desktop** — JavaFX tabanlı masaüstü uygulaması (AtlantaFX) — Clone Context ekranı ile tek tıkla yeniden üretim
-- **CLI** — CI/CD pipeline'larına entegre edilebilen komut satırı aracı
-- **IntelliJ Plugin** — IDE içinden doğrudan Clone sekmesi, Connections, Discovery, Monitor
+**Three deployment targets:**
+- **Desktop** — JavaFX desktop application (AtlantaFX) — one-click reproduction via the Clone Context screen
+- **CLI** — command-line tool that integrates into CI/CD pipelines
+- **IntelliJ Plugin** — Clone, Connections, Discovery, and Monitor tabs directly inside the IDE
 
 ---
 
-## CLI Kullanımı
+## CLI Usage
 
 ```bash
-# Bağlantı ekle
+# Add a connection
 rr conn add --name prod --type POSTGRESQL --host db.prod --port 5432 --database mydb --user admin
 rr conn add --name local --type POSTGRESQL --host localhost --port 5432 --database mydb --user admin
 
-# Müşteriyi production'dan local'e clone et
+# Clone a customer from production to local
 rr clone --entity customer --id 12345 --from prod --target local --depth 3
 
-# Pakete export et (başkasıyla paylaş)
+# Export to a package (share with others)
 rr export --entity customer --id 12345 --from prod --output ./exports/
 
-# Paketi başka bir ortama import et
+# Import a package into another environment
 rr import customer-12345-1234567890.rrpkg --target staging
 
-# İki environment'ı karşılaştır
+# Compare two environments
 rr diff --entity customer --id 12345 --from prod --to staging
 
-# Schema keşfi
+# Schema discovery
 rr discover --source prod
 ```
 
 ---
 
-## Mimari
+## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -79,24 +79,24 @@ rr discover --source prod
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Hexagonal Architecture (Ports & Adapters): domain ve core modülleri yalnızca arayüz tanımlarını içerir. Hiçbir DB sürücüsüne veya UI framework'üne bağımlı değildir. Connector'lar ve engine'ler birer adapter'dır.
+Hexagonal Architecture (Ports & Adapters): the domain and core modules contain only interface definitions. They have no dependency on any DB driver or UI framework. Connectors and engines are adapters.
 
 ---
 
-## Modüller
+## Modules
 
-| Modül | Dizin | Açıklama |
-|-------|-------|----------|
+| Module | Directory | Description |
+|--------|-----------|-------------|
 | `recordrelay-core` | `recordrelay-core/` | ConnectionProfile, ContextProviderPort SPI, ConnectorRegistry |
 | `recordrelay-domain` | `recordrelay-domain/` | BusinessEntity, RelationshipGraph, ContextClonePlan, IdentityMapping, MaskingConfig |
 | `recordrelay-engine` | `recordrelay-engine/` | Clone orchestration, identity mapping, BFS extraction, replay |
-| `recordrelay-graph-engine` | `recordrelay-graph-engine/` | FK-based ve heuristic relationship discovery |
+| `recordrelay-graph-engine` | `recordrelay-graph-engine/` | FK-based and heuristic relationship discovery |
 | `recordrelay-masking-engine` | `recordrelay-masking-engine/` | Deterministic PII masking (EMAIL, PHONE, ADDRESS, IBAN, NATIONAL_ID) |
-| `recordrelay-package-engine` | `recordrelay-package-engine/` | `.rrpkg` v2.1 ZIP export ve import |
+| `recordrelay-package-engine` | `recordrelay-package-engine/` | `.rrpkg` v2.1 ZIP export and import |
 | `recordrelay-cli` | `recordrelay-cli/` | Picocli CLI — clone, export, import, replay, diff, discover, analyze, env, conn, status |
-| `recordrelay-desktop` | `recordrelay-desktop/` | JavaFX masaüstü uygulaması — Clone Context, Environments, Connections, Discovery, Monitor |
-| `recordrelay-plugin` | `recordrelay-plugin/` | IntelliJ IDEA plugin — Clone, Connections, Discovery, Monitor sekmeleri |
-| `recordrelay-adapter-jdbc-base` | `recordrelay-adapter-jdbc-base/` | JDBC connector'ları için abstract base |
+| `recordrelay-desktop` | `recordrelay-desktop/` | JavaFX desktop application — Clone Context, Environments, Connections, Discovery, Monitor |
+| `recordrelay-plugin` | `recordrelay-plugin/` | IntelliJ IDEA plugin — Clone, Connections, Discovery, Monitor tabs |
+| `recordrelay-adapter-jdbc-base` | `recordrelay-adapter-jdbc-base/` | Abstract base for JDBC connectors |
 | `recordrelay-adapter-postgres` | `recordrelay-adapter-postgres/` | PostgreSQL 14+ |
 | `recordrelay-adapter-mysql` | `recordrelay-adapter-mysql/` | MySQL 8+ / MariaDB 10.6+ |
 | `recordrelay-adapter-sqlserver` | `recordrelay-adapter-sqlserver/` | Microsoft SQL Server 2019+ |
@@ -107,30 +107,30 @@ Hexagonal Architecture (Ports & Adapters): domain ve core modülleri yalnızca a
 | `recordrelay-adapter-redis` | `recordrelay-adapter-redis/` | Redis 7+ (Lettuce) |
 | `recordrelay-adapter-elasticsearch` | `recordrelay-adapter-elasticsearch/` | Elasticsearch 8+ |
 | `recordrelay-adapter-file` | `recordrelay-adapter-file/` | CSV, Excel, JSON Lines, YAML, Parquet |
-| `recordrelay-adapter-template` | `recordrelay-adapter-template/` | Yeni connector geliştirme şablonu |
+| `recordrelay-adapter-template` | `recordrelay-adapter-template/` | Template for building custom connectors |
 
 ---
 
-## Desteklenen Kaynaklar
+## Supported Sources
 
-### SQL Veritabanları
-| Veritabanı | Versiyon | Reader | Writer | Schema |
-|------------|----------|:------:|:------:|:------:|
+### SQL Databases
+| Database | Version | Reader | Writer | Schema |
+|----------|---------|:------:|:------:|:------:|
 | PostgreSQL | 14+ | ✓ | ✓ | ✓ |
 | MySQL / MariaDB | 8+ / 10.6+ | ✓ | ✓ | ✓ |
 | SQL Server | 2019+ | ✓ | ✓ | ✓ |
 | Oracle | 19c+ | ✓ | ✓ | ✓ |
 | SQLite | 3.x | ✓ | ✓ | ✓ |
 
-### NoSQL Veritabanları
-| Veritabanı | Versiyon | Reader | Writer | Schema |
-|------------|----------|:------:|:------:|:------:|
+### NoSQL Databases
+| Database | Version | Reader | Writer | Schema |
+|----------|---------|:------:|:------:|:------:|
 | MongoDB | 6+ | ✓ | ✓ | ✓ |
 | Cassandra | 4+ | ✓ | ✓ | ✓ |
 | Redis | 7+ | ✓ | ✓ | — |
 | Elasticsearch | 8+ | ✓ | ✓ | ✓ |
 
-### Dosya Formatları
+### File Formats
 | Format | Reader | Writer |
 |--------|:------:|:------:|
 | CSV | ✓ | ✓ |
@@ -141,11 +141,11 @@ Hexagonal Architecture (Ports & Adapters): domain ve core modülleri yalnızca a
 
 ---
 
-## Kurulum
+## Installation
 
 ### Desktop (macOS / Windows / Linux)
 
-[GitHub Releases](https://github.com/MstroCA/recordrelay/releases/latest) sayfasından platformunuza uygun paketi indirin.
+Download the package for your platform from the [GitHub Releases](https://github.com/MstroCA/recordrelay/releases/latest) page.
 
 ### CLI
 
@@ -155,7 +155,7 @@ export PATH="$PWD/rr-cli-x.y.z/bin:$PATH"
 rr --version
 ```
 
-> Gereksinim: Java 21+
+> Requirement: Java 21+
 
 ### IntelliJ IDEA Plugin
 
@@ -163,19 +163,19 @@ rr --version
 
 ---
 
-## Kaynak Koddan Derleme
+## Building from Source
 
 ```bash
 git clone https://github.com/MstroCA/recordrelay.git
 cd recordrelay
 
-# Derle + statik analiz + unit testler
+# Compile + static analysis + unit tests
 ./gradlew build
 
-# Integration testler (Docker gerektirir)
+# Integration tests (requires Docker)
 ./gradlew integrationTest
 
-# CLI fat JAR üret
+# Build CLI fat JAR
 ./gradlew :recordrelay-cli:shadowJar
 # → recordrelay-cli/build/libs/rr-cli-0.1.0-SNAPSHOT.jar
 
@@ -188,9 +188,9 @@ cd recordrelay
 
 ---
 
-## Yeni Connector Yazma
+## Writing a New Connector
 
-`recordrelay-adapter-template` modülünü kopyalayın ve `ContextProviderPort` arayüzünü implement edin:
+Copy the `recordrelay-adapter-template` module and implement the `ContextProviderPort` interface:
 
 ```java
 public class MyConnector implements ContextProviderPort {
@@ -200,16 +200,16 @@ public class MyConnector implements ContextProviderPort {
 }
 ```
 
-SPI kaydı için `META-INF/services/io.recordrelay.core.port.out.ContextProviderPort` dosyasına sınıf adını ekleyin. JAR classpath'e atıldığında `ServiceLoader` otomatik keşfeder.
+Add the class name to `META-INF/services/io.recordrelay.core.port.out.ContextProviderPort` for SPI registration. Once the JAR is on the classpath, `ServiceLoader` discovers it automatically.
 
 ---
 
-## Katkıda Bulunma
+## Contributing
 
-Lütfen [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını okuyun. Tüm katkılar Apache-2.0 lisansı altında kabul edilir.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md). All contributions are accepted under the Apache-2.0 license.
 
 ---
 
-## Lisans
+## License
 
 [Apache License 2.0](LICENSE) — Copyright 2026 the RecordRelay authors

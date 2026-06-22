@@ -6,32 +6,37 @@ isolated from infrastructure; connectors are discovered at runtime via Java's `S
 ## Module overview
 
 ```
-core/                      Pure domain model + ports
-  domain/                  Immutable value objects (record types)
-  port/in/                 Use-case interfaces (TransferUseCase, etc.)
-  port/out/                Adapter interfaces (DataSourceConnector, RecordReader, ...)
-  spi/                     ConnectorRegistry — ServiceLoader wrapper
+recordrelay-core/          ConnectionProfile, ContextProviderPort SPI, ConnectorRegistry
+recordrelay-domain/        Immutable domain objects — BusinessEntity, RelationshipGraph,
+                             ContextClonePlan, IdentityMapping, MaskingConfig
 
-connectors/
-  connector-postgresql/    PostgreSQL adapter
-  connector-mongodb/       MongoDB adapter
-  connector-jdbc-base/     Abstract JDBC base (AbstractJdbcConnector, etc.)
-  connector-mysql/         MySQL/MariaDB adapter (extends jdbc-base)
-  connector-sqlserver/     SQL Server adapter (standalone — semicolon URL format)
-  connector-oracle/        Oracle adapter (standalone — thin URL format)
-  connector-sqlite/        SQLite adapter
-  connector-cassandra/     Cassandra adapter (DataStax driver)
-  connector-redis/         Redis adapter (Lettuce)
-  connector-elasticsearch/ Elasticsearch adapter (Java API client 8.x)
-  connector-file/          File connectors: CSV, Excel, JSON, YAML, Parquet
-  connector-template/      Starting point for custom connectors
+recordrelay-engine/        Clone orchestration — DefaultContextCloneEngine, DefaultCloneEngine,
+                             DefaultIdentityMapper, JdbcRecordFetcher, FkRemapper,
+                             DefaultReplayEngine, JdbcSequenceSynchronizer, CloneHistoryStore
+recordrelay-graph-engine/  Relationship discovery — JdbcRelationshipResolver (FK-based),
+                             HeuristicRelationshipResolver (naming convention), DefaultContextResolver
+recordrelay-masking-engine/ Deterministic PII masking — DefaultMaskingService
+                             (EMAIL, PHONE, ADDRESS, IBAN, NATIONAL_ID)
+recordrelay-package-engine/ .rrpkg v2.1 export/import — RrPkgExporter, RrPkgImporter
 
-engine-batch/              Spring Batch job — RecordRelayJob
-mapping-parsers/           SQL and YAML mapping DSL parsers
+recordrelay-cli/           Picocli fat-JAR (rr-cli) — clone, export, import, replay, diff,
+                             discover, analyze, conn, env, status
+recordrelay-desktop/       JavaFX desktop application (AtlantaFX) — Clone Context, Environments,
+                             Connections, Discovery, Monitor
+recordrelay-plugin/        IntelliJ IDEA plugin — Clone, Connections, Discovery, Monitor tabs
 
-cli/                       Picocli CLI — rr-cli fat-JAR (Shadow)
-desktop/                   JavaFX desktop application
-plugin/                    IntelliJ IDEA plugin
+recordrelay-adapter-jdbc-base/    Abstract JDBC base (HikariCP pooling, batch read/write)
+recordrelay-adapter-postgres/     PostgreSQL 14+
+recordrelay-adapter-mysql/        MySQL 8+ / MariaDB 10.6+
+recordrelay-adapter-sqlserver/    SQL Server 2019+
+recordrelay-adapter-oracle/       Oracle 19c+
+recordrelay-adapter-sqlite/       SQLite 3.x (embedded)
+recordrelay-adapter-mongodb/      MongoDB 6+
+recordrelay-adapter-cassandra/    Apache Cassandra 4+ (DataStax driver)
+recordrelay-adapter-redis/        Redis 7+ (Lettuce)
+recordrelay-adapter-elasticsearch/ Elasticsearch 8+ (Java API client)
+recordrelay-adapter-file/         CSV, Excel (POI), JSON Lines, YAML, Parquet
+recordrelay-adapter-template/     Starting point for custom connectors
 ```
 
 ## Request flow
@@ -40,27 +45,33 @@ plugin/                    IntelliJ IDEA plugin
 CLI / Desktop / Plugin
         │
         ▼
-TransferUseCase (core/port/in)
+ContextClonePlan.liveCloneWithOverrides()   ← builds the plan
         │
         ▼
-BatchJobService → RecordRelayJob (Spring Batch)
-        │                    │
-        ▼                    ▼
-ConnectorRegistry     MappingParser
-  ServiceLoader     (SQL or YAML DSL)
+DefaultContextCloneEngine.execute(plan, listener)
+        │                        │
+        ▼                        ▼
+JdbcRelationshipResolver    DefaultMaskingService
+(FK + heuristic graph)      (deterministic PII mask)
         │
-        ├─── DataSourceConnector.supports(profile) → selected connector
-        │                    │
-        ├── RecordReader ◄───┘   (streams rows / documents / lines)
-        └── RecordWriter ◄───┘   (batch insert / bulk index / HSET)
+        ├── JdbcRecordFetcher   (BFS extraction per table)
+        ├── DefaultIdentityMapper (PK remapping across envs)
+        ├── FkRemapper          (fix FK references in cloned rows)
+        └── ConnectorRegistry.findConnector(profile)
+              │
+              ├── ContextProviderPort.createReader()  (streams rows)
+              └── ContextProviderPort.createWriter()  (batch insert)
 ```
+
+For export-only flows (`bugCapture`), `RrPkgExporter` replaces the writer and produces a
+`.rrpkg` ZIP file. `RrPkgImporter` + `DefaultReplayEngine` replays the package into a target.
 
 ## Connector SPI
 
-Every connector implements `DataSourceConnector` (in `core/port/out`):
+Every connector implements `ContextProviderPort` (in `recordrelay-core`):
 
 ```java
-public interface DataSourceConnector {
+public interface ContextProviderPort {
   String connectorId();
   boolean supports(ConnectionProfile profile);
   void testConnection(ConnectionProfile profile) throws ConnectorException;
@@ -74,9 +85,12 @@ public interface DataSourceConnector {
 }
 ```
 
-Connectors register via `META-INF/services/io.recordrelay.core.port.out.DataSourceConnector`.
+Connectors register via `META-INF/services/io.recordrelay.core.port.out.ContextProviderPort`.
 `ConnectorRegistry.findConnector(profile)` iterates `ServiceLoader` and picks the first
 connector for which `supports(profile)` returns `true`.
+
+In an IntelliJ plugin, call `ConnectorRegistry.reloadFrom(MyService.class.getClassLoader())`
+at startup so the plugin classloader's adapters are visible to the registry.
 
 ## Security model
 

@@ -1,86 +1,86 @@
 # Contributing to RecordRelay
 
-RecordRelay'e katkıda bulunduğunuz için teşekkürler! Bu döküman, geliştirme sürecini, kod standartlarını ve yeni connector yazma adımlarını açıklar.
+Thank you for contributing to RecordRelay! This document describes the development process, code standards, and steps for writing new connectors.
 
 ---
 
-## İçindekiler
+## Table of Contents
 
-1. [Geliştirme Ortamı](#geliştirme-ortamı)
-2. [Proje Yapısı](#proje-yapısı)
-3. [Kod Standartları](#kod-standartları)
-4. [Test Yazma](#test-yazma)
-5. [Yeni Connector Yazma](#yeni-connector-yazma)
-6. [PR Süreci](#pr-süreci)
-7. [Commit Mesajları](#commit-mesajları)
+1. [Development Environment](#development-environment)
+2. [Project Structure](#project-structure)
+3. [Code Standards](#code-standards)
+4. [Writing Tests](#writing-tests)
+5. [Writing a New Connector](#writing-a-new-connector)
+6. [PR Process](#pr-process)
+7. [Commit Messages](#commit-messages)
 
 ---
 
-## Geliştirme Ortamı
+## Development Environment
 
-### Gereksinimler
-- Java 21 (Temurin önerilir)
-- Docker Desktop (Testcontainers için)
-- IntelliJ IDEA veya herhangi bir Java IDE
+### Requirements
+- Java 21 (Temurin recommended)
+- Docker Desktop (for Testcontainers)
+- IntelliJ IDEA or any Java IDE
 
-### İlk Kurulum
+### Initial Setup
 
 ```bash
 git clone https://github.com/recordrelay/recordrelay.git
 cd recordrelay
-./gradlew build          # Derleme + tüm kontroller
-./gradlew test           # Sadece unit testler
-./gradlew integrationTest # Testcontainers integration testleri (Docker gerekir)
+./gradlew build           # Compile + all checks
+./gradlew test            # Unit tests only
+./gradlew integrationTest # Testcontainers integration tests (requires Docker)
 ```
 
-### Kalite Araçları
+### Quality Tools
 
-| Araç | Amaç | Komut |
-|------|------|-------|
-| Spotless | Kod formatı (Google Java Format) | `./gradlew spotlessApply` |
-| Checkstyle | Yapısal kurallar | `./gradlew checkstyleMain` |
-| SpotBugs | Statik analiz, bug pattern'leri | `./gradlew spotbugsMain` |
-| JaCoCo | Kod coverage (%70 minimum) | `./gradlew jacocoTestReport` |
+| Tool | Purpose | Command |
+|------|---------|---------|
+| Spotless | Code formatting (Google Java Format) | `./gradlew spotlessApply` |
+| Checkstyle | Structural rules | `./gradlew checkstyleMain` |
+| SpotBugs | Static analysis, bug patterns | `./gradlew spotbugsMain` |
+| JaCoCo | Code coverage (70% minimum) | `./gradlew jacocoTestReport` |
 
-PR açmadan önce şunu çalıştırın:
+Before opening a PR, run:
 ```bash
 ./gradlew spotlessApply && ./gradlew check
 ```
 
 ---
 
-## Proje Yapısı
+## Project Structure
 
 ```
-core/                    ← Buraya adapter kodu GİRMEZ
-  domain/                ← Değişmez iş nesneleri (record/immutable)
-  port/in/               ← Driving ports (use case arayüzleri)
-  port/out/              ← Driven ports (connector arayüzleri)
+core/                    ← No adapter code goes here
+  domain/                ← Immutable business objects (record/immutable)
+  port/in/               ← Driving ports (use-case interfaces)
+  port/out/              ← Driven ports (connector interfaces)
   spi/                   ← ServiceLoader registry
   engine/                ← Transfer orchestration
 
 connectors/
-  connector-{db}/        ← Her DB için ayrı modül
-    src/main/java/...    ← Port implement eden sınıflar
+  connector-{db}/        ← Separate module per database
+    src/main/java/...    ← Classes implementing the ports
     src/main/resources/
-      META-INF/services/ ← SPI kayıt dosyaları
-    src/test/java/...    ← Unit + Testcontainers testleri
+      META-INF/services/ ← SPI registration files
+    src/test/java/...    ← Unit + Testcontainers tests
 ```
 
 ---
 
-## Kod Standartları
+## Code Standards
 
-- **Java 21**: Record'lar, sealed interface'ler, pattern matching tercih edilir.
-- **Immutability**: Domain nesneleri `record` veya `@Value` (Lombok yok) olmalı.
-- **Null safety**: `Optional` kullanın; `null` dönmeyin ve kabul etmeyin.
-- **Exception handling**: Checked exception'lar connector boundary'de `ConnectorException` (unchecked) olarak wrap edilmeli.
-- **Javadoc**: `public` API'lar için zorunlu. Implementation detayı yazma — "ne" değil "neden".
-- **Yorum satırı**: Yalnızca non-obvious constraint veya workaround'lar için. "Bu metod X yapar" türü yorumlar kabul edilmez.
-- **Metod uzunluğu**: Max 60 satır (Checkstyle enforce eder).
-- **Cyclomatic complexity**: Max 10 (Checkstyle enforce eder).
+- **Java 21**: Records, sealed interfaces, and pattern matching are preferred.
+- **Immutability**: Domain objects must be `record` types or plain immutables (no Lombok).
+- **Null safety**: Use `Optional`; never return or accept `null`.
+- **Exception handling**: Checked exceptions must be wrapped as `ConnectorException` (unchecked) at the connector boundary.
+- **Javadoc**: Required for all `public` APIs. Document the *why*, not the *what*.
+- **Comments**: Only for non-obvious constraints or workarounds. "This method does X" comments are not accepted.
+- **Method length**: Max 60 lines (enforced by Checkstyle).
+- **Cyclomatic complexity**: Max 10 (enforced by Checkstyle).
 
-### Paket Yapısı
+### Package Structure
 
 ```
 io.recordrelay.core.domain.*
@@ -97,7 +97,7 @@ io.recordrelay.plugin.*
 
 ---
 
-## Test Yazma
+## Writing Tests
 
 ### Unit Test
 
@@ -143,15 +143,15 @@ class PostgreSqlConnectorIT {
 }
 ```
 
-Integration testleri `integrationTest` source set'inde bulunur ve `./gradlew integrationTest` ile ayrıca çalıştırılır.
+Integration tests live in the `integrationTest` source set and are run separately with `./gradlew integrationTest`.
 
 ---
 
-## Yeni Connector Yazma
+## Writing a New Connector
 
-### 1. Modül Oluşturma
+### 1. Create the Module
 
-`connectors/` altında yeni bir Gradle alt projesi açın:
+Create a new Gradle subproject under `connectors/`:
 
 ```
 connectors/connector-{dbname}/
@@ -165,14 +165,14 @@ connectors/connector-{dbname}/
     io.recordrelay.core.port.out.DataSourceConnector
 ```
 
-### 2. Port'ları Implement Etme
+### 2. Implement the Ports
 
 ```java
 public final class MyDbConnector implements DataSourceConnector {
 
     @Override
     public String connectorId() {
-        return "mydb"; // benzersiz tanımlayıcı
+        return "mydb"; // unique identifier
     }
 
     @Override
@@ -187,17 +187,17 @@ public final class MyDbConnector implements DataSourceConnector {
 }
 ```
 
-### 3. SPI Kaydı
+### 3. Register the SPI
 
-`src/main/resources/META-INF/services/io.recordrelay.core.port.out.DataSourceConnector` dosyasını oluşturun:
+Create `src/main/resources/META-INF/services/io.recordrelay.core.port.out.DataSourceConnector`:
 
 ```
 io.recordrelay.connector.mydb.MyDbConnector
 ```
 
-`ConnectorRegistry`, `ServiceLoader` aracılığıyla bu sınıfı otomatik olarak keşfeder.
+`ConnectorRegistry` discovers this class automatically via `ServiceLoader`.
 
-### 4. `settings.gradle.kts`'e Ekleme
+### 4. Add to `settings.gradle.kts`
 
 ```kotlin
 include("connectors:connector-mydb")
@@ -205,20 +205,20 @@ include("connectors:connector-mydb")
 
 ### 5. Test
 
-Testcontainers ile gerçek bir DB container'ı ayağa kaldırarak integration testi yazın.
+Write an integration test that spins up a real DB container using Testcontainers.
 
 ---
 
-## PR Süreci
+## PR Process
 
-1. `develop` branch'inden fork alın veya feature branch açın: `feature/connector-cassandra`
-2. Değişikliklerinizi yapın ve testleri geçirin: `./gradlew check`
-3. PR açarken şablonu doldurun: ne değişti, neden, nasıl test edildi.
-4. En az 1 reviewer onayı gerekir.
-5. CI tüm matriste (Linux/macOS/Windows) yeşil olmalı.
-6. Squash merge — commit geçmişi temiz kalır.
+1. Fork or create a feature branch from `develop`: `feature/connector-cassandra`
+2. Make your changes and pass the tests: `./gradlew check`
+3. Fill in the PR template when opening: what changed, why, how it was tested.
+4. At least 1 reviewer approval is required.
+5. CI must be green on all matrix targets (Linux/macOS/Windows).
+6. Squash merge — keeps the commit history clean.
 
-### Branch İsimlendirme
+### Branch Naming
 
 ```
 feature/connector-cassandra
@@ -229,9 +229,9 @@ docs/connector-guide
 
 ---
 
-## Commit Mesajları
+## Commit Messages
 
-[Conventional Commits](https://www.conventionalcommits.org/) formatı:
+[Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ```
 feat(connector-postgresql): add schema introspection for partitioned tables
@@ -241,10 +241,10 @@ docs(contributing): add connector writing guide
 test(connector-mongodb): add collection listing integration test
 ```
 
-Tipler: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `perf`, `ci`
+Types: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `perf`, `ci`
 
 ---
 
-## Lisans
+## License
 
-Tüm katkılar [Apache-2.0](LICENSE) lisansı altında kabul edilir. Katkıda bulunarak, yazdığınız kodun bu lisans altında yayınlanmasına onay vermiş olursunuz.
+All contributions are accepted under the [Apache-2.0](LICENSE) license. By contributing, you agree that your code will be published under this license.

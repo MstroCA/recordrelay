@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.recordrelay.desktop.view.QueryController">
+
+    <top>
+        <VBox spacing="4">
+            <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
+            <Label text="%nav.query" styleClass="screen-title"/>
+            <Label text="%query.placeholder" styleClass="screen-subtitle"/>
+            <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="edge-to-edge">
+        <VBox spacing="12">
+            <padding><Insets top="4" right="28" bottom="16" left="28"/></padding>
+
+            <!-- ── Connection + Run row ──────────────────────────────────────── -->
+            <HBox spacing="16" styleClass="card" alignment="CENTER_LEFT">
+
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label text="CONNECTION" styleClass="section-label"/>
+                    <ComboBox fx:id="cmbConn" maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="8" alignment="BOTTOM_CENTER" minWidth="130">
+                    <Region VBox.vgrow="ALWAYS"/>
+                    <Button fx:id="btnRun" text="%query.btn.run"
+                            maxWidth="Infinity" onAction="#onRun" styleClass="accent-btn"/>
+                    <Label fx:id="lblStatus" text="%status.ready" styleClass="status-label"/>
+                </VBox>
+
+            </HBox>
+
+            <!-- ── SQL editor ────────────────────────────────────────────────── -->
+            <VBox styleClass="card" spacing="8">
+                <Label text="SQL" styleClass="section-label"/>
+                <TextArea fx:id="taSql" prefHeight="140" wrapText="false"
+                          promptText="%query.placeholder" styleClass="log-area"/>
+            </VBox>
+
+            <!-- ── Results table ─────────────────────────────────────────────── -->
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label fx:id="lblRows" text="" styleClass="hint-label"/>
+                <Region HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+            <TableView fx:id="tblResults" prefHeight="320" minHeight="180">
+                <placeholder>
+                    <Label text="%query.placeholder" styleClass="placeholder-hint"/>
+                </placeholder>
+            </TableView>
+
+        </VBox>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

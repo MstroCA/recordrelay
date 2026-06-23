@@ -34,5 +34,6 @@ public final class RecordRelayToolWindowFactory implements ToolWindowFactory {
     mgr.addContent(factory.createContent(new ConnectionsPanel(project), "Connections", false));
     mgr.addContent(factory.createContent(new DiscoveryPanel(project), "Discovery", false));
     mgr.addContent(factory.createContent(new MonitorPanel(project), "Monitor", false));
+    mgr.addContent(factory.createContent(new QueryPanel(project), "Query", false));
   }
 }

@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.picocli)
     implementation(libs.jackson.databind)
     implementation(libs.snakeyaml)
+    implementation(libs.hikaricp)
     compileOnly(libs.spotbugs.annotations)
     runtimeOnly(libs.logback.classic)
 

@@ -38,7 +38,7 @@ public record RootTableCandidate(
     Objects.requireNonNull(reason, "reason");
   }
 
-  /** Short badge text suitable for a button label, e.g. {@code "orders  ·  ×5"}. */
+  /** Short badge text suitable for a button label, e.g. {@code "orders · ×5"}. */
   public String badgeLabel() {
     if (inDegree > 0) {
       return tableName + "  ·  ×" + inDegree;

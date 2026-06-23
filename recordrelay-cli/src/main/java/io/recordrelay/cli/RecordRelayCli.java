@@ -23,6 +23,7 @@ import io.recordrelay.cli.command.DiscoverCommand;
 import io.recordrelay.cli.command.EnvCommand;
 import io.recordrelay.cli.command.ExportContextCommand;
 import io.recordrelay.cli.command.ImportContextCommand;
+import io.recordrelay.cli.command.QueryCommand;
 import io.recordrelay.cli.command.ReplayCommand;
 import io.recordrelay.cli.command.StatusCommand;
 import io.recordrelay.cli.config.ConfigStore;
@@ -65,7 +66,8 @@ import picocli.CommandLine.Option;
       StatusCommand.class,
       // ── Discovery & analysis (secondary) ──
       DiscoverCommand.class,
-      AnalyzeCommand.class
+      AnalyzeCommand.class,
+      QueryCommand.class
     })
 public final class RecordRelayCli implements Callable<Integer> {
 

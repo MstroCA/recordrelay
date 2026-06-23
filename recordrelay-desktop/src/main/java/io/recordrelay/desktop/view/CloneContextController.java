@@ -316,11 +316,12 @@ public final class CloneContextController implements Refreshable {
       var btn = new Button(c.badgeLabel());
       btn.setTooltip(new javafx.scene.control.Tooltip(c.reason()));
       btn.getStyleClass().add("nav-btn");
-      btn.setOnAction(e -> {
-        cmbRootTable.setValue(c.tableName());
-        rootSuggestPanel.setVisible(false);
-        rootSuggestPanel.setManaged(false);
-      });
+      btn.setOnAction(
+          e -> {
+            cmbRootTable.setValue(c.tableName());
+            rootSuggestPanel.setVisible(false);
+            rootSuggestPanel.setManaged(false);
+          });
       rootSuggestFlow.getChildren().add(btn);
     }
 

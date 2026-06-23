@@ -85,8 +85,19 @@ public final class QueryCommand implements Callable<Integer> {
     }
   }
 
-  private void printTable(java.util.List<String> columns, java.util.List<java.util.List<String>> rows) {
+  private void printTable(
+      java.util.List<String> columns, java.util.List<java.util.List<String>> rows) {
     var printer = parent.printer();
+    int[] widths = computeWidths(columns, rows);
+    printer.printLine(buildRow(columns, widths, " | "));
+    printer.printLine(buildSeparator(widths));
+    for (var row : rows) {
+      printer.printLine(buildRow(row, widths, " | "));
+    }
+  }
+
+  private static int[] computeWidths(
+      java.util.List<String> columns, java.util.List<java.util.List<String>> rows) {
     int[] widths = new int[columns.size()];
     for (int i = 0; i < columns.size(); i++) {
       widths[i] = columns.get(i).length();
@@ -96,35 +107,29 @@ public final class QueryCommand implements Callable<Integer> {
         widths[i] = Math.max(widths[i], row.get(i).length());
       }
     }
+    return widths;
+  }
 
+  private static String buildRow(java.util.List<String> cells, int[] widths, String sep) {
     var sb = new StringBuilder();
-    for (int i = 0; i < columns.size(); i++) {
+    for (int i = 0; i < cells.size() && i < widths.length; i++) {
       if (i > 0) {
-        sb.append(" | ");
+        sb.append(sep);
       }
-      sb.append(pad(columns.get(i), widths[i]));
+      sb.append(pad(cells.get(i), widths[i]));
     }
-    printer.printLine(sb.toString());
+    return sb.toString();
+  }
 
-    sb.setLength(0);
-    for (int i = 0; i < columns.size(); i++) {
+  private static String buildSeparator(int[] widths) {
+    var sb = new StringBuilder();
+    for (int i = 0; i < widths.length; i++) {
       if (i > 0) {
         sb.append("-+-");
       }
       sb.append("-".repeat(widths[i]));
     }
-    printer.printLine(sb.toString());
-
-    for (var row : rows) {
-      sb.setLength(0);
-      for (int i = 0; i < row.size() && i < columns.size(); i++) {
-        if (i > 0) {
-          sb.append(" | ");
-        }
-        sb.append(pad(row.get(i), widths[i]));
-      }
-      printer.printLine(sb.toString());
-    }
+    return sb.toString();
   }
 
   private static String pad(String s, int width) {

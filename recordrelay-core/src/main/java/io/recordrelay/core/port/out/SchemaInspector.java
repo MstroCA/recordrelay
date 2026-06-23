@@ -56,12 +56,12 @@ public interface SchemaInspector {
   }
 
   /**
-   * Analyses the FK graph of the given database and returns the top root-table candidates ranked
-   * by score.
+   * Analyses the FK graph of the given database and returns the top root-table candidates ranked by
+   * score.
    *
    * <p>The default implementation returns an empty list (not supported). SQL connectors that extend
-   * {@code AbstractJdbcSchemaInspector} override this with a real {@link
-   * java.sql.DatabaseMetaData} implementation.
+   * {@code AbstractJdbcSchemaInspector} override this with a real {@link java.sql.DatabaseMetaData}
+   * implementation.
    *
    * @param profile connection parameters
    * @param database database to inspect

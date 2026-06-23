@@ -92,7 +92,9 @@ public final class RowCountDiffController implements Refreshable {
     vm.sourceDatabasesProperty().clear();
     cmbSrcDb.setValue(null);
     String conn = cmbSrcConn.getValue();
-    if (conn == null || conn.isBlank()) return;
+    if (conn == null || conn.isBlank()) {
+      return;
+    }
     lblStatus.setText("Veritabanları yükleniyor…");
     new Thread(() -> loadDatabases(conn, true), "rr-rcd-src-db").start();
   }
@@ -102,7 +104,9 @@ public final class RowCountDiffController implements Refreshable {
     vm.targetDatabasesProperty().clear();
     cmbTgtDb.setValue(null);
     String conn = cmbTgtConn.getValue();
-    if (conn == null || conn.isBlank()) return;
+    if (conn == null || conn.isBlank()) {
+      return;
+    }
     lblStatus.setText("Veritabanları yükleniyor…");
     new Thread(() -> loadDatabases(conn, false), "rr-rcd-tgt-db").start();
   }
@@ -113,7 +117,9 @@ public final class RowCountDiffController implements Refreshable {
     DatabaseRef srcDb = cmbSrcDb.getValue();
     String tgtConn = cmbTgtConn.getValue();
     DatabaseRef tgtDb = cmbTgtDb.getValue();
-    if (srcConn == null || srcDb == null || tgtConn == null || tgtDb == null) return;
+    if (srcConn == null || srcDb == null || tgtConn == null || tgtDb == null) {
+      return;
+    }
 
     btnCompare.setDisable(true);
     lblStatus.setText("Sayılıyor…");
@@ -233,7 +239,9 @@ public final class RowCountDiffController implements Refreshable {
                         .removeAll("drift-row-missing", "drift-row-extra", "drift-row-mismatch");
                     if (item != null) {
                       String style = rowStyle(item.status());
-                      if (!style.isEmpty()) row.getStyleClass().add(style);
+                      if (!style.isEmpty()) {
+                        row.getStyleClass().add(style);
+                      }
                     }
                   });
           return row;
@@ -241,8 +249,12 @@ public final class RowCountDiffController implements Refreshable {
   }
 
   private static String formatCount(long count) {
-    if (count == ABSENT) return "(yok)";
-    if (count < 0) return "—";
+    if (count == ABSENT) {
+      return "(yok)";
+    }
+    if (count < 0) {
+      return "—";
+    }
     return String.format("%,d", count);
   }
 

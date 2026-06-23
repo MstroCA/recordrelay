@@ -112,66 +112,97 @@ public abstract class AbstractJdbcSchemaInspector implements SchemaInspector {
     try (var ds = JdbcDataSourceFactory.create(profile, jdbcScheme());
         var conn = ds.getConnection()) {
       var meta = conn.getMetaData();
-
-      // Collect all user tables
-      var tables = new ArrayList<TableRef>();
-      try (var rs = meta.getTables(database.name(), null, "%", new String[] {"TABLE"})) {
-        while (rs.next()) {
-          String schema = rs.getString("TABLE_SCHEM");
-          String tbl = rs.getString("TABLE_NAME");
-          tables.add(new TableRef(database, schema != null ? schema : "", tbl));
-        }
-      }
+      var tables = collectTables(meta, database);
       if (tables.isEmpty()) {
         return List.of();
       }
-
-      // Build in/out degree maps from getImportedKeys (one call per table)
-      Map<String, Integer> inDegree = new HashMap<>();
-      Map<String, Integer> outDegree = new HashMap<>();
-      for (TableRef t : tables) {
-        inDegree.put(t.tableName().toLowerCase(), 0);
-        outDegree.put(t.tableName().toLowerCase(), 0);
-      }
-      for (TableRef t : tables) {
-        String schema = t.schemaName().isBlank() ? null : t.schemaName();
-        try (ResultSet fks = meta.getImportedKeys(database.name(), schema, t.tableName())) {
-          while (fks.next()) {
-            String pkTable = fks.getString("PKTABLE_NAME").toLowerCase();
-            outDegree.merge(t.tableName().toLowerCase(), 1, Integer::sum);
-            inDegree.merge(pkTable, 1, Integer::sum);
-          }
-        } catch (SQLException ignored) {
-          // table may be inaccessible — skip
-        }
-      }
-
-      // Score each table and build candidates
-      var candidates = new ArrayList<RootTableCandidate>(tables.size());
-      for (TableRef t : tables) {
-        String key = t.tableName().toLowerCase();
-        int in = inDegree.getOrDefault(key, 0);
-        int out = outDegree.getOrDefault(key, 0);
-        int bonus = nameBonus(t.tableName());
-        int score = in * 3 - out + bonus;
-        candidates.add(new RootTableCandidate(t.tableName(), score, in, out, buildReason(in, out)));
-      }
-
-      candidates.sort(Comparator.comparingInt(RootTableCandidate::score).reversed());
-      int limit = Math.min(5, candidates.size());
-      return List.copyOf(candidates.subList(0, limit));
+      var inDegree = new HashMap<String, Integer>();
+      var outDegree = new HashMap<String, Integer>();
+      buildDegreeMaps(meta, tables, database, inDegree, outDegree);
+      return rankCandidates(tables, inDegree, outDegree);
     } catch (SQLException e) {
       throw new ConnectorException("Root-table detection failed: " + e.getMessage(), e);
     }
   }
 
+  private static List<TableRef> collectTables(DatabaseMetaData meta, DatabaseRef database)
+      throws SQLException {
+    var tables = new ArrayList<TableRef>();
+    try (var rs = meta.getTables(database.name(), null, "%", new String[] {"TABLE"})) {
+      while (rs.next()) {
+        String schema = rs.getString("TABLE_SCHEM");
+        String tbl = rs.getString("TABLE_NAME");
+        tables.add(new TableRef(database, schema != null ? schema : "", tbl));
+      }
+    }
+    return tables;
+  }
+
+  private static void buildDegreeMaps(
+      DatabaseMetaData meta,
+      List<TableRef> tables,
+      DatabaseRef database,
+      Map<String, Integer> inDegree,
+      Map<String, Integer> outDegree)
+      throws SQLException {
+    for (TableRef t : tables) {
+      inDegree.put(t.tableName().toLowerCase(), 0);
+      outDegree.put(t.tableName().toLowerCase(), 0);
+    }
+    for (TableRef t : tables) {
+      String schema = t.schemaName().isBlank() ? null : t.schemaName();
+      try (ResultSet fks = meta.getImportedKeys(database.name(), schema, t.tableName())) {
+        while (fks.next()) {
+          String pkTable = fks.getString("PKTABLE_NAME").toLowerCase();
+          outDegree.merge(t.tableName().toLowerCase(), 1, Integer::sum);
+          inDegree.merge(pkTable, 1, Integer::sum);
+        }
+      } catch (SQLException ignored) {
+        // table may be inaccessible
+      }
+    }
+  }
+
+  private static List<RootTableCandidate> rankCandidates(
+      List<TableRef> tables, Map<String, Integer> inDegree, Map<String, Integer> outDegree) {
+    var candidates = new ArrayList<RootTableCandidate>(tables.size());
+    for (TableRef t : tables) {
+      String key = t.tableName().toLowerCase();
+      int in = inDegree.getOrDefault(key, 0);
+      int out = outDegree.getOrDefault(key, 0);
+      int bonus = nameBonus(t.tableName());
+      int score = in * 3 - out + bonus;
+      candidates.add(new RootTableCandidate(t.tableName(), score, in, out, buildReason(in, out)));
+    }
+    candidates.sort(Comparator.comparingInt(RootTableCandidate::score).reversed());
+    int limit = Math.min(5, candidates.size());
+    return List.copyOf(candidates.subList(0, limit));
+  }
+
   private static int nameBonus(String tableName) {
     String lower = tableName.toLowerCase();
-    for (String root : List.of(
-        "order", "customer", "account", "user", "patient", "employee",
-        "invoice", "contract", "project", "subscription", "transaction",
-        "ticket", "request", "case", "sale", "booking", "reservation")) {
-      if (lower.equals(root) || lower.startsWith(root + "_") || lower.endsWith("_" + root)
+    for (String root :
+        List.of(
+            "order",
+            "customer",
+            "account",
+            "user",
+            "patient",
+            "employee",
+            "invoice",
+            "contract",
+            "project",
+            "subscription",
+            "transaction",
+            "ticket",
+            "request",
+            "case",
+            "sale",
+            "booking",
+            "reservation")) {
+      if (lower.equals(root)
+          || lower.startsWith(root + "_")
+          || lower.endsWith("_" + root)
           || lower.equals(root + "s")) {
         return 2;
       }

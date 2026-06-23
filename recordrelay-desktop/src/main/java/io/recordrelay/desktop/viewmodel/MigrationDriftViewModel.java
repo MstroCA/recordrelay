@@ -35,6 +35,7 @@ public final class MigrationDriftViewModel extends BaseViewModel {
     this.store = store;
   }
 
+  /** Reloads the list of saved connection names from the config store. */
   public void loadConnections() {
     clearError();
     try {
@@ -44,18 +45,38 @@ public final class MigrationDriftViewModel extends BaseViewModel {
     }
   }
 
+  /**
+   * Returns the observable list of saved connection names.
+   *
+   * @return connection name list
+   */
   public ObservableList<String> connNamesProperty() {
     return connNames;
   }
 
+  /**
+   * Returns the observable list of source database references.
+   *
+   * @return source databases list
+   */
   public ObservableList<DatabaseRef> sourceDatabasesProperty() {
     return sourceDatabases;
   }
 
+  /**
+   * Returns the observable list of target database references.
+   *
+   * @return target databases list
+   */
   public ObservableList<DatabaseRef> targetDatabasesProperty() {
     return targetDatabases;
   }
 
+  /**
+   * Returns the observable list of drift items produced by the last analysis run.
+   *
+   * @return drift item list
+   */
   public ObservableList<MigrationDriftItem> driftItemsProperty() {
     return driftItems;
   }

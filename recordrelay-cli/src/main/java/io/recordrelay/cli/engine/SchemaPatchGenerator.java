@@ -30,6 +30,7 @@ import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.ContextProviderPort;
 import io.recordrelay.core.spi.ConnectorRegistry;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,43 +92,45 @@ public final class SchemaPatchGenerator {
     var statements = new ArrayList<SchemaPatchStatement>();
 
     // Order: CREATE TABLE → ADD COLUMN → MODIFY TYPE → DROP COLUMN → DROP TABLE
-    for (var item : report.items()) {
-      if (item.kind() == DriftKind.TABLE_MISSING) {
-        List<ColumnMeta> cols =
-            missingTableColumns.getOrDefault(item.tableName().toLowerCase(), List.of());
-        statements.add(buildCreateTable(item.tableName(), cols, targetDialect));
-      }
-    }
-    for (var item : report.items()) {
-      if (item.kind() == DriftKind.COLUMN_MISSING) {
-        statements.add(
-            buildAddColumn(
-                item.tableName(), item.columnName(), item.sourceDetail(), targetDialect));
-      }
-    }
-    for (var item : report.items()) {
-      if (item.kind() == DriftKind.TYPE_MISMATCH) {
-        statements.add(
-            buildModifyColumn(
-                item.tableName(),
-                item.columnName(),
-                item.sourceDetail(),
-                item.targetDetail(),
-                targetDialect));
-      }
-    }
-    for (var item : report.items()) {
-      if (item.kind() == DriftKind.COLUMN_EXTRA) {
-        statements.add(buildDropColumn(item.tableName(), item.columnName(), targetDialect));
-      }
-    }
-    for (var item : report.items()) {
-      if (item.kind() == DriftKind.TABLE_EXTRA) {
-        statements.add(buildDropTable(item.tableName(), targetDialect));
+    var ordered =
+        report.items().stream()
+            .sorted(Comparator.comparingInt(i -> kindOrder(i.kind())))
+            .collect(Collectors.toList());
+    for (var item : ordered) {
+      switch (item.kind()) {
+        case TABLE_MISSING -> {
+          var cols = missingTableColumns.getOrDefault(item.tableName().toLowerCase(), List.of());
+          statements.add(buildCreateTable(item.tableName(), cols, targetDialect));
+        }
+        case COLUMN_MISSING ->
+            statements.add(
+                buildAddColumn(
+                    item.tableName(), item.columnName(), item.sourceDetail(), targetDialect));
+        case TYPE_MISMATCH ->
+            statements.add(
+                buildModifyColumn(
+                    item.tableName(),
+                    item.columnName(),
+                    item.sourceDetail(),
+                    item.targetDetail(),
+                    targetDialect));
+        case COLUMN_EXTRA ->
+            statements.add(buildDropColumn(item.tableName(), item.columnName(), targetDialect));
+        case TABLE_EXTRA -> statements.add(buildDropTable(item.tableName(), targetDialect));
       }
     }
 
     return new SchemaPatchScript(statements, targetDialect);
+  }
+
+  private static int kindOrder(DriftKind kind) {
+    return switch (kind) {
+      case TABLE_MISSING -> 0;
+      case COLUMN_MISSING -> 1;
+      case TYPE_MISMATCH -> 2;
+      case COLUMN_EXTRA -> 3;
+      case TABLE_EXTRA -> 4;
+    };
   }
 
   // ── Statement builders ────────────────────────────────────────────────────
@@ -142,10 +145,18 @@ public final class SchemaPatchGenerator {
       for (int i = 0; i < cols.size(); i++) {
         var col = cols.get(i);
         sb.append("\n    ").append(quote(col.name(), dialect)).append(" ").append(col.nativeType());
-        if (col.primaryKey()) sb.append(" PRIMARY KEY");
-        if (!col.nullable() && !col.primaryKey()) sb.append(" NOT NULL");
-        if (col.defaultValue() != null) sb.append(" DEFAULT ").append(col.defaultValue());
-        if (i < cols.size() - 1) sb.append(",");
+        if (col.primaryKey()) {
+          sb.append(" PRIMARY KEY");
+        }
+        if (!col.nullable() && !col.primaryKey()) {
+          sb.append(" NOT NULL");
+        }
+        if (col.defaultValue() != null) {
+          sb.append(" DEFAULT ").append(col.defaultValue());
+        }
+        if (i < cols.size() - 1) {
+          sb.append(",");
+        }
       }
       sb.append("\n");
     }
@@ -254,7 +265,9 @@ public final class SchemaPatchGenerator {
             .map(MigrationDriftItem::tableName)
             .collect(Collectors.toList());
 
-    if (missingTables.isEmpty()) return Map.of();
+    if (missingTables.isEmpty()) {
+      return Map.of();
+    }
 
     try {
       var inspector = connectorLookup.apply(sourceProfile).schemaInspector();

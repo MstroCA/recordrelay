@@ -451,7 +451,9 @@ public final class CloneContextController implements Refreshable {
   }
 
   private void bindDryRunTable() {
-    if (colDryTable == null) return;
+    if (colDryTable == null) {
+      return;
+    }
     colDryTable.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().tableName()));
     colDryRows.setCellValueFactory(
         cd -> new SimpleStringProperty(String.valueOf(cd.getValue().rowCount())));

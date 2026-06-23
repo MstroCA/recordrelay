@@ -27,57 +27,31 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Heuristic {@link RelationshipResolverPort} that infers FK relationships from column naming
- * conventions (priority 3 — lowest confidence).
+ * Schema-driven heuristic {@link RelationshipResolverPort} for databases not supported by {@link
+ * JdbcRelationshipResolver} (e.g. SQLite, Oracle).
  *
- * <p>When a live connection is available the resolver:
+ * <p>When a live connection is available:
  *
  * <ol>
- *   <li>Loads the actual columns of the root table via {@code DatabaseMetaData.getColumns}.
+ *   <li>Loads actual columns of the root table via {@code DatabaseMetaData.getColumns}.
  *   <li>Loads all user table names via {@code DatabaseMetaData.getTables}.
- *   <li>Adds outgoing edges only for {@code *_id} columns that exist in the root table AND whose
- *       inferred target table actually exists in the database.
- *   <li>Adds incoming edges by scanning for tables that have a {@code {rootTable}_id} column —
- *       these are child tables that hold a FK back to the root.
+ *   <li>Adds outgoing edges for {@code *_id} columns whose inferred target table exists.
+ *   <li>Discovers incoming child tables via {@code getColumns(null,null,null,rootTable+"_id")}.
  * </ol>
  *
- * <p>Falls back to emitting all high-confidence patterns without verification when the database
- * cannot be reached or the type is not supported.
+ * <p>All discovery is purely schema-driven — no hardcoded column name patterns. Returns a root-only
+ * graph (no edges) with a warning when the database cannot be reached.
  */
 public final class HeuristicRelationshipResolver implements RelationshipResolverPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(HeuristicRelationshipResolver.class);
-
-  private static final double HIGH_CONFIDENCE = 0.85;
-  private static final double LOW_CONFIDENCE = 0.60;
-
-  private static final List<String> HIGH_CONFIDENCE_PATTERNS =
-      List.of(
-          "customer_id",
-          "order_id",
-          "account_id",
-          "user_id",
-          "product_id",
-          "invoice_id",
-          "payment_id",
-          "address_id",
-          "category_id",
-          "vendor_id",
-          "employee_id",
-          "department_id",
-          "project_id",
-          "ticket_id",
-          "session_id",
-          "tenant_id",
-          "organisation_id",
-          "organization_id");
+  private static final double HEURISTIC_CONFIDENCE = 0.80;
 
   @Override
   public RelationshipGraph resolve(ConnectionProfile profile, String rootTable)
@@ -88,8 +62,10 @@ public final class HeuristicRelationshipResolver implements RelationshipResolver
     try {
       jdbcUrl = buildJdbcUrl(profile);
     } catch (IllegalArgumentException e) {
-      LOG.debug("Unsupported DB type ({}); using all high-confidence patterns", profile.type());
-      addAllHighConfidencePatterns(rootTable, builder);
+      LOG.warn(
+          "Cannot discover relationships without a database connection for table '{}' ({})",
+          rootTable,
+          profile.type());
       return builder.build();
     }
 
@@ -105,14 +81,14 @@ public final class HeuristicRelationshipResolver implements RelationshipResolver
         var conn = ds.getConnection()) {
       var rootColumns = loadColumns(conn, rootTable);
       var existingTables = loadTables(conn);
-      addOutgoingEdges(rootTable, rootColumns, existingTables, builder);
-      addIncomingEdges(conn, rootTable, builder);
+      addOutgoingLogicalFks(rootTable, rootColumns, existingTables, builder);
+      addIncomingLogicalFks(conn, rootTable, builder);
     } catch (Exception e) {
-      LOG.debug(
-          "Heuristic resolution failed for '{}': {}; using all high-confidence patterns",
+      LOG.warn(
+          "Cannot discover relationships without a database connection for table '{}': {}",
           rootTable,
           e.getMessage());
-      addAllHighConfidencePatterns(rootTable, builder);
+      return builder.build();
     }
 
     var graph = builder.build();
@@ -121,81 +97,30 @@ public final class HeuristicRelationshipResolver implements RelationshipResolver
   }
 
   /**
-   * Infers the referenced table name from an {@code _id} suffix column.
-   *
-   * <p>For example: {@code customer_id} → {@code customers}.
-   */
-  static String inferTableName(String columnName) {
-    var lower = columnName.toLowerCase(Locale.ROOT);
-    if (!lower.endsWith("_id")) {
-      return lower;
-    }
-    var base = lower.substring(0, lower.length() - 3);
-    return base.endsWith("s") ? base : base + "s";
-  }
-
-  /**
-   * Returns the inferred confidence for a column name.
-   *
-   * @param columnName the column name to evaluate
-   * @return confidence score in [0.0, 1.0]
+   * Returns the heuristic confidence for a column name ({@code 0.80} for {@code *_id} columns,
+   * {@code 0.0} otherwise).
    */
   public double confidenceFor(String columnName) {
-    var lower = columnName.toLowerCase(Locale.ROOT);
-    if (HIGH_CONFIDENCE_PATTERNS.contains(lower)) {
-      return HIGH_CONFIDENCE;
-    }
-    return lower.endsWith("_id") ? LOW_CONFIDENCE : 0.0;
+    return columnName.toLowerCase(Locale.ROOT).endsWith("_id") ? HEURISTIC_CONFIDENCE : 0.0;
   }
 
-  // ── Outgoing edges (columns in rootTable that look like FKs) ────────────────
+  // ── Outgoing edges ────────────────────────────────────────────────────────
 
-  private void addOutgoingEdges(
-      String rootTable,
-      Set<String> rootColumns,
-      Set<String> existingTables,
-      RelationshipGraph.Builder builder) {
-    addHighConfidenceOutgoing(rootTable, rootColumns, existingTables, builder);
-    addLowConfidenceOutgoing(rootTable, rootColumns, existingTables, builder);
-  }
-
-  private void addHighConfidenceOutgoing(
-      String rootTable,
-      Set<String> rootColumns,
-      Set<String> existingTables,
-      RelationshipGraph.Builder builder) {
-    for (String pattern : HIGH_CONFIDENCE_PATTERNS) {
-      if (!rootColumns.isEmpty() && !rootColumns.contains(pattern)) {
-        continue;
-      }
-      var refTable = inferTableName(pattern);
-      if (!targetTableValid(refTable, rootTable, existingTables)) {
-        continue;
-      }
-      var edge =
-          new RelationshipEdge(
-              new RelationshipNode(rootTable),
-              pattern,
-              new RelationshipNode(refTable),
-              "id",
-              RelationshipSource.HEURISTIC,
-              HIGH_CONFIDENCE);
-      builder.addEdge(edge);
-      LOG.debug("Heuristic outgoing (high): {}", edge.describe());
-    }
-  }
-
-  private void addLowConfidenceOutgoing(
+  private void addOutgoingLogicalFks(
       String rootTable,
       Set<String> rootColumns,
       Set<String> existingTables,
       RelationshipGraph.Builder builder) {
     for (String col : rootColumns) {
-      if (!col.endsWith("_id") || HIGH_CONFIDENCE_PATTERNS.contains(col)) {
+      if (!col.endsWith("_id")) {
         continue;
       }
-      var refTable = inferTableName(col);
-      if (!targetTableValid(refTable, rootTable, existingTables)) {
+      var refTable = JdbcRelationshipResolver.deriveTableName(col);
+      if (refTable.equalsIgnoreCase(rootTable)) {
+        continue;
+      }
+      if (!existingTables.isEmpty()
+          && !existingTables.contains(refTable.toLowerCase(Locale.ROOT))) {
         continue;
       }
       var edge =
@@ -205,23 +130,15 @@ public final class HeuristicRelationshipResolver implements RelationshipResolver
               new RelationshipNode(refTable),
               "id",
               RelationshipSource.HEURISTIC,
-              LOW_CONFIDENCE);
+              HEURISTIC_CONFIDENCE);
       builder.addEdge(edge);
-      LOG.debug("Heuristic outgoing (low): {}", edge.describe());
+      LOG.debug("Heuristic outgoing: {}", edge.describe());
     }
   }
 
-  private static boolean targetTableValid(
-      String refTable, String rootTable, Set<String> existingTables) {
-    if (refTable.equalsIgnoreCase(rootTable)) {
-      return false;
-    }
-    return existingTables.isEmpty() || existingTables.contains(refTable.toLowerCase(Locale.ROOT));
-  }
+  // ── Incoming edges ────────────────────────────────────────────────────────
 
-  // ── Incoming edges (other tables with {rootTable}_id column) ────────────────
-
-  private void addIncomingEdges(
+  private void addIncomingLogicalFks(
       Connection conn, String rootTable, RelationshipGraph.Builder builder) throws SQLException {
     var fkColName = rootTable.toLowerCase(Locale.ROOT) + "_id";
     try (var rs = conn.getMetaData().getColumns(null, null, null, fkColName)) {
@@ -232,7 +149,6 @@ public final class HeuristicRelationshipResolver implements RelationshipResolver
         }
         var childTable = rs.getString("TABLE_NAME").toLowerCase(Locale.ROOT);
         var colName = rs.getString("COLUMN_NAME").toLowerCase(Locale.ROOT);
-        // getColumns uses LIKE matching; verify exact column name to avoid false positives
         if (!colName.equals(fkColName) || childTable.equalsIgnoreCase(rootTable)) {
           continue;
         }
@@ -243,34 +159,14 @@ public final class HeuristicRelationshipResolver implements RelationshipResolver
                 new RelationshipNode(rootTable),
                 "id",
                 RelationshipSource.HEURISTIC,
-                HIGH_CONFIDENCE);
+                HEURISTIC_CONFIDENCE);
         builder.addEdge(edge);
-        LOG.debug("Heuristic incoming (high): {}", edge.describe());
+        LOG.debug("Heuristic incoming: {}", edge.describe());
       }
     }
   }
 
-  // ── Fallback (no live DB) ────────────────────────────────────────────────────
-
-  private static void addAllHighConfidencePatterns(
-      String rootTable, RelationshipGraph.Builder builder) {
-    for (String pattern : HIGH_CONFIDENCE_PATTERNS) {
-      var refTable = inferTableName(pattern);
-      if (refTable.equalsIgnoreCase(rootTable)) {
-        continue;
-      }
-      builder.addEdge(
-          new RelationshipEdge(
-              new RelationshipNode(rootTable),
-              pattern,
-              new RelationshipNode(refTable),
-              "id",
-              RelationshipSource.HEURISTIC,
-              HIGH_CONFIDENCE));
-    }
-  }
-
-  // ── JDBC metadata helpers ────────────────────────────────────────────────────
+  // ── JDBC metadata helpers ─────────────────────────────────────────────────
 
   private static Set<String> loadColumns(Connection conn, String tableName) throws SQLException {
     var cols = new HashSet<String>();
@@ -279,7 +175,6 @@ public final class HeuristicRelationshipResolver implements RelationshipResolver
         cols.add(rs.getString("COLUMN_NAME").toLowerCase(Locale.ROOT));
       }
     }
-    LOG.debug("Loaded {} column(s) for table '{}'", cols.size(), tableName);
     return cols.isEmpty() ? Set.of() : Set.copyOf(cols);
   }
 
@@ -288,13 +183,11 @@ public final class HeuristicRelationshipResolver implements RelationshipResolver
     try (var rs = conn.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
       while (rs.next()) {
         var schema = rs.getString("TABLE_SCHEM");
-        if (isSystemSchema(schema)) {
-          continue;
+        if (!isSystemSchema(schema)) {
+          tables.add(rs.getString("TABLE_NAME").toLowerCase(Locale.ROOT));
         }
-        tables.add(rs.getString("TABLE_NAME").toLowerCase(Locale.ROOT));
       }
     }
-    LOG.debug("Loaded {} table(s) from database", tables.size());
     return Set.copyOf(tables);
   }
 

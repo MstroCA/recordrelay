@@ -17,7 +17,6 @@ package io.recordrelay.engine.clone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.recordrelay.core.clone.domain.RelationshipSource;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.Credentials;
 import io.recordrelay.core.domain.DatabaseType;
@@ -50,13 +49,11 @@ class HeuristicRelationshipResolverTest {
   }
 
   @Test
-  void resolveAddsHeuristicEdgesForKnownPatterns() throws Exception {
+  void resolveReturnsRootOnlyGraphWhenDatabaseUnreachable() throws Exception {
+    // No real database is available in unit test — resolver should degrade gracefully
     var graph = resolver.resolve(profile(), "orders");
-    var customerEdge =
-        graph.edges().stream().filter(e -> e.fromColumn().equals("customer_id")).findFirst();
-    assertThat(customerEdge).isPresent();
-    assertThat(customerEdge.get().source()).isEqualTo(RelationshipSource.HEURISTIC);
-    assertThat(customerEdge.get().confidence()).isGreaterThan(0.5);
+    assertThat(graph.getNode("orders")).isPresent();
+    assertThat(graph.edgeCount()).isZero();
   }
 
   @Test
@@ -81,18 +78,19 @@ class HeuristicRelationshipResolverTest {
     "product_id, products",
     "invoice_id, invoices"
   })
-  void inferTableNamePluralisesCorrectly(String column, String expectedTable) {
-    assertThat(HeuristicRelationshipResolver.inferTableName(column)).isEqualTo(expectedTable);
+  void deriveTableNamePluralisesCorrectly(String column, String expectedTable) {
+    assertThat(JdbcRelationshipResolver.deriveTableName(column)).isEqualTo(expectedTable);
   }
 
   @Test
-  void confidenceForKnownPatternReturnsHighConfidence() {
+  void confidenceForIdColumnReturnsHighConfidence() {
     assertThat(resolver.confidenceFor("customer_id")).isGreaterThanOrEqualTo(0.8);
   }
 
   @Test
-  void confidenceForUnknownIdSuffixReturnsLowConfidence() {
-    assertThat(resolver.confidenceFor("widget_id")).isLessThan(0.8).isGreaterThan(0.0);
+  void confidenceForAnyIdSuffixReturnsHighConfidence() {
+    // All *_id columns get the same schema-driven confidence — no hardcoded patterns
+    assertThat(resolver.confidenceFor("widget_id")).isGreaterThanOrEqualTo(0.8);
   }
 
   @Test

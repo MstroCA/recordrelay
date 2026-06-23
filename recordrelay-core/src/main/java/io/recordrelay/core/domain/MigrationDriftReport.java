@@ -31,10 +31,21 @@ public record MigrationDriftReport(List<MigrationDriftItem> items) {
     items = items == null ? List.of() : List.copyOf(items);
   }
 
+  /**
+   * Returns the number of drift items with the given {@link DriftKind}.
+   *
+   * @param kind the drift category to count
+   * @return count of matching items
+   */
   public long countByKind(DriftKind kind) {
     return items.stream().filter(i -> i.kind() == kind).count();
   }
 
+  /**
+   * Returns {@code true} when no drift items were found.
+   *
+   * @return {@code true} if source and target are in sync
+   */
   public boolean isClean() {
     return items.isEmpty();
   }

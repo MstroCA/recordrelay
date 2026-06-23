@@ -15,6 +15,7 @@
  */
 package io.recordrelay.cli.engine;
 
+import io.recordrelay.core.domain.ColumnMeta;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.MigrationDriftItem;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
  * Compares every table and column in two databases and returns a flat list of discrepancies.
  *
  * <p>Algorithm:
+ *
  * <ol>
  *   <li>List all tables in source and target.
  *   <li>Emit {@link DriftKind#TABLE_MISSING} for tables only in source.
@@ -61,7 +63,6 @@ public final class MigrationDriftEngine implements MigrationDriftUseCase {
       DatabaseRef sourceDatabase,
       ConnectionProfile targetProfile,
       DatabaseRef targetDatabase) {
-
     try {
       SchemaInspector srcInspector = connectorLookup.apply(sourceProfile).schemaInspector();
       SchemaInspector tgtInspector = connectorLookup.apply(targetProfile).schemaInspector();
@@ -69,65 +70,109 @@ public final class MigrationDriftEngine implements MigrationDriftUseCase {
       List<TableRef> srcTables = srcInspector.listTables(sourceProfile, sourceDatabase);
       List<TableRef> tgtTables = tgtInspector.listTables(targetProfile, targetDatabase);
 
-      Map<String, TableRef> srcByName =
-          srcTables.stream()
-              .collect(Collectors.toMap(t -> t.tableName().toLowerCase(), Function.identity(), (a, b) -> a));
-      Map<String, TableRef> tgtByName =
-          tgtTables.stream()
-              .collect(Collectors.toMap(t -> t.tableName().toLowerCase(), Function.identity(), (a, b) -> a));
+      Map<String, TableRef> srcByName = indexByName(srcTables);
+      Map<String, TableRef> tgtByName = indexByName(tgtTables);
 
       var items = new ArrayList<MigrationDriftItem>();
-
-      // Tables only in source
-      for (TableRef src : srcTables) {
-        if (!tgtByName.containsKey(src.tableName().toLowerCase())) {
-          items.add(new MigrationDriftItem(DriftKind.TABLE_MISSING, src.tableName(), null, src.tableName(), null));
-        }
-      }
-
-      // Tables only in target
-      for (TableRef tgt : tgtTables) {
-        if (!srcByName.containsKey(tgt.tableName().toLowerCase())) {
-          items.add(new MigrationDriftItem(DriftKind.TABLE_EXTRA, tgt.tableName(), null, null, tgt.tableName()));
-        }
-      }
-
-      // Tables in both — compare columns
-      for (TableRef src : srcTables) {
-        TableRef tgt = tgtByName.get(src.tableName().toLowerCase());
-        if (tgt == null) continue;
-
-        var srcCols = srcInspector.inspectColumns(sourceProfile, src);
-        var tgtCols = tgtInspector.inspectColumns(targetProfile, tgt);
-
-        Map<String, String> srcColTypes =
-            srcCols.stream()
-                .collect(Collectors.toMap(c -> c.name().toLowerCase(), c -> c.nativeType(), (a, b) -> a));
-        Map<String, String> tgtColTypes =
-            tgtCols.stream()
-                .collect(Collectors.toMap(c -> c.name().toLowerCase(), c -> c.nativeType(), (a, b) -> a));
-
-        // Columns in source but not target
-        for (var col : srcCols) {
-          String key = col.name().toLowerCase();
-          if (!tgtColTypes.containsKey(key)) {
-            items.add(new MigrationDriftItem(DriftKind.COLUMN_MISSING, src.tableName(), col.name(), col.nativeType(), null));
-          } else if (!col.nativeType().equalsIgnoreCase(tgtColTypes.get(key))) {
-            items.add(new MigrationDriftItem(DriftKind.TYPE_MISMATCH, src.tableName(), col.name(), col.nativeType(), tgtColTypes.get(key)));
-          }
-        }
-
-        // Columns in target but not source
-        for (var col : tgtCols) {
-          if (!srcColTypes.containsKey(col.name().toLowerCase())) {
-            items.add(new MigrationDriftItem(DriftKind.COLUMN_EXTRA, tgt.tableName(), col.name(), null, col.nativeType()));
-          }
-        }
-      }
-
+      collectTableDifferences(srcTables, tgtByName, tgtTables, srcByName, items);
+      collectColumnDifferences(
+          srcInspector, tgtInspector, sourceProfile, targetProfile, srcTables, tgtByName, items);
       return new MigrationDriftReport(items);
     } catch (ConnectorException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  private static Map<String, TableRef> indexByName(List<TableRef> tables) {
+    return tables.stream()
+        .collect(
+            Collectors.toMap(t -> t.tableName().toLowerCase(), Function.identity(), (a, b) -> a));
+  }
+
+  private static void collectTableDifferences(
+      List<TableRef> srcTables,
+      Map<String, TableRef> tgtByName,
+      List<TableRef> tgtTables,
+      Map<String, TableRef> srcByName,
+      List<MigrationDriftItem> items) {
+    for (TableRef src : srcTables) {
+      if (!tgtByName.containsKey(src.tableName().toLowerCase())) {
+        items.add(
+            new MigrationDriftItem(
+                DriftKind.TABLE_MISSING, src.tableName(), null, src.tableName(), null));
+      }
+    }
+    for (TableRef tgt : tgtTables) {
+      if (!srcByName.containsKey(tgt.tableName().toLowerCase())) {
+        items.add(
+            new MigrationDriftItem(
+                DriftKind.TABLE_EXTRA, tgt.tableName(), null, null, tgt.tableName()));
+      }
+    }
+  }
+
+  private void collectColumnDifferences(
+      SchemaInspector srcInspector,
+      SchemaInspector tgtInspector,
+      ConnectionProfile sourceProfile,
+      ConnectionProfile targetProfile,
+      List<TableRef> srcTables,
+      Map<String, TableRef> tgtByName,
+      List<MigrationDriftItem> items)
+      throws ConnectorException {
+    for (TableRef src : srcTables) {
+      TableRef tgt = tgtByName.get(src.tableName().toLowerCase());
+      if (tgt == null) {
+        continue;
+      }
+      var srcCols = srcInspector.inspectColumns(sourceProfile, src);
+      var tgtCols = tgtInspector.inspectColumns(targetProfile, tgt);
+      Map<String, String> srcColTypes = indexTypes(srcCols);
+      Map<String, String> tgtColTypes = indexTypes(tgtCols);
+      addMissingAndMismatch(src, srcCols, tgtColTypes, items);
+      addExtraColumns(tgt, tgtCols, srcColTypes, items);
+    }
+  }
+
+  private static Map<String, String> indexTypes(List<ColumnMeta> cols) {
+    return cols.stream()
+        .collect(Collectors.toMap(c -> c.name().toLowerCase(), c -> c.nativeType(), (a, b) -> a));
+  }
+
+  private static void addMissingAndMismatch(
+      TableRef src,
+      List<ColumnMeta> srcCols,
+      Map<String, String> tgtColTypes,
+      List<MigrationDriftItem> items) {
+    for (var col : srcCols) {
+      String key = col.name().toLowerCase();
+      if (!tgtColTypes.containsKey(key)) {
+        items.add(
+            new MigrationDriftItem(
+                DriftKind.COLUMN_MISSING, src.tableName(), col.name(), col.nativeType(), null));
+      } else if (!col.nativeType().equalsIgnoreCase(tgtColTypes.get(key))) {
+        items.add(
+            new MigrationDriftItem(
+                DriftKind.TYPE_MISMATCH,
+                src.tableName(),
+                col.name(),
+                col.nativeType(),
+                tgtColTypes.get(key)));
+      }
+    }
+  }
+
+  private static void addExtraColumns(
+      TableRef tgt,
+      List<ColumnMeta> tgtCols,
+      Map<String, String> srcColTypes,
+      List<MigrationDriftItem> items) {
+    for (var col : tgtCols) {
+      if (!srcColTypes.containsKey(col.name().toLowerCase())) {
+        items.add(
+            new MigrationDriftItem(
+                DriftKind.COLUMN_EXTRA, tgt.tableName(), col.name(), null, col.nativeType()));
+      }
     }
   }
 }

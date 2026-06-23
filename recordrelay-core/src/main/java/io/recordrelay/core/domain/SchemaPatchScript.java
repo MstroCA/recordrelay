@@ -55,10 +55,20 @@ public record SchemaPatchScript(List<SchemaPatchStatement> statements, DatabaseT
     return statements.isEmpty();
   }
 
+  /**
+   * Returns the number of non-destructive statements in this script.
+   *
+   * @return count of safe statements
+   */
   public long safeCount() {
     return statements.stream().filter(s -> !s.destructive()).count();
   }
 
+  /**
+   * Returns the number of destructive (commented-out) statements in this script.
+   *
+   * @return count of destructive statements
+   */
   public long destructiveCount() {
     return statements.stream().filter(SchemaPatchStatement::destructive).count();
   }

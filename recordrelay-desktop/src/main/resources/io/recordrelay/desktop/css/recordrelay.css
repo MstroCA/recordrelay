@@ -258,3 +258,23 @@
 .drift-chip-colmiss  { -fx-background-color: derive(-color-danger-subtle, 20%);  -fx-text-fill: -color-danger-fg; }
 .drift-chip-colextra { -fx-background-color: derive(-color-warning-subtle, 20%); -fx-text-fill: -color-warning-fg; }
 .drift-chip-mismatch { -fx-background-color: -color-accent-subtle;  -fx-text-fill: -color-accent-fg; }
+
+/* ── Connection Health — row colours ────────────────────────────────── */
+.health-row-ok {
+    -fx-background-color: derive(-color-success-subtle, 10%);
+}
+.health-row-ok:selected {
+    -fx-background-color: derive(-color-success-subtle, -15%);
+}
+.health-row-degraded {
+    -fx-background-color: derive(-color-warning-subtle, 10%);
+}
+.health-row-degraded:selected {
+    -fx-background-color: derive(-color-warning-subtle, -15%);
+}
+.health-row-down {
+    -fx-background-color: derive(-color-danger-subtle, 10%);
+}
+.health-row-down:selected {
+    -fx-background-color: derive(-color-danger-subtle, -15%);
+}

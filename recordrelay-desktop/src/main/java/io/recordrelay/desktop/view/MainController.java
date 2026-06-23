@@ -15,6 +15,7 @@
  */
 package io.recordrelay.desktop.view;
 
+import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.desktop.theme.ThemeManager;
 import java.io.IOException;
 import java.net.URL;
@@ -84,10 +85,20 @@ public final class MainController {
   }
 
   @FXML
+  void showQuery() {
+    navigate("query");
+  }
+
+  @FXML
+  void showConnectionHealth() {
+    navigate("connection-health");
+  }
+
+  @FXML
   void toggleTheme() {
     darkMode = !darkMode;
     ThemeManager.apply(darkMode);
-    btnTheme.setText(darkMode ? "☀ Light" : "🌙 Dark");
+    btnTheme.setText(darkMode ? Messages.get("theme.light") : Messages.get("theme.dark"));
   }
 
   /** Updates the status bar label. */
@@ -113,7 +124,7 @@ public final class MainController {
       return;
     }
     try {
-      var loader = new FXMLLoader(url);
+      var loader = new FXMLLoader(url, Messages.getBundle());
       Parent root = loader.load();
       screenCache.put(name, root);
       controllerCache.put(name, loader.getController());

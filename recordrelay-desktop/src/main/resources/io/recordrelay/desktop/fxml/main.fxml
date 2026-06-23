@@ -14,33 +14,37 @@
         <VBox styleClass="sidebar" prefWidth="190" spacing="2">
             <padding><Insets top="16" right="8" bottom="8" left="8"/></padding>
 
-            <Label text="RecordRelay" styleClass="sidebar-title"/>
+            <Label text="%app.title" styleClass="sidebar-title"/>
             <Separator/>
 
-            <Button text="⚡  Clone Context" maxWidth="Infinity"
+            <Button text="%nav.clone.context" maxWidth="Infinity"
                     styleClass="nav-btn-accent" onAction="#showCloneContext"/>
             <Separator/>
-            <Button text="🌐  Environments" maxWidth="Infinity"
+            <Button text="%nav.environments" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showEnvironments"/>
-            <Button text="🔌  Connections"  maxWidth="Infinity"
+            <Button text="%nav.connections" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showConnections"/>
-            <Button text="🔍  Discovery"    maxWidth="Infinity"
+            <Button text="%nav.discovery" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showDiscovery"/>
-            <Button text="📊  Monitor"      maxWidth="Infinity"
+            <Button text="%nav.monitor" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showMonitor"/>
-            <Button text="🕸  Graph View"   maxWidth="Infinity"
+            <Button text="%nav.graph.view" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showGraphView"/>
-            <Button text="⚠  Migration Drift" maxWidth="Infinity"
+            <Button text="%nav.migration.drift" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showMigrationDrift"/>
-            <Button text="🔢  Row Count Diff" maxWidth="Infinity"
+            <Button text="%nav.row.count.diff" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showRowCountDiff"/>
+            <Button text="%nav.query" maxWidth="Infinity"
+                    styleClass="nav-btn" onAction="#showQuery"/>
+            <Button text="%nav.connection.health" maxWidth="Infinity"
+                    styleClass="nav-btn" onAction="#showConnectionHealth"/>
 
             <Region VBox.vgrow="ALWAYS"/>
             <Separator/>
 
-            <Button fx:id="btnTheme" text="🌙 Dark" maxWidth="Infinity"
+            <Button fx:id="btnTheme" text="%theme.dark" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#toggleTheme"/>
-            <Label fx:id="lblStatus" text="● Ready" styleClass="status-label"/>
+            <Label fx:id="lblStatus" text="%status.ready" styleClass="status-label"/>
         </VBox>
     </left>
 

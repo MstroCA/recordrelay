@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.recordrelay.desktop.view.HealthCheckController">
+
+    <top>
+        <VBox spacing="4">
+            <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
+            <Label text="Connection Health" styleClass="screen-title"/>
+            <Label text="Kayıtlı tüm bağlantıları test et — gecikme, erişilebilirlik ve detay bilgisi."
+                   styleClass="screen-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="edge-to-edge">
+        <VBox spacing="12">
+            <padding><Insets top="4" right="28" bottom="16" left="28"/></padding>
+
+            <!-- ── Action bar ─────────────────────────────────────────────────── -->
+            <HBox spacing="12" alignment="CENTER_LEFT" styleClass="card">
+                <Button fx:id="btnCheck" text="▶  Tümünü Test Et"
+                        onAction="#onCheckAll" styleClass="accent-btn"/>
+                <ProgressIndicator fx:id="progressIndicator" prefWidth="22" prefHeight="22"
+                                   visible="false" managed="false"/>
+                <Label fx:id="lblStatus" text="● Hazır" styleClass="status-label"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="lblSummary" styleClass="hint-label"/>
+            </HBox>
+
+            <!-- ── Results table ─────────────────────────────────────────────── -->
+            <TableView fx:id="tblHealth" prefHeight="440" minHeight="200">
+                <columns>
+                    <TableColumn fx:id="colStatus"  text="Durum"      prefWidth="90"  minWidth="70"/>
+                    <TableColumn fx:id="colName"    text="Bağlantı"   prefWidth="180" minWidth="120"/>
+                    <TableColumn fx:id="colType"    text="Tip"        prefWidth="110" minWidth="80"/>
+                    <TableColumn fx:id="colHost"    text="Host"       prefWidth="200" minWidth="120"/>
+                    <TableColumn fx:id="colLatency" text="Gecikme"    prefWidth="100" minWidth="70"/>
+                    <TableColumn fx:id="colDetail"  text="Detay"      prefWidth="280" minWidth="150"/>
+                </columns>
+                <placeholder>
+                    <Label text="'Tümünü Test Et' butonuna basarak bağlantıları kontrol edin."
+                           styleClass="placeholder-hint"/>
+                </placeholder>
+            </TableView>
+
+        </VBox>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

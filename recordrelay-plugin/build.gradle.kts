@@ -21,7 +21,7 @@ intellijPlatform {
     pluginConfiguration {
         id = "io.recordrelay.plugin"
         name = "RecordRelay"
-        version = "0.1.0-SNAPSHOT"
+        version = project.version.toString()
         description =
             "Universal Data Reproduction & Debug Platform — reproduce production context locally from IntelliJ IDEA."
         ideaVersion {

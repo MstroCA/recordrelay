@@ -79,6 +79,11 @@ public final class MainController {
   }
 
   @FXML
+  void showRowCountDiff() {
+    navigate("row-count-diff");
+  }
+
+  @FXML
   void toggleTheme() {
     darkMode = !darkMode;
     ThemeManager.apply(darkMode);

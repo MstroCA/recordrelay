@@ -40,6 +40,21 @@ public interface SchemaInspector {
       throws ConnectorException;
 
   /**
+   * Returns the total row count for the given table.
+   *
+   * <p>The default implementation returns {@code -1}, signalling "not supported". Connectors backed
+   * by SQL engines should override this with a {@code SELECT COUNT(*)} query.
+   *
+   * @param profile connection parameters
+   * @param table the table to count
+   * @return number of rows, or {@code -1} when the connector does not support counting
+   * @throws ConnectorException if the query fails
+   */
+  default long countRows(ConnectionProfile profile, TableRef table) throws ConnectorException {
+    return -1L;
+  }
+
+  /**
    * Compares source and target column lists and returns a compatibility report.
    *
    * <p>Default implementation: a target column is compatible when a source column with the same

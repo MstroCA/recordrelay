@@ -103,7 +103,9 @@ public final class MigrationDriftController implements Refreshable {
 
   @Override
   public void refresh() {
-    if (vm != null) vm.loadConnections();
+    if (vm != null) {
+      vm.loadConnections();
+    }
   }
 
   @FXML
@@ -111,7 +113,9 @@ public final class MigrationDriftController implements Refreshable {
     vm.sourceDatabasesProperty().clear();
     cmbSrcDb.setValue(null);
     String conn = cmbSrcConn.getValue();
-    if (conn == null || conn.isBlank()) return;
+    if (conn == null || conn.isBlank()) {
+      return;
+    }
     lblStatus.setText("Veritabanları yükleniyor…");
     new Thread(() -> loadDatabases(conn, true), "rr-drift-src-db").start();
   }
@@ -121,7 +125,9 @@ public final class MigrationDriftController implements Refreshable {
     vm.targetDatabasesProperty().clear();
     cmbTgtDb.setValue(null);
     String conn = cmbTgtConn.getValue();
-    if (conn == null || conn.isBlank()) return;
+    if (conn == null || conn.isBlank()) {
+      return;
+    }
     lblStatus.setText("Veritabanları yükleniyor…");
     new Thread(() -> loadDatabases(conn, false), "rr-drift-tgt-db").start();
   }
@@ -132,7 +138,9 @@ public final class MigrationDriftController implements Refreshable {
     DatabaseRef srcDb = cmbSrcDb.getValue();
     String tgtConn = cmbTgtConn.getValue();
     DatabaseRef tgtDb = cmbTgtDb.getValue();
-    if (srcConn == null || srcDb == null || tgtConn == null || tgtDb == null) return;
+    if (srcConn == null || srcDb == null || tgtConn == null || tgtDb == null) {
+      return;
+    }
 
     lblStatus.setText("Analiz ediliyor…");
     btnAnalyze.setDisable(true);
@@ -170,7 +178,9 @@ public final class MigrationDriftController implements Refreshable {
 
   @FXML
   void onGeneratePatch() {
-    if (lastReport == null || lastSrcProfile == null || lastTgtDb == null) return;
+    if (lastReport == null || lastSrcProfile == null || lastTgtDb == null) {
+      return;
+    }
 
     btnPatch.setDisable(true);
     btnPatch.setText("Üretiliyor…");
@@ -198,7 +208,9 @@ public final class MigrationDriftController implements Refreshable {
   @FXML
   void onCopyPatch() {
     String text = taPatch.getText();
-    if (text == null || text.isBlank()) return;
+    if (text == null || text.isBlank()) {
+      return;
+    }
     var content = new ClipboardContent();
     content.putString(text);
     Clipboard.getSystemClipboard().setContent(content);
@@ -246,9 +258,10 @@ public final class MigrationDriftController implements Refreshable {
     hboxSummary.setManaged(true);
     btnPatch.setDisable(report.isClean());
 
-    lblStatus.setText(report.isClean()
-        ? "✓ Tam eşleşme — fark yok"
-        : "● " + report.items().size() + " fark bulundu");
+    lblStatus.setText(
+        report.isClean()
+            ? "✓ Tam eşleşme — fark yok"
+            : "● " + report.items().size() + " fark bulundu");
   }
 
   private void showPatchScript(SchemaPatchScript script) {
@@ -287,22 +300,30 @@ public final class MigrationDriftController implements Refreshable {
     lblError.visibleProperty().bind(vm.errorProperty().isNotEmpty());
     lblError.managedProperty().bind(vm.errorProperty().isNotEmpty());
     lblError.textProperty().bind(vm.errorProperty());
-    btnAnalyze.disableProperty().bind(
-        cmbSrcDb.valueProperty().isNull().or(cmbTgtDb.valueProperty().isNull()));
+
+    // Use listeners (not bind) so onAnalyze() can call btnAnalyze.setDisable() freely
+    Runnable updateAnalyzeBtn =
+        () -> btnAnalyze.setDisable(cmbSrcDb.getValue() == null || cmbTgtDb.getValue() == null);
+    cmbSrcDb.valueProperty().addListener((obs, o, n) -> updateAnalyzeBtn.run());
+    cmbTgtDb.valueProperty().addListener((obs, o, n) -> updateAnalyzeBtn.run());
+    btnAnalyze.setDisable(true);
   }
 
   private void bindTable() {
     colKind.setCellValueFactory(cd -> new SimpleStringProperty(kindLabel(cd.getValue().kind())));
     colTable.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().tableName()));
     colColumn.setCellValueFactory(
-        cd -> new SimpleStringProperty(
-            cd.getValue().columnName() != null ? cd.getValue().columnName() : ""));
+        cd ->
+            new SimpleStringProperty(
+                cd.getValue().columnName() != null ? cd.getValue().columnName() : ""));
     colSourceDetail.setCellValueFactory(
-        cd -> new SimpleStringProperty(
-            cd.getValue().sourceDetail() != null ? cd.getValue().sourceDetail() : "—"));
+        cd ->
+            new SimpleStringProperty(
+                cd.getValue().sourceDetail() != null ? cd.getValue().sourceDetail() : "—"));
     colTargetDetail.setCellValueFactory(
-        cd -> new SimpleStringProperty(
-            cd.getValue().targetDetail() != null ? cd.getValue().targetDetail() : "—"));
+        cd ->
+            new SimpleStringProperty(
+                cd.getValue().targetDetail() != null ? cd.getValue().targetDetail() : "—"));
 
     tblDrift.setRowFactory(
         tv -> {

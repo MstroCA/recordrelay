@@ -85,6 +85,27 @@ public abstract class AbstractJdbcSchemaInspector implements SchemaInspector {
     }
   }
 
+  @Override
+  public long countRows(ConnectionProfile profile, TableRef table) throws ConnectorException {
+    String qualified =
+        table.schemaName().isBlank()
+            ? quoteName(table.tableName())
+            : quoteName(table.schemaName()) + "." + quoteName(table.tableName());
+    try (var ds = JdbcDataSourceFactory.create(profile, jdbcScheme());
+        var conn = ds.getConnection();
+        var stmt = conn.createStatement();
+        var rs = stmt.executeQuery("SELECT COUNT(*) FROM " + qualified)) {
+      return rs.next() ? rs.getLong(1) : 0L;
+    } catch (SQLException e) {
+      throw new ConnectorException(
+          "Failed to count rows in " + table.tableName() + ": " + e.getMessage(), e);
+    }
+  }
+
+  protected String quoteName(String name) {
+    return "\"" + name.replace("\"", "\"\"") + "\"";
+  }
+
   private Set<String> getPrimaryKeys(DatabaseMetaData meta, TableRef table) throws SQLException {
     var pks = new HashSet<String>();
     String schemaPattern = table.schemaName().isBlank() ? null : table.schemaName();

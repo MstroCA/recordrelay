@@ -20,7 +20,7 @@ hikaricp = "5.1.0"
 mysql-connector = "9.1.0"
 mssql-jdbc = "12.8.1.jre11"
 oracle-jdbc = "23.6.0.24.10"
-sqlite-jdbc = "3.47.1.0"
+sqlite-jdbc = "3.53.2.0"
 
 # New NoSQL connectors
 cassandra-driver = "4.17.0"

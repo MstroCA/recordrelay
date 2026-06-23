@@ -61,7 +61,7 @@ atlantafx = "2.0.1"
 testfx = "4.0.18"
 
 # IntelliJ Platform plugin
-intellij-platform = "2.1.0"
+intellij-platform = "2.16.0"
 
 # CLI packaging
 shadow = "8.1.1"

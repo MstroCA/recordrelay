@@ -3,9 +3,12 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -24,6 +27,7 @@
     </top>
 
     <center>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="edge-to-edge">
         <VBox spacing="12">
             <padding><Insets top="4" right="28" bottom="16" left="28"/></padding>
 
@@ -57,8 +61,8 @@
 
             </HBox>
 
-            <!-- ── Summary chips ─────────────────────────────────────────────── -->
-            <HBox fx:id="hboxSummary" spacing="12" visible="false" managed="false">
+            <!-- ── Summary chips + patch button ────────────────────────────────── -->
+            <HBox fx:id="hboxSummary" spacing="12" visible="false" managed="false" alignment="CENTER_LEFT">
                 <Label fx:id="lblSummaryMissing"  styleClass="drift-chip-missing"/>
                 <Label fx:id="lblSummaryExtra"    styleClass="drift-chip-extra"/>
                 <Label fx:id="lblSummaryColMiss"  styleClass="drift-chip-colmiss"/>
@@ -66,10 +70,12 @@
                 <Label fx:id="lblSummaryMismatch" styleClass="drift-chip-mismatch"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="lblTotal" styleClass="hint-label"/>
+                <Button fx:id="btnPatch" text="SQL Üret ▶" onAction="#onGeneratePatch"
+                        styleClass="accent-btn" disable="true"/>
             </HBox>
 
             <!-- ── Results table ─────────────────────────────────────────────── -->
-            <TableView fx:id="tblDrift" VBox.vgrow="ALWAYS">
+            <TableView fx:id="tblDrift" prefHeight="320" minHeight="180">
                 <columns>
                     <TableColumn fx:id="colKind"          text="Tür"            prefWidth="160" minWidth="120"/>
                     <TableColumn fx:id="colTable"         text="Tablo"          prefWidth="200" minWidth="120"/>
@@ -83,7 +89,21 @@
                 </placeholder>
             </TableView>
 
+            <!-- ── SQL Patch panel (hidden until generated) ─────────────────── -->
+            <VBox fx:id="patchPanel" styleClass="card" spacing="8"
+                  visible="false" managed="false">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="SQL PATCH SCRIPT" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="lblPatchStats" styleClass="hint-label"/>
+                    <Button text="Kopyala" onAction="#onCopyPatch" styleClass="nav-btn"/>
+                </HBox>
+                <TextArea fx:id="taPatch" prefHeight="280" editable="false" wrapText="false"
+                          styleClass="log-area"
+                          promptText="SQL burada görünür…"/>
+            </VBox>
+
         </VBox>
+        </ScrollPane>
     </center>
 
 </BorderPane>

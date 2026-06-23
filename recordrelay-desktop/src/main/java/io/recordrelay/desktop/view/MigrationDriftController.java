@@ -18,13 +18,15 @@ package io.recordrelay.desktop.view;
 import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.engine.ConnProfileResolver;
 import io.recordrelay.cli.engine.MigrationDriftEngine;
+import io.recordrelay.cli.engine.SchemaPatchGenerator;
+import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.MigrationDriftItem;
 import io.recordrelay.core.domain.MigrationDriftItem.DriftKind;
 import io.recordrelay.core.domain.MigrationDriftReport;
+import io.recordrelay.core.domain.SchemaPatchScript;
 import io.recordrelay.desktop.viewmodel.MigrationDriftViewModel;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -34,7 +36,11 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 /** Controller for the Migration Drift screen. */
 public final class MigrationDriftController implements Refreshable {
@@ -54,6 +60,7 @@ public final class MigrationDriftController implements Refreshable {
   @FXML private Label lblSummaryColExtra;
   @FXML private Label lblSummaryMismatch;
   @FXML private Label lblTotal;
+  @FXML private Button btnPatch;
 
   @FXML private TableView<MigrationDriftItem> tblDrift;
   @FXML private TableColumn<MigrationDriftItem, String> colKind;
@@ -62,9 +69,20 @@ public final class MigrationDriftController implements Refreshable {
   @FXML private TableColumn<MigrationDriftItem, String> colSourceDetail;
   @FXML private TableColumn<MigrationDriftItem, String> colTargetDetail;
 
+  @FXML private VBox patchPanel;
+  @FXML private TextArea taPatch;
+  @FXML private Label lblPatchStats;
+
   private MigrationDriftViewModel vm;
   private ConnProfileResolver resolver;
-  private MigrationDriftEngine engine;
+  private MigrationDriftEngine driftEngine;
+  private SchemaPatchGenerator patchGenerator;
+
+  // Held between analyze and patch generation
+  private MigrationDriftReport lastReport;
+  private ConnectionProfile lastSrcProfile;
+  private DatabaseRef lastSrcDb;
+  private DatabaseRef lastTgtDb;
 
   @FXML
   void initialize() {
@@ -72,7 +90,8 @@ public final class MigrationDriftController implements Refreshable {
       var store = new ConfigStore();
       vm = new MigrationDriftViewModel(store);
       resolver = new ConnProfileResolver(store);
-      engine = new MigrationDriftEngine();
+      driftEngine = new MigrationDriftEngine();
+      patchGenerator = new SchemaPatchGenerator();
     } catch (Exception e) {
       showError("Config init failed: " + e.getMessage());
       return;
@@ -118,8 +137,9 @@ public final class MigrationDriftController implements Refreshable {
     lblStatus.setText("Analiz ediliyor…");
     btnAnalyze.setDisable(true);
     tblDrift.getItems().clear();
-    hboxSummary.setVisible(false);
-    hboxSummary.setManaged(false);
+    hideSummary();
+    hidePatchPanel();
+    lastReport = null;
 
     new Thread(
             () -> {
@@ -127,8 +147,15 @@ public final class MigrationDriftController implements Refreshable {
                 var srcProfile = resolver.resolve(srcConn);
                 var tgtProfile = resolver.resolve(tgtConn);
                 MigrationDriftReport report =
-                    engine.analyzeDrift(srcProfile, srcDb, tgtProfile, tgtDb);
-                Platform.runLater(() -> showReport(report));
+                    driftEngine.analyzeDrift(srcProfile, srcDb, tgtProfile, tgtDb);
+                Platform.runLater(
+                    () -> {
+                      lastReport = report;
+                      lastSrcProfile = srcProfile;
+                      lastSrcDb = srcDb;
+                      lastTgtDb = tgtDb;
+                      showReport(report);
+                    });
               } catch (Exception ex) {
                 Platform.runLater(
                     () -> {
@@ -141,10 +168,47 @@ public final class MigrationDriftController implements Refreshable {
         .start();
   }
 
+  @FXML
+  void onGeneratePatch() {
+    if (lastReport == null || lastSrcProfile == null || lastTgtDb == null) return;
+
+    btnPatch.setDisable(true);
+    btnPatch.setText("Üretiliyor…");
+
+    new Thread(
+            () -> {
+              try {
+                SchemaPatchScript script =
+                    patchGenerator.generate(
+                        lastReport, lastSrcProfile, lastSrcDb, lastTgtDb.type());
+                Platform.runLater(() -> showPatchScript(script));
+              } catch (Exception ex) {
+                Platform.runLater(
+                    () -> {
+                      showError("SQL üretme hatası: " + ex.getMessage());
+                      btnPatch.setDisable(false);
+                      btnPatch.setText("SQL Üret ▶");
+                    });
+              }
+            },
+            "rr-drift-patch")
+        .start();
+  }
+
+  @FXML
+  void onCopyPatch() {
+    String text = taPatch.getText();
+    if (text == null || text.isBlank()) return;
+    var content = new ClipboardContent();
+    content.putString(text);
+    Clipboard.getSystemClipboard().setContent(content);
+  }
+
+  // ── Private helpers ───────────────────────────────────────────────────────
+
   private void loadDatabases(String conn, boolean isSource) {
     try {
       var profile = resolver.resolve(conn);
-      // Use discovery engine via the connector directly
       var connector = io.recordrelay.core.spi.ConnectorRegistry.findConnector(profile);
       var dbs = connector.listDatabases(profile);
       Platform.runLater(
@@ -180,18 +244,37 @@ public final class MigrationDriftController implements Refreshable {
 
     hboxSummary.setVisible(true);
     hboxSummary.setManaged(true);
+    btnPatch.setDisable(report.isClean());
 
-    if (report.isClean()) {
-      lblStatus.setText("✓ Tam eşleşme — fark yok");
-    } else {
-      lblStatus.setText("● " + report.items().size() + " fark bulundu");
-    }
+    lblStatus.setText(report.isClean()
+        ? "✓ Tam eşleşme — fark yok"
+        : "● " + report.items().size() + " fark bulundu");
+  }
+
+  private void showPatchScript(SchemaPatchScript script) {
+    taPatch.setText(script.fullScript());
+    lblPatchStats.setText(
+        script.safeCount() + " güvenli, " + script.destructiveCount() + " yorum satırı");
+    patchPanel.setVisible(true);
+    patchPanel.setManaged(true);
+    btnPatch.setDisable(false);
+    btnPatch.setText("SQL Üret ▶");
   }
 
   private void showError(String msg) {
     lblError.setText(msg);
     lblError.setVisible(true);
     lblError.setManaged(true);
+  }
+
+  private void hideSummary() {
+    hboxSummary.setVisible(false);
+    hboxSummary.setManaged(false);
+  }
+
+  private void hidePatchPanel() {
+    patchPanel.setVisible(false);
+    patchPanel.setManaged(false);
   }
 
   private void bindSelectors() {
@@ -212,11 +295,14 @@ public final class MigrationDriftController implements Refreshable {
     colKind.setCellValueFactory(cd -> new SimpleStringProperty(kindLabel(cd.getValue().kind())));
     colTable.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().tableName()));
     colColumn.setCellValueFactory(
-        cd -> new SimpleStringProperty(cd.getValue().columnName() != null ? cd.getValue().columnName() : ""));
+        cd -> new SimpleStringProperty(
+            cd.getValue().columnName() != null ? cd.getValue().columnName() : ""));
     colSourceDetail.setCellValueFactory(
-        cd -> new SimpleStringProperty(cd.getValue().sourceDetail() != null ? cd.getValue().sourceDetail() : "—"));
+        cd -> new SimpleStringProperty(
+            cd.getValue().sourceDetail() != null ? cd.getValue().sourceDetail() : "—"));
     colTargetDetail.setCellValueFactory(
-        cd -> new SimpleStringProperty(cd.getValue().targetDetail() != null ? cd.getValue().targetDetail() : "—"));
+        cd -> new SimpleStringProperty(
+            cd.getValue().targetDetail() != null ? cd.getValue().targetDetail() : "—"));
 
     tblDrift.setRowFactory(
         tv -> {

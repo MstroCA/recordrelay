@@ -74,6 +74,11 @@ public final class MainController {
   }
 
   @FXML
+  void showMigrationDrift() {
+    navigate("migration-drift");
+  }
+
+  @FXML
   void toggleTheme() {
     darkMode = !darkMode;
     ThemeManager.apply(darkMode);

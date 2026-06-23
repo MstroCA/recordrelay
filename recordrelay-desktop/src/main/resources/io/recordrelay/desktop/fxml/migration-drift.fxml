@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.recordrelay.desktop.view.MigrationDriftController">
+
+    <top>
+        <VBox spacing="4">
+            <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
+            <Label text="Migration Drift" styleClass="screen-title"/>
+            <Label text="Kaynak ve hedef veritabanlarını karşılaştır — eksik tablolar, fazla tablolar, kolon farkları."
+                   styleClass="screen-subtitle"/>
+            <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="12">
+            <padding><Insets top="4" right="28" bottom="16" left="28"/></padding>
+
+            <!-- ── Selector row ──────────────────────────────────────────────── -->
+            <HBox spacing="16" styleClass="card" alignment="CENTER_LEFT">
+
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label text="KAYNAK (SOURCE)" styleClass="section-label"/>
+                    <Label text="Bağlantı" styleClass="field-label"/>
+                    <ComboBox fx:id="cmbSrcConn" maxWidth="Infinity" onAction="#onSrcConnChanged"/>
+                    <Label text="Veritabanı" styleClass="field-label"/>
+                    <ComboBox fx:id="cmbSrcDb"   maxWidth="Infinity"/>
+                </VBox>
+
+                <Separator orientation="VERTICAL" prefHeight="110"/>
+
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label text="HEDEF (TARGET)" styleClass="section-label"/>
+                    <Label text="Bağlantı" styleClass="field-label"/>
+                    <ComboBox fx:id="cmbTgtConn" maxWidth="Infinity" onAction="#onTgtConnChanged"/>
+                    <Label text="Veritabanı" styleClass="field-label"/>
+                    <ComboBox fx:id="cmbTgtDb"   maxWidth="Infinity"/>
+                </VBox>
+
+                <VBox spacing="8" alignment="BOTTOM_CENTER" minWidth="130">
+                    <Region VBox.vgrow="ALWAYS"/>
+                    <Button fx:id="btnAnalyze" text="Analiz Et ▶"
+                            maxWidth="Infinity" onAction="#onAnalyze" styleClass="accent-btn"/>
+                    <Label fx:id="lblStatus" text="● Hazır" styleClass="status-label"/>
+                </VBox>
+
+            </HBox>
+
+            <!-- ── Summary chips ─────────────────────────────────────────────── -->
+            <HBox fx:id="hboxSummary" spacing="12" visible="false" managed="false">
+                <Label fx:id="lblSummaryMissing"  styleClass="drift-chip-missing"/>
+                <Label fx:id="lblSummaryExtra"    styleClass="drift-chip-extra"/>
+                <Label fx:id="lblSummaryColMiss"  styleClass="drift-chip-colmiss"/>
+                <Label fx:id="lblSummaryColExtra" styleClass="drift-chip-colextra"/>
+                <Label fx:id="lblSummaryMismatch" styleClass="drift-chip-mismatch"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="lblTotal" styleClass="hint-label"/>
+            </HBox>
+
+            <!-- ── Results table ─────────────────────────────────────────────── -->
+            <TableView fx:id="tblDrift" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colKind"          text="Tür"            prefWidth="160" minWidth="120"/>
+                    <TableColumn fx:id="colTable"         text="Tablo"          prefWidth="200" minWidth="120"/>
+                    <TableColumn fx:id="colColumn"        text="Kolon"          prefWidth="180" minWidth="100"/>
+                    <TableColumn fx:id="colSourceDetail"  text="Kaynak Detay"   prefWidth="160" minWidth="80"/>
+                    <TableColumn fx:id="colTargetDetail"  text="Hedef Detay"    prefWidth="160" minWidth="80"/>
+                </columns>
+                <placeholder>
+                    <Label text="Kaynak ve hedef seçip 'Analiz Et' butonuna basın."
+                           styleClass="placeholder-hint"/>
+                </placeholder>
+            </TableView>
+
+        </VBox>
+    </center>
+
+</BorderPane>

@@ -224,3 +224,37 @@
     -fx-background-color: -color-bg-default;
     -fx-border-color: transparent;
 }
+
+/* ── Migration Drift — row colours ──────────────────────────────────── */
+.drift-row-missing {
+    -fx-background-color: derive(-color-danger-subtle, 10%);
+}
+.drift-row-missing:selected {
+    -fx-background-color: derive(-color-danger-subtle, -15%);
+}
+.drift-row-extra {
+    -fx-background-color: derive(-color-warning-subtle, 10%);
+}
+.drift-row-extra:selected {
+    -fx-background-color: derive(-color-warning-subtle, -15%);
+}
+.drift-row-mismatch {
+    -fx-background-color: derive(-color-accent-subtle, 10%);
+}
+.drift-row-mismatch:selected {
+    -fx-background-color: derive(-color-accent-subtle, -15%);
+}
+
+/* ── Migration Drift — summary chips ────────────────────────────────── */
+.drift-chip-missing, .drift-chip-extra, .drift-chip-colmiss,
+.drift-chip-colextra, .drift-chip-mismatch {
+    -fx-padding: 4 10 4 10;
+    -fx-background-radius: 12;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+.drift-chip-missing  { -fx-background-color: -color-danger-subtle;  -fx-text-fill: -color-danger-fg; }
+.drift-chip-extra    { -fx-background-color: -color-warning-subtle; -fx-text-fill: -color-warning-fg; }
+.drift-chip-colmiss  { -fx-background-color: derive(-color-danger-subtle, 20%);  -fx-text-fill: -color-danger-fg; }
+.drift-chip-colextra { -fx-background-color: derive(-color-warning-subtle, 20%); -fx-text-fill: -color-warning-fg; }
+.drift-chip-mismatch { -fx-background-color: -color-accent-subtle;  -fx-text-fill: -color-accent-fg; }

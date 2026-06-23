@@ -92,9 +92,12 @@ jobs:
         shell: bash
         run: |
           LIB="recordrelay-desktop/build/install/recordrelay-desktop/lib"
+          JAVAFX_MODS="recordrelay-desktop/build/javafx-mods"
+          mkdir -p "${JAVAFX_MODS}"
+          find "${LIB}" -maxdepth 1 -name "javafx-*.jar" -exec cp {} "${JAVAFX_MODS}/" \;
           MODS="java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.sql,java.sql.rowset,java.transaction.xa,java.xml,jdk.crypto.ec,jdk.jfr,jdk.management,jdk.unsupported,jdk.unsupported.desktop,javafx.controls,javafx.fxml,javafx.base,javafx.graphics"
           jlink \
-            --module-path "${JAVA_HOME}/jmods:${LIB}" \
+            --module-path "${JAVA_HOME}/jmods:${JAVAFX_MODS}" \
             --add-modules "${MODS}" \
             --strip-debug \
             --no-header-files \

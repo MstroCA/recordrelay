@@ -92,17 +92,19 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          MAIN_JAR=$(find recordrelay-desktop/build/install/recordrelay-desktop/lib \
-            -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
+          LIB="recordrelay-desktop/build/install/recordrelay-desktop/lib"
+          mkdir -p "${LIB}/mods"
+          find "${LIB}" -maxdepth 1 -name "javafx-*.jar" -exec mv {} "${LIB}/mods/" \;
+          MAIN_JAR=$(find "${LIB}" -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
           jpackage \
             --type dmg \
             --name "RecordRelay" \
             --app-version "${{ steps.ver.outputs.VERSION }}" \
-            --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
+            --input "${LIB}" \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
             --java-options "-Xmx512m" \
-            --java-options "--module-path \$APPDIR" \
+            --java-options "--module-path \$APPDIR/mods" \
             --java-options "--add-modules javafx.controls,javafx.fxml,javafx.base,javafx.graphics" \
             --dest recordrelay-desktop/build/packages
 
@@ -110,17 +112,19 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          MAIN_JAR=$(find recordrelay-desktop/build/install/recordrelay-desktop/lib \
-            -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
+          LIB="recordrelay-desktop/build/install/recordrelay-desktop/lib"
+          mkdir -p "${LIB}/mods"
+          find "${LIB}" -maxdepth 1 -name "javafx-*.jar" -exec mv {} "${LIB}/mods/" \;
+          MAIN_JAR=$(find "${LIB}" -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
           jpackage \
             --type exe \
             --name "RecordRelay" \
             --app-version "${{ steps.ver.outputs.VERSION }}" \
-            --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
+            --input "${LIB}" \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
             --java-options "-Xmx512m" \
-            --java-options "--module-path \$APPDIR" \
+            --java-options "--module-path \$APPDIR/mods" \
             --java-options "--add-modules javafx.controls,javafx.fxml,javafx.base,javafx.graphics" \
             --win-dir-chooser \
             --win-shortcut \
@@ -130,17 +134,19 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          MAIN_JAR=$(find recordrelay-desktop/build/install/recordrelay-desktop/lib \
-            -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
+          LIB="recordrelay-desktop/build/install/recordrelay-desktop/lib"
+          mkdir -p "${LIB}/mods"
+          find "${LIB}" -maxdepth 1 -name "javafx-*.jar" -exec mv {} "${LIB}/mods/" \;
+          MAIN_JAR=$(find "${LIB}" -maxdepth 1 -name "recordrelay-desktop-*.jar" | head -1 | xargs basename)
           jpackage \
             --type deb \
             --name "recordrelay" \
             --app-version "${{ steps.ver.outputs.VERSION }}" \
-            --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
+            --input "${LIB}" \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
             --java-options "-Xmx512m" \
-            --java-options "--module-path \$APPDIR" \
+            --java-options "--module-path \$APPDIR/mods" \
             --java-options "--add-modules javafx.controls,javafx.fxml,javafx.base,javafx.graphics" \
             --linux-shortcut \
             --dest recordrelay-desktop/build/packages

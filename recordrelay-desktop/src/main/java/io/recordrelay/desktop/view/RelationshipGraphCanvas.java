@@ -40,12 +40,12 @@ import javafx.scene.text.Text;
  */
 public final class RelationshipGraphCanvas extends Pane {
 
-  private static final double NODE_W = 140;
-  private static final double NODE_H = 36;
-  private static final double H_GAP = 30;
-  private static final double V_GAP = 70;
-  private static final double MARGIN_X = 24;
-  private static final double MARGIN_Y = 24;
+  private static final double NODE_W = 170;
+  private static final double NODE_H = 38;
+  private static final double H_GAP = 24;
+  private static final double V_GAP = 72;
+  private static final double MARGIN_X = 32;
+  private static final double MARGIN_Y = 28;
 
   private static final Color ROOT_FILL = Color.web("#0969DA");
   private static final Color ROOT_TEXT = Color.WHITE;
@@ -154,10 +154,17 @@ public final class RelationshipGraphCanvas extends Pane {
 
   private Map<String, Point2D> assignPositions(List<List<String>> layers) {
     var positions = new LinkedHashMap<String, Point2D>();
+
+    double maxRowWidth =
+        layers.stream()
+            .mapToDouble(l -> l.size() * NODE_W + Math.max(0, l.size() - 1) * H_GAP)
+            .max()
+            .orElse(NODE_W);
+
     double y = MARGIN_Y;
     for (var layer : layers) {
-      double totalWidth = layer.size() * NODE_W + (layer.size() - 1) * H_GAP;
-      double startX = MARGIN_X;
+      double rowWidth = layer.size() * NODE_W + Math.max(0, layer.size() - 1) * H_GAP;
+      double startX = MARGIN_X + (maxRowWidth - rowWidth) / 2.0;
       for (int i = 0; i < layer.size(); i++) {
         double x = startX + i * (NODE_W + H_GAP);
         positions.put(layer.get(i), new Point2D(x, y));

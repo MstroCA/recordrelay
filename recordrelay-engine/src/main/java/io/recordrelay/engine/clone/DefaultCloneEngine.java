@@ -25,6 +25,7 @@ import io.recordrelay.core.clone.domain.IdentityMapping;
 import io.recordrelay.core.clone.domain.ImportedPackage;
 import io.recordrelay.core.clone.domain.PackageManifest;
 import io.recordrelay.core.clone.domain.RelationshipGraph;
+import io.recordrelay.core.clone.domain.RelationshipSource;
 import io.recordrelay.core.clone.engine.TraversalNode;
 import io.recordrelay.core.clone.exception.CloneException;
 import io.recordrelay.core.clone.port.in.CloneUseCase;
@@ -296,9 +297,14 @@ public final class DefaultCloneEngine
       for (var record : records) {
         var fkValue = record.get(edge.fromColumn());
         if (fkValue == null) {
-          var msg = "Null FK value for " + node.tableName() + "." + edge.fromColumn();
-          warnings.add(msg);
-          listener.onWarning(msg);
+          if (edge.source() == RelationshipSource.FOREIGN_KEY) {
+            var msg = "Null FK value for " + node.tableName() + "." + edge.fromColumn();
+            warnings.add(msg);
+            listener.onWarning(msg);
+          } else {
+            LOG.debug(
+                "Null heuristic FK for {}.{} — skipping", node.tableName(), edge.fromColumn());
+          }
           continue;
         }
         queue.add(

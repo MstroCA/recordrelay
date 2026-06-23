@@ -332,23 +332,13 @@ public final class CloneCommand implements Callable<Integer> {
       }
 
       @Override
-      public void onTableExtractionStarted(String tableName) {
-        printer.printLine("  Extracting: " + tableName);
-      }
-
-      @Override
       public void onTableExtractionCompleted(String tableName, long recordCount) {
-        printer.printLine("    └─ " + recordCount + " record(s)");
-      }
-
-      @Override
-      public void onImportStarted(String tableName) {
-        printer.printLine("  Importing:  " + tableName);
+        printer.printLine(String.format("  ↓ [%s] %d record(s) fetched", tableName, recordCount));
       }
 
       @Override
       public void onImportCompleted(String tableName, long recordCount) {
-        printer.printLine("    └─ " + recordCount + " record(s) imported");
+        printer.printLine(String.format("  ✓ [%s] %d record(s) written", tableName, recordCount));
       }
 
       @Override

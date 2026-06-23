@@ -465,23 +465,13 @@ public final class CloneContextPanel extends JPanel {
       }
 
       @Override
-      public void onTableExtractionStarted(String tableName) {
-        appendLog("  Extracting: " + tableName);
-      }
-
-      @Override
       public void onTableExtractionCompleted(String tableName, long recordCount) {
-        appendLog("    └─ " + recordCount + " records");
-      }
-
-      @Override
-      public void onImportStarted(String tableName) {
-        appendLog("  Importing: " + tableName);
+        appendLog(String.format("  ↓ [%s] %d record(s) fetched", tableName, recordCount));
       }
 
       @Override
       public void onImportCompleted(String tableName, long recordCount) {
-        appendLog("    └─ " + recordCount + " records imported");
+        appendLog(String.format("  ✓ [%s] %d record(s) written", tableName, recordCount));
       }
 
       @Override

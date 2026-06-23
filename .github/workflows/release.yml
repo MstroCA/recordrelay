@@ -92,14 +92,10 @@ jobs:
         shell: bash
         run: |
           LIB="recordrelay-desktop/build/install/recordrelay-desktop/lib"
+          MODS="java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.sql,java.sql.rowset,java.transaction.xa,java.xml,jdk.crypto.ec,jdk.jfr,jdk.management,jdk.unsupported,jdk.unsupported.desktop,javafx.controls,javafx.fxml,javafx.base,javafx.graphics"
           jlink \
             --module-path "${JAVA_HOME}/jmods:${LIB}" \
-            --add-modules \
-              java.base,java.compiler,java.desktop,java.instrument,java.logging,\
-java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,\
-java.security.jgss,java.sql,java.sql.rowset,java.transaction.xa,java.xml,\
-jdk.crypto.ec,jdk.jfr,jdk.management,jdk.unsupported,jdk.unsupported.desktop,\
-javafx.controls,javafx.fxml,javafx.base,javafx.graphics \
+            --add-modules "${MODS}" \
             --strip-debug \
             --no-header-files \
             --no-man-pages \

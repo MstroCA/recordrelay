@@ -18,6 +18,7 @@ package io.recordrelay.connector.jdbc;
 import io.recordrelay.core.domain.ColumnMeta;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
+import io.recordrelay.core.domain.RootTableCandidate;
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.SchemaInspector;
@@ -25,8 +26,11 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -100,6 +104,93 @@ public abstract class AbstractJdbcSchemaInspector implements SchemaInspector {
       throw new ConnectorException(
           "Failed to count rows in " + table.tableName() + ": " + e.getMessage(), e);
     }
+  }
+
+  @Override
+  public List<RootTableCandidate> detectRootCandidates(
+      ConnectionProfile profile, DatabaseRef database) throws ConnectorException {
+    try (var ds = JdbcDataSourceFactory.create(profile, jdbcScheme());
+        var conn = ds.getConnection()) {
+      var meta = conn.getMetaData();
+
+      // Collect all user tables
+      var tables = new ArrayList<TableRef>();
+      try (var rs = meta.getTables(database.name(), null, "%", new String[] {"TABLE"})) {
+        while (rs.next()) {
+          String schema = rs.getString("TABLE_SCHEM");
+          String tbl = rs.getString("TABLE_NAME");
+          tables.add(new TableRef(database, schema != null ? schema : "", tbl));
+        }
+      }
+      if (tables.isEmpty()) {
+        return List.of();
+      }
+
+      // Build in/out degree maps from getImportedKeys (one call per table)
+      Map<String, Integer> inDegree = new HashMap<>();
+      Map<String, Integer> outDegree = new HashMap<>();
+      for (TableRef t : tables) {
+        inDegree.put(t.tableName().toLowerCase(), 0);
+        outDegree.put(t.tableName().toLowerCase(), 0);
+      }
+      for (TableRef t : tables) {
+        String schema = t.schemaName().isBlank() ? null : t.schemaName();
+        try (ResultSet fks = meta.getImportedKeys(database.name(), schema, t.tableName())) {
+          while (fks.next()) {
+            String pkTable = fks.getString("PKTABLE_NAME").toLowerCase();
+            outDegree.merge(t.tableName().toLowerCase(), 1, Integer::sum);
+            inDegree.merge(pkTable, 1, Integer::sum);
+          }
+        } catch (SQLException ignored) {
+          // table may be inaccessible — skip
+        }
+      }
+
+      // Score each table and build candidates
+      var candidates = new ArrayList<RootTableCandidate>(tables.size());
+      for (TableRef t : tables) {
+        String key = t.tableName().toLowerCase();
+        int in = inDegree.getOrDefault(key, 0);
+        int out = outDegree.getOrDefault(key, 0);
+        int bonus = nameBonus(t.tableName());
+        int score = in * 3 - out + bonus;
+        candidates.add(new RootTableCandidate(t.tableName(), score, in, out, buildReason(in, out)));
+      }
+
+      candidates.sort(Comparator.comparingInt(RootTableCandidate::score).reversed());
+      int limit = Math.min(5, candidates.size());
+      return List.copyOf(candidates.subList(0, limit));
+    } catch (SQLException e) {
+      throw new ConnectorException("Root-table detection failed: " + e.getMessage(), e);
+    }
+  }
+
+  private static int nameBonus(String tableName) {
+    String lower = tableName.toLowerCase();
+    for (String root : List.of(
+        "order", "customer", "account", "user", "patient", "employee",
+        "invoice", "contract", "project", "subscription", "transaction",
+        "ticket", "request", "case", "sale", "booking", "reservation")) {
+      if (lower.equals(root) || lower.startsWith(root + "_") || lower.endsWith("_" + root)
+          || lower.equals(root + "s")) {
+        return 2;
+      }
+    }
+    return 0;
+  }
+
+  private static String buildReason(int inDegree, int outDegree) {
+    var parts = new ArrayList<String>(2);
+    if (inDegree > 0) {
+      parts.add(inDegree + " tablo bu tabloyu referans alıyor");
+    }
+    if (outDegree > 0) {
+      parts.add(outDegree + " FK bağlantısı var");
+    }
+    if (parts.isEmpty()) {
+      return "FK ilişkisi bulunamadı";
+    }
+    return String.join(" · ", parts);
   }
 
   protected String quoteName(String name) {

@@ -19,6 +19,7 @@ import io.recordrelay.core.domain.ColumnCompatibility;
 import io.recordrelay.core.domain.ColumnMeta;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
+import io.recordrelay.core.domain.RootTableCandidate;
 import io.recordrelay.core.domain.SchemaMatchReport;
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
@@ -52,6 +53,24 @@ public interface SchemaInspector {
    */
   default long countRows(ConnectionProfile profile, TableRef table) throws ConnectorException {
     return -1L;
+  }
+
+  /**
+   * Analyses the FK graph of the given database and returns the top root-table candidates ranked
+   * by score.
+   *
+   * <p>The default implementation returns an empty list (not supported). SQL connectors that extend
+   * {@code AbstractJdbcSchemaInspector} override this with a real {@link
+   * java.sql.DatabaseMetaData} implementation.
+   *
+   * @param profile connection parameters
+   * @param database database to inspect
+   * @return ordered list of candidates (best first), may be empty
+   * @throws ConnectorException if the schema query fails
+   */
+  default List<RootTableCandidate> detectRootCandidates(
+      ConnectionProfile profile, DatabaseRef database) throws ConnectorException {
+    return List.of();
   }
 
   /**

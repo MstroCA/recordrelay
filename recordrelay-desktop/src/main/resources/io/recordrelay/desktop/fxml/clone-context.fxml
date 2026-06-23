@@ -66,7 +66,13 @@
                            styleClass="screen-subtitle"/>
                     <HBox spacing="12" alignment="BOTTOM_LEFT">
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Başlangıç Tablosu (root table)" styleClass="field-label"/>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label text="Başlangıç Tablosu (root table)" styleClass="field-label"
+                                       HBox.hgrow="ALWAYS"/>
+                                <Button fx:id="btnDetectRoot" text="🎯 Tespit Et"
+                                        onAction="#onDetectRoot" disable="true"
+                                        styleClass="nav-btn"/>
+                            </HBox>
                             <ComboBox fx:id="cmbRootTable" maxWidth="Infinity"
                                       promptText="Source seçince dolar…" editable="true"/>
                         </VBox>
@@ -79,6 +85,13 @@
                             <TextField fx:id="tfEntityId" promptText="örn. 12345"/>
                         </VBox>
                     </HBox>
+
+                    <!-- Root suggestion panel — shown after detection -->
+                    <VBox fx:id="rootSuggestPanel" spacing="6" visible="false" managed="false">
+                        <Label text="Önerilen kafa tablolar (tıklayarak seç):" styleClass="hint-label"/>
+                        <javafx.scene.layout.FlowPane fx:id="rootSuggestFlow" hgap="8" vgap="6"/>
+                    </VBox>
+
                     <Label text="Sistem bu tablodan başlayarak FK ilişkilerini takip eder ve bağlı tüm kayıtları kopyalar."
                            styleClass="hint-label"/>
                 </VBox>

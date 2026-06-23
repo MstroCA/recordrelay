@@ -28,6 +28,7 @@ import io.recordrelay.core.clone.domain.MaskingConfig;
 import io.recordrelay.core.clone.domain.MaskingRule;
 import io.recordrelay.core.clone.port.out.CloneProgressListener;
 import io.recordrelay.core.domain.DatabaseRef;
+import io.recordrelay.core.domain.RootTableCandidate;
 import io.recordrelay.core.spi.ConnectorRegistry;
 import io.recordrelay.desktop.viewmodel.CloneContextViewModel;
 import io.recordrelay.engine.clone.DefaultContextCloneEngine;
@@ -51,7 +52,9 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 
 /** Controller for the Clone Context screen. */
@@ -70,6 +73,9 @@ public final class CloneContextController implements Refreshable {
   @FXML private Button btnLoadTables;
   @FXML private Label lblTableCount;
   @FXML private ComboBox<String> cmbRootTable;
+  @FXML private Button btnDetectRoot;
+  @FXML private VBox rootSuggestPanel;
+  @FXML private FlowPane rootSuggestFlow;
   @FXML private TextField tfPkColumn;
   @FXML private TextField tfEntityId;
 
@@ -244,6 +250,9 @@ public final class CloneContextController implements Refreshable {
                       cmbRootTable.setItems(FXCollections.observableArrayList(tableNames));
                       lblTableCount.setText(tableNames.size() + " tablo");
                       btnLoadTables.setDisable(false);
+                      btnDetectRoot.setDisable(tableNames.isEmpty());
+                      rootSuggestPanel.setVisible(false);
+                      rootSuggestPanel.setManaged(false);
                       if (!tableNames.isEmpty()) {
                         cmbRootTable.getSelectionModel().selectFirst();
                       }
@@ -259,6 +268,66 @@ public final class CloneContextController implements Refreshable {
             },
             "rr-load-tables")
         .start();
+  }
+
+  @FXML
+  void onDetectRoot() {
+    var connName = cmbSource.getValue();
+    if (connName == null || connName.isBlank()) {
+      return;
+    }
+    btnDetectRoot.setDisable(true);
+    btnDetectRoot.setText("Analiz ediliyor…");
+    rootSuggestPanel.setVisible(false);
+    rootSuggestPanel.setManaged(false);
+
+    new Thread(
+            () -> {
+              try {
+                var profile = resolver.resolve(connName);
+                var connector = ConnectorRegistry.findConnector(profile);
+                var dbRef = new DatabaseRef(profile.database(), profile.type());
+                var candidates = connector.schemaInspector().detectRootCandidates(profile, dbRef);
+                Platform.runLater(() -> showRootSuggestions(candidates));
+              } catch (Exception e) {
+                Platform.runLater(
+                    () -> {
+                      btnDetectRoot.setDisable(false);
+                      btnDetectRoot.setText("🎯 Tespit Et");
+                      showError("Kafa tablo tespiti başarısız: " + e.getMessage());
+                    });
+              }
+            },
+            "rr-detect-root")
+        .start();
+  }
+
+  private void showRootSuggestions(List<RootTableCandidate> candidates) {
+    btnDetectRoot.setDisable(false);
+    btnDetectRoot.setText("🎯 Tespit Et");
+
+    if (candidates.isEmpty()) {
+      showError("FK ilişkisi bulunamadı — tabloyu manuel seçin.");
+      return;
+    }
+
+    rootSuggestFlow.getChildren().clear();
+    for (RootTableCandidate c : candidates) {
+      var btn = new Button(c.badgeLabel());
+      btn.setTooltip(new javafx.scene.control.Tooltip(c.reason()));
+      btn.getStyleClass().add("nav-btn");
+      btn.setOnAction(e -> {
+        cmbRootTable.setValue(c.tableName());
+        rootSuggestPanel.setVisible(false);
+        rootSuggestPanel.setManaged(false);
+      });
+      rootSuggestFlow.getChildren().add(btn);
+    }
+
+    // Auto-select the top candidate
+    cmbRootTable.setValue(candidates.get(0).tableName());
+    rootSuggestPanel.setVisible(true);
+    rootSuggestPanel.setManaged(true);
   }
 
   // ── Action handlers ────────────────────────────────────────────────────────

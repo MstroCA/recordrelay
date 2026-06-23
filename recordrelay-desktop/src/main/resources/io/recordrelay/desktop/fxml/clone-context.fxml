@@ -130,6 +130,27 @@
                     <Label fx:id="lblExportedPath" styleClass="hint-label" visible="false" managed="false"/>
                 </VBox>
 
+                <!-- Dry Run Results (hidden until preview runs) -->
+                <?import javafx.scene.control.TableView?>
+                <?import javafx.scene.control.TableColumn?>
+                <VBox fx:id="dryRunPanel" styleClass="card" spacing="8"
+                      visible="false" managed="false">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="ÖNİZLEME SONUCU" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblDryRunSummary" styleClass="hint-label"/>
+                    </HBox>
+                    <TableView fx:id="tblDryRun" prefHeight="220">
+                        <columns>
+                            <TableColumn fx:id="colDryTable"  text="Tablo"        prefWidth="240" minWidth="140"/>
+                            <TableColumn fx:id="colDryRows"   text="Satır Sayısı" prefWidth="120" minWidth="80"/>
+                            <TableColumn fx:id="colDryDepth"  text="Derinlik"     prefWidth="90"  minWidth="60"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="Önizleme verisi yok." styleClass="placeholder-hint"/>
+                        </placeholder>
+                    </TableView>
+                </VBox>
+
             </VBox>
         </ScrollPane>
     </center>
@@ -137,9 +158,10 @@
     <bottom>
         <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
             <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
-            <Button fx:id="btnClone"  text="▶  Context Kopyala" onAction="#onClone" styleClass="accent-btn"/>
-            <Button fx:id="btnExport" text="📦  Paket Dışa Aktar" onAction="#onExport" disable="true"/>
+            <Button fx:id="btnClone"   text="▶  Context Kopyala" onAction="#onClone" styleClass="accent-btn"/>
+            <Button fx:id="btnExport"  text="📦  Paket Dışa Aktar" onAction="#onExport" disable="true"/>
             <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="btnDryRun"  text="🔍  Önizle" onAction="#onDryRun"/>
         </HBox>
     </bottom>
 

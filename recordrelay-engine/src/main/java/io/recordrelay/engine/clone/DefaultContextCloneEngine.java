@@ -18,6 +18,7 @@ package io.recordrelay.engine.clone;
 import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
+import io.recordrelay.core.clone.domain.DryRunReport;
 import io.recordrelay.core.clone.exception.CloneException;
 import io.recordrelay.core.clone.port.in.ContextCloneUseCase;
 import io.recordrelay.core.clone.port.out.CloneProgressListener;
@@ -77,6 +78,32 @@ public final class DefaultContextCloneEngine implements ContextCloneUseCase {
     var request = resolver.resolve(plan);
     var job = CloneJob.of(request);
     return delegate.clone(job, listener);
+  }
+
+  /**
+   * Runs a dry-run traversal for the given plan: follows FK edges and counts rows exactly as a live
+   * clone would, but writes nothing to the target.
+   *
+   * @param plan the context clone plan (target connection is not required)
+   * @return per-table row counts ordered by traversal depth
+   */
+  public DryRunReport dryRunContext(ContextClonePlan plan) throws CloneException {
+    Objects.requireNonNull(plan, "plan");
+    var dryPlan =
+        plan.isLiveClone()
+            ? plan
+            : new ContextClonePlan(
+                plan.entity(),
+                plan.entityId(),
+                plan.source(),
+                plan.source(),
+                plan.depth(),
+                plan.masking(),
+                plan.outputDirectory(),
+                plan.bugReport(),
+                plan.fieldOverrides());
+    var request = resolver.resolve(dryPlan);
+    return delegate.dryRun(CloneJob.of(request));
   }
 
   @Override

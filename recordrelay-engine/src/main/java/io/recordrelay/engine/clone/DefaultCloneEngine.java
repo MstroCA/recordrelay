@@ -20,6 +20,8 @@ import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
 import io.recordrelay.core.clone.domain.CloneRequest;
 import io.recordrelay.core.clone.domain.ClonedTableSummary;
+import io.recordrelay.core.clone.domain.DryRunReport;
+import io.recordrelay.core.clone.domain.DryRunTableEntry;
 import io.recordrelay.core.clone.domain.FieldOverrideConfig;
 import io.recordrelay.core.clone.domain.IdentityMapping;
 import io.recordrelay.core.clone.domain.ImportedPackage;
@@ -183,6 +185,52 @@ public final class DefaultCloneEngine
         report.totalRecords(),
         identityMapping.totalMappings());
     return report;
+  }
+
+  /**
+   * Traverses the relationship graph and counts records per table without writing anything to the
+   * target — a safe preview of what a live clone would touch.
+   *
+   * @param job the clone job describing source, root table, and traversal depth
+   * @return a report with per-table row counts and traversal depths
+   */
+  public DryRunReport dryRun(CloneJob job) throws CloneException {
+    long startMs = System.currentTimeMillis();
+    var request = job.request();
+    var graph = relationshipResolver.resolve(request.source(), request.rootTable());
+    var tableDepths = new LinkedHashMap<String, Integer>();
+    var allRecords = new LinkedHashMap<String, List<DataRecord>>();
+    var visited = new HashSet<String>();
+    var queue = new ArrayDeque<TraversalNode>();
+    queue.add(new TraversalNode(request.rootTable(), "id", request.rootId(), 0));
+
+    while (!queue.isEmpty()) {
+      var node = queue.poll();
+      if (visited.contains(node.visitKey()) || node.depth() > request.depth()) {
+        continue;
+      }
+      visited.add(node.visitKey());
+      tableDepths.merge(node.tableName(), node.depth(), Math::min);
+      var records = fetchNode(request, node, new ArrayList<>());
+      allRecords.computeIfAbsent(node.tableName(), k -> new ArrayList<>()).addAll(records);
+      enqueueOutgoing(
+          graph, node, records, queue, new ArrayList<>(), new CloneProgressListener() {});
+      enqueueIncoming(graph, node, records, queue);
+    }
+
+    var entries =
+        allRecords.entrySet().stream()
+            .map(
+                e ->
+                    new DryRunTableEntry(
+                        e.getKey(), e.getValue().size(), tableDepths.getOrDefault(e.getKey(), 0)))
+            .sorted(
+                java.util.Comparator.comparingInt(DryRunTableEntry::minDepth)
+                    .thenComparing(DryRunTableEntry::tableName))
+            .toList();
+
+    return new DryRunReport(
+        request.rootTable(), request.rootId(), entries, System.currentTimeMillis() - startMs);
   }
 
   @Override

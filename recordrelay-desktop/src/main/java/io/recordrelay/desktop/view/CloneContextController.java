@@ -19,6 +19,8 @@ import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.engine.ConnProfileResolver;
 import io.recordrelay.core.clone.domain.BusinessEntity;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
+import io.recordrelay.core.clone.domain.DryRunReport;
+import io.recordrelay.core.clone.domain.DryRunTableEntry;
 import io.recordrelay.core.clone.domain.FieldOverride;
 import io.recordrelay.core.clone.domain.FieldOverrideConfig;
 import io.recordrelay.core.clone.domain.MaskerType;
@@ -87,11 +89,20 @@ public final class CloneContextController implements Refreshable {
   // ── Actions & Progress ─────────────────────────────────────────────────────
   @FXML private Button btnClone;
   @FXML private Button btnExport;
+  @FXML private Button btnDryRun;
   @FXML private ProgressBar progressBar;
   @FXML private Label lblStatus;
   @FXML private TextArea taLog;
   @FXML private Label lblError;
   @FXML private Label lblExportedPath;
+
+  // ── Dry Run panel ──────────────────────────────────────────────────────────
+  @FXML private javafx.scene.layout.VBox dryRunPanel;
+  @FXML private Label lblDryRunSummary;
+  @FXML private TableView<DryRunTableEntry> tblDryRun;
+  @FXML private TableColumn<DryRunTableEntry, String> colDryTable;
+  @FXML private TableColumn<DryRunTableEntry, String> colDryRows;
+  @FXML private TableColumn<DryRunTableEntry, String> colDryDepth;
 
   private CloneContextViewModel vm;
   private ConfigStore store;
@@ -112,6 +123,7 @@ public final class CloneContextController implements Refreshable {
     setupExportModeToggle();
     setupOverrideTable();
     bindViewModel();
+    bindDryRunTable();
     loadConnections();
   }
 
@@ -252,6 +264,21 @@ public final class CloneContextController implements Refreshable {
   // ── Action handlers ────────────────────────────────────────────────────────
 
   @FXML
+  void onDryRun() {
+    var err = validate(chkExportMode.isSelected());
+    if (err != null) {
+      showAlert(err);
+      return;
+    }
+    btnDryRun.setDisable(true);
+    btnDryRun.setText("🔍  Önizleniyor…");
+    dryRunPanel.setVisible(false);
+    dryRunPanel.setManaged(false);
+
+    new Thread(this::runDryRun, "rr-dry-run").start();
+  }
+
+  @FXML
   void onClone() {
     var err = validate(false);
     if (err != null) {
@@ -375,6 +402,61 @@ public final class CloneContextController implements Refreshable {
       vm.appendLog("HATA: " + e.getMessage());
       vm.markFailed(e.getMessage());
     }
+  }
+
+  // ── Dry run ────────────────────────────────────────────────────────────────
+
+  private void runDryRun() {
+    try {
+      var entity = buildEntity();
+      var srcProfile = resolver.resolve(cmbSource.getValue());
+      int depth = (int) sliderDepth.getValue();
+
+      // Use source as dummy target — dry run never writes
+      var plan =
+          ContextClonePlan.liveClone(
+              entity,
+              tfEntityId.getText().trim(),
+              srcProfile,
+              srcProfile,
+              depth,
+              MaskingConfig.none());
+
+      var engine = DefaultContextCloneEngine.createDefault();
+      DryRunReport report = engine.dryRunContext(plan);
+      Platform.runLater(() -> showDryRunReport(report));
+    } catch (Exception e) {
+      Platform.runLater(
+          () -> {
+            btnDryRun.setDisable(false);
+            btnDryRun.setText("🔍  Önizle");
+            showError("Önizleme hatası: " + e.getMessage());
+          });
+    }
+  }
+
+  private void showDryRunReport(DryRunReport report) {
+    tblDryRun.getItems().setAll(report.tables());
+    lblDryRunSummary.setText(
+        report.tableCount()
+            + " tablo  •  "
+            + report.totalRows()
+            + " satır  •  "
+            + report.durationMillis()
+            + " ms");
+    dryRunPanel.setVisible(true);
+    dryRunPanel.setManaged(true);
+    btnDryRun.setDisable(false);
+    btnDryRun.setText("🔍  Önizle");
+  }
+
+  private void bindDryRunTable() {
+    if (colDryTable == null) return;
+    colDryTable.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().tableName()));
+    colDryRows.setCellValueFactory(
+        cd -> new SimpleStringProperty(String.valueOf(cd.getValue().rowCount())));
+    colDryDepth.setCellValueFactory(
+        cd -> new SimpleStringProperty(String.valueOf(cd.getValue().minDepth())));
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

@@ -96,8 +96,15 @@ jobs:
           mkdir -p "${JAVAFX_MODS}"
           find "${LIB}" -maxdepth 1 -name "javafx-*.jar" -exec cp {} "${JAVAFX_MODS}/" \;
           MODS="java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.sql,java.sql.rowset,java.transaction.xa,java.xml,jdk.crypto.ec,jdk.jfr,jdk.management,jdk.unsupported,jdk.unsupported.desktop,javafx.controls,javafx.fxml,javafx.base,javafx.graphics"
+          if [[ "${RUNNER_OS}" == "Windows" ]]; then
+            JMODS=$(cygpath -m "${JAVA_HOME}/jmods")
+            JAVAFX_ABS=$(cygpath -m "$(pwd)/${JAVAFX_MODS}")
+            MP="${JMODS};${JAVAFX_ABS}"
+          else
+            MP="${JAVA_HOME}/jmods:${JAVAFX_MODS}"
+          fi
           jlink \
-            --module-path "${JAVA_HOME}/jmods:${JAVAFX_MODS}" \
+            --module-path "${MP}" \
             --add-modules "${MODS}" \
             --strip-debug \
             --no-header-files \

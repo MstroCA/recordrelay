@@ -32,6 +32,7 @@ import io.recordrelay.core.clone.domain.MaskingConfig;
 import io.recordrelay.core.clone.domain.MaskingRule;
 import io.recordrelay.core.clone.port.out.CloneProgressListener;
 import io.recordrelay.core.domain.DatabaseRef;
+import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.core.spi.ConnectorRegistry;
 import io.recordrelay.engine.clone.DefaultContextCloneEngine;
 import io.recordrelay.plugin.service.RecordRelayService;
@@ -466,12 +467,12 @@ public final class CloneContextPanel extends JPanel {
 
       @Override
       public void onTableExtractionCompleted(String tableName, long recordCount) {
-        appendLog(String.format("  ↓ [%s] %d record(s) fetched", tableName, recordCount));
+        appendLog(Messages.get("clone.fetched", tableName, recordCount));
       }
 
       @Override
       public void onImportCompleted(String tableName, long recordCount) {
-        appendLog(String.format("  ✓ [%s] %d record(s) written", tableName, recordCount));
+        appendLog(Messages.get("clone.written", tableName, recordCount));
       }
 
       @Override

@@ -15,6 +15,7 @@
  */
 package io.recordrelay.desktop;
 
+import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.desktop.theme.ThemeManager;
 import java.net.URL;
 import javafx.application.Application;
@@ -36,7 +37,8 @@ public final class RecordRelayApp extends Application {
     ThemeManager.applyLight();
 
     URL fxml = getClass().getResource("/io/recordrelay/desktop/fxml/main.fxml");
-    Parent root = FXMLLoader.load(fxml);
+    var loader = new FXMLLoader(fxml, Messages.getBundle());
+    Parent root = loader.load();
     var scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
     addStylesheet(scene);
 

@@ -29,19 +29,42 @@ public record RowCountEntry(String tableName, long sourceCount, long targetCount
     Objects.requireNonNull(tableName, "tableName");
   }
 
+  /**
+   * Returns the source minus target row count delta ({@code 0} when either count is unsupported).
+   *
+   * @return signed row count difference
+   */
   public long diff() {
-    if (sourceCount < 0 || targetCount < 0) return 0;
+    if (sourceCount < 0 || targetCount < 0) {
+      return 0;
+    }
     return sourceCount - targetCount;
   }
 
+  /**
+   * Returns {@code true} when at least one side does not support row counting.
+   *
+   * @return {@code true} if unsupported
+   */
   public boolean hasUnsupported() {
     return sourceCount < 0 || targetCount < 0;
   }
 
+  /**
+   * Classifies the row count relationship between source and target.
+   *
+   * @return the {@link RowStatus} for this entry
+   */
   public RowStatus status() {
-    if (sourceCount < 0 || targetCount < 0) return RowStatus.UNSUPPORTED;
-    if (sourceCount == targetCount) return RowStatus.IN_SYNC;
-    if (targetCount < sourceCount) return RowStatus.TARGET_BEHIND;
+    if (sourceCount < 0 || targetCount < 0) {
+      return RowStatus.UNSUPPORTED;
+    }
+    if (sourceCount == targetCount) {
+      return RowStatus.IN_SYNC;
+    }
+    if (targetCount < sourceCount) {
+      return RowStatus.TARGET_BEHIND;
+    }
     return RowStatus.TARGET_AHEAD;
   }
 

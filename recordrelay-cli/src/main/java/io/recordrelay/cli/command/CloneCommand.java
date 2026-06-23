@@ -29,6 +29,7 @@ import io.recordrelay.core.clone.domain.MaskerType;
 import io.recordrelay.core.clone.domain.MaskingConfig;
 import io.recordrelay.core.clone.domain.MaskingRule;
 import io.recordrelay.core.clone.port.out.CloneProgressListener;
+import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.engine.clone.BuiltinEntityRegistry;
 import io.recordrelay.engine.clone.DefaultCloneEngine;
 import io.recordrelay.engine.clone.DefaultContextCloneEngine;
@@ -333,12 +334,12 @@ public final class CloneCommand implements Callable<Integer> {
 
       @Override
       public void onTableExtractionCompleted(String tableName, long recordCount) {
-        printer.printLine(String.format("  ↓ [%s] %d record(s) fetched", tableName, recordCount));
+        printer.printLine(Messages.get("clone.fetched", tableName, recordCount));
       }
 
       @Override
       public void onImportCompleted(String tableName, long recordCount) {
-        printer.printLine(String.format("  ✓ [%s] %d record(s) written", tableName, recordCount));
+        printer.printLine(Messages.get("clone.written", tableName, recordCount));
       }
 
       @Override

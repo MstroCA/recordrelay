@@ -435,7 +435,12 @@ public final class CloneContextController implements Refreshable {
       if (report.maskedFieldCount() > 0) {
         vm.appendLog("  Maskelenen   : " + report.maskedFieldCount() + " alan");
       }
-      vm.markComplete("Tamamlandı — " + report.totalRecords() + " kayıt kopyalandı");
+      if (!report.warnings().isEmpty()) {
+        vm.appendLog("\nUYARILAR:");
+        report.warnings().forEach(w -> vm.appendLog("  ⚠ " + w));
+      }
+      vm.markComplete("Tamamlandı — " + report.totalRecords() + " kayıt kopyalandı"
+          + (report.warnings().isEmpty() ? "" : " (" + report.warnings().size() + " uyarı)"));
     } catch (Exception e) {
       vm.appendLog("HATA: " + e.getMessage());
       vm.markFailed(e.getMessage());

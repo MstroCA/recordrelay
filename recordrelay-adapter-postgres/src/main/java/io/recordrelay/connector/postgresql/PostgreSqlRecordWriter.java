@@ -50,7 +50,7 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
 
   @Override
   public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
-    this.qualifiedTable = table.qualifiedName();
+    this.qualifiedTable = buildQuotedTableName(table);
     var url =
         "jdbc:postgresql://" + profile.host() + ":" + profile.port() + "/" + profile.database();
     try {
@@ -107,7 +107,7 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
 
   private void initInsertStatement(DataRecord sample) throws ConnectorException {
     columnOrder = new ArrayList<>(sample.fieldNames());
-    var colList = String.join(", ", columnOrder);
+    var colList = columnOrder.stream().map(this::quoteIdent).collect(Collectors.joining(", "));
     var placeholders = columnOrder.stream().map(c -> "?").collect(Collectors.joining(", "));
     var sql = "INSERT INTO " + qualifiedTable + " (" + colList + ") VALUES (" + placeholders + ")";
     try {
@@ -116,6 +116,15 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
     } catch (SQLException e) {
       throw new ConnectorException("Failed to prepare INSERT statement: " + sql, e);
     }
+  }
+
+  private String quoteIdent(String name) {
+    return "\"" + name.replace("\"", "\"\"") + "\"";
+  }
+
+  private static String buildQuotedTableName(TableRef table) {
+    var q = "\"" + table.tableName().replace("\"", "\"\"") + "\"";
+    return table.schemaName().isEmpty() ? q : "\"" + table.schemaName().replace("\"", "\"\"") + "\"." + q;
   }
 
   private void flushBuffer() throws ConnectorException {

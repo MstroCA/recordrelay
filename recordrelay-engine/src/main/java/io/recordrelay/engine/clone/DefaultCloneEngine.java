@@ -477,14 +477,16 @@ public final class DefaultCloneEngine
         writer.write(applyFieldOverrides(record, tableName, overrides));
       }
       writer.flush();
+      listener.onImportCompleted(tableName, records.size());
     } catch (ConnectorException e) {
       var msg = "Failed to write table " + tableName + ": " + e.getMessage();
       warnings.add(msg);
+      listener.onWarning(msg);
       LOG.warn(msg, e);
+      listener.onImportCompleted(tableName, 0);
     } catch (Exception e) {
       throw new CloneException("Unexpected error writing " + tableName, e);
     }
-    listener.onImportCompleted(tableName, records.size());
   }
 
   private DataRecord applyFieldOverrides(

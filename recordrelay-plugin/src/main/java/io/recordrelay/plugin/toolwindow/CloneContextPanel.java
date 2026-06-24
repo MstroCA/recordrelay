@@ -20,9 +20,11 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.ui.components.JBTextField;
+import com.intellij.util.ui.JBUI;
 import io.recordrelay.core.clone.domain.BusinessEntity;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
 import io.recordrelay.core.clone.domain.FieldOverride;
@@ -37,6 +39,7 @@ import io.recordrelay.core.spi.ConnectorRegistry;
 import io.recordrelay.engine.clone.DefaultContextCloneEngine;
 import io.recordrelay.plugin.service.RecordRelayService;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -45,8 +48,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -75,7 +81,7 @@ public final class CloneContextPanel extends JPanel {
 
   // Step 3: Options
   private final JSpinner spinDepth = new JSpinner(new SpinnerNumberModel(3, 1, 10, 1));
-  private final JCheckBox chkMaskPii = new JCheckBox("Mask PII");
+  private final JCheckBox chkMaskPii = new JCheckBox("Mask PII (email, phone, IBAN, address, national ID)");
 
   // Step 4: Field Overrides
   private final JBTextArea taOverrides = new JBTextArea(4, 40);
@@ -93,7 +99,7 @@ public final class CloneContextPanel extends JPanel {
 
   /** Creates the panel for the given project. */
   public CloneContextPanel(Project project) {
-    super(new BorderLayout(0, 6));
+    super(new BorderLayout(0, 0));
     this.project = project;
     taLog.setEditable(false);
     taLog.setLineWrap(true);
@@ -103,18 +109,113 @@ public final class CloneContextPanel extends JPanel {
     setupExportModeToggle();
     btnLoadTables.addActionListener(e -> onLoadTables());
 
-    add(buildForm(), BorderLayout.NORTH);
+    // Steps 1–4 in a scrollable area
+    var stepsPanel = new JPanel();
+    stepsPanel.setLayout(new BoxLayout(stepsPanel, BoxLayout.Y_AXIS));
+    stepsPanel.setBorder(JBUI.Borders.empty(8));
+    stepsPanel.add(section("Step 1 — Connections", buildConnectionsForm()));
+    stepsPanel.add(Box.createVerticalStrut(JBUI.scale(8)));
+    stepsPanel.add(section("Step 2 — Table & Record", buildTableForm()));
+    stepsPanel.add(Box.createVerticalStrut(JBUI.scale(8)));
+    stepsPanel.add(section("Step 3 — Options", buildOptionsForm()));
+    stepsPanel.add(Box.createVerticalStrut(JBUI.scale(8)));
+    stepsPanel.add(section("Step 4 — Field Overrides (optional)", buildOverridesForm()));
 
-    var centerPanel = new JPanel(new BorderLayout(0, 4));
-    var overridesScroll = new JBScrollPane(taOverrides);
-    overridesScroll.setBorder(
-        BorderFactory.createTitledBorder("Field Overrides (column=value / table:column=value)"));
-    centerPanel.add(overridesScroll, BorderLayout.NORTH);
-    centerPanel.add(new JBScrollPane(taLog), BorderLayout.CENTER);
-    add(centerPanel, BorderLayout.CENTER);
+    // Log always visible below the scroll area
+    var logSection = section("Log", buildLogForm());
+
+    var center = new JPanel(new BorderLayout(0, JBUI.scale(4)));
+    center.add(new JBScrollPane(stepsPanel), BorderLayout.CENTER);
+    center.add(logSection, BorderLayout.SOUTH);
+
+    add(center, BorderLayout.CENTER);
     add(buildButtonBar(), BorderLayout.SOUTH);
 
     loadConnections();
+  }
+
+  // ── Layout helpers ─────────────────────────────────────────────────────────
+
+  private static JPanel section(String title, JComponent content) {
+    var panel = new JPanel(new BorderLayout());
+    panel.setBorder(BorderFactory.createCompoundBorder(
+        IdeBorderFactory.createTitledBorder(title),
+        JBUI.Borders.empty(4, 8, 6, 8)));
+    panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+    panel.add(content, BorderLayout.CENTER);
+    return panel;
+  }
+
+  private JPanel buildConnectionsForm() {
+    var panel = new JPanel(new GridBagLayout());
+    var gbc = defaultGbc();
+
+    gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.weightx = 1.0;
+    panel.add(chkExportMode, gbc);
+    gbc.gridwidth = 1;
+
+    addRow(panel, gbc, 1, "Source:", cmbSource);
+    addRow(panel, gbc, 2, "Target:", cmbTarget);
+
+    gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2; gbc.weightx = 1.0;
+    panel.add(pnlOutputDir, gbc);
+
+    return panel;
+  }
+
+  private JPanel buildTableForm() {
+    var panel = new JPanel(new GridBagLayout());
+    var gbc = defaultGbc();
+
+    var loadRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+    loadRow.add(btnLoadTables);
+    loadRow.add(lblTableCount);
+    gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.weightx = 1.0;
+    panel.add(loadRow, gbc);
+    gbc.gridwidth = 1;
+
+    addRow(panel, gbc, 1, "Root table:", cmbRootTable);
+    addRow(panel, gbc, 2, "PK column:", tfPkColumn);
+    addRow(panel, gbc, 3, "Entity ID:", tfEntityId);
+    return panel;
+  }
+
+  private JPanel buildOptionsForm() {
+    var panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 4));
+    var depthRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+    depthRow.add(new JLabel("Relationship depth:"));
+    depthRow.add(spinDepth);
+    panel.add(depthRow);
+    panel.add(chkMaskPii);
+    return panel;
+  }
+
+  private JComponent buildOverridesForm() {
+    var container = new JPanel(new BorderLayout(0, JBUI.scale(4)));
+    var hint = new JLabel(
+        "<html><small>One override per line: <code>column=value</code>"
+            + " &nbsp;or&nbsp; <code>table:column=value</code></small></html>");
+    container.add(hint, BorderLayout.NORTH);
+    taOverrides.setRows(4);
+    container.add(new JBScrollPane(taOverrides), BorderLayout.CENTER);
+    return container;
+  }
+
+  private JComponent buildLogForm() {
+    var container = new JPanel(new BorderLayout(0, JBUI.scale(4)));
+    container.add(lblStatus, BorderLayout.NORTH);
+    taLog.setRows(7);
+    container.add(new JBScrollPane(taLog), BorderLayout.CENTER);
+    return container;
+  }
+
+  private static GridBagConstraints defaultGbc() {
+    var gbc = new GridBagConstraints();
+    gbc.insets = new Insets(3, 4, 3, 4);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.gridwidth = 1;
+    gbc.weightx = 0;
+    return gbc;
   }
 
   // ── Setup ──────────────────────────────────────────────────────────────────
@@ -147,56 +248,6 @@ public final class CloneContextPanel extends JPanel {
         });
   }
 
-  private JPanel buildForm() {
-    var panel = new JPanel(new GridBagLayout());
-    var gbc = new GridBagConstraints();
-    gbc.insets = new Insets(3, 4, 3, 4);
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-
-    int row = 0;
-
-    // Export mode toggle (full width)
-    gbc.gridx = 0;
-    gbc.gridy = row++;
-    gbc.gridwidth = 2;
-    gbc.weightx = 1.0;
-    panel.add(chkExportMode, gbc);
-    gbc.gridwidth = 1;
-
-    addRow(panel, gbc, row++, "Source:", cmbSource);
-    addRow(panel, gbc, row++, "Target:", cmbTarget);
-
-    // Output dir row (export mode only)
-    gbc.gridx = 0;
-    gbc.gridy = row++;
-    gbc.gridwidth = 2;
-    gbc.weightx = 1.0;
-    panel.add(pnlOutputDir, gbc);
-    gbc.gridwidth = 1;
-
-    // Load tables row
-    var loadRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-    loadRow.add(btnLoadTables);
-    loadRow.add(lblTableCount);
-    gbc.gridx = 0;
-    gbc.gridy = row++;
-    gbc.gridwidth = 2;
-    gbc.weightx = 1.0;
-    panel.add(loadRow, gbc);
-    gbc.gridwidth = 1;
-
-    addRow(panel, gbc, row++, "Root table:", cmbRootTable);
-    addRow(panel, gbc, row++, "PK column:", tfPkColumn);
-    addRow(panel, gbc, row++, "Entity ID:", tfEntityId);
-    addRow(panel, gbc, row++, "Depth:", spinDepth);
-
-    gbc.gridx = 1;
-    gbc.gridy = row;
-    panel.add(chkMaskPii, gbc);
-
-    return panel;
-  }
-
   private static void addRow(
       JPanel panel, GridBagConstraints gbc, int row, String label, java.awt.Component field) {
     gbc.gridx = 0;
@@ -209,7 +260,7 @@ public final class CloneContextPanel extends JPanel {
   }
 
   private JPanel buildButtonBar() {
-    var panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+    var panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
     btnClone.addActionListener(e -> onClone());
     btnExport.addActionListener(e -> onExport());
     panel.add(btnClone);
@@ -362,13 +413,14 @@ public final class CloneContextPanel extends JPanel {
 
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener());
 
-      appendLog(
-          "Clone complete — "
-              + report.totalRecords()
-              + " records in "
-              + report.formattedDuration());
-      SwingUtilities.invokeLater(
-          () -> lblStatus.setText("Done — " + report.totalRecords() + " records"));
+      appendLog("Clone complete — " + report.totalRecords() + " records in " + report.formattedDuration());
+      if (!report.warnings().isEmpty()) {
+        appendLog("WARNINGS:");
+        report.warnings().forEach(w -> appendLog("  ⚠ " + w));
+      }
+      var statusText = "Done — " + report.totalRecords() + " records"
+          + (report.warnings().isEmpty() ? "" : " (" + report.warnings().size() + " warnings)");
+      SwingUtilities.invokeLater(() -> lblStatus.setText(statusText));
     } catch (Exception ex) {
       appendLog("ERROR: " + ex.getMessage());
       SwingUtilities.invokeLater(() -> lblStatus.setText("Failed: " + ex.getMessage()));

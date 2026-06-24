@@ -19,12 +19,19 @@ import io.recordrelay.connector.postgresql.internal.DataSourceFactory;
 import io.recordrelay.core.domain.ColumnMeta;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DatabaseRef;
+import io.recordrelay.core.domain.RootTableCandidate;
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.SchemaInspector;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * {@link SchemaInspector} adapter for PostgreSQL.
@@ -76,6 +83,148 @@ public final class PostgreSqlSchemaInspector implements SchemaInspector {
       throw new ConnectorException(
           "Failed to list tables in '" + database.name() + "': " + e.getMessage(), e);
     }
+  }
+
+  @Override
+  public List<RootTableCandidate> detectRootCandidates(
+      ConnectionProfile profile, DatabaseRef database) throws ConnectorException {
+    try (var ds = DataSourceFactory.create(profile);
+        var conn = ds.getConnection()) {
+      var meta = conn.getMetaData();
+
+      var tables = new ArrayList<TableRef>();
+      try (var rs = meta.getTables(null, null, "%", new String[] {"TABLE"})) {
+        while (rs.next()) {
+          String schema = rs.getString("TABLE_SCHEM");
+          if (isPgSystemSchema(schema)) {
+            continue;
+          }
+          String tbl = rs.getString("TABLE_NAME");
+          tables.add(new TableRef(database, schema != null ? schema : "", tbl));
+        }
+      }
+
+      if (tables.isEmpty()) {
+        return List.of();
+      }
+
+      var tableNames = new HashSet<String>();
+      for (var t : tables) {
+        tableNames.add(t.tableName().toLowerCase(Locale.ROOT));
+      }
+
+      var inDegree = new HashMap<String, Integer>();
+      var outDegree = new HashMap<String, Integer>();
+      for (var t : tables) {
+        inDegree.put(t.tableName().toLowerCase(Locale.ROOT), 0);
+        outDegree.put(t.tableName().toLowerCase(Locale.ROOT), 0);
+      }
+
+      for (var t : tables) {
+        String schema = t.schemaName().isBlank() ? null : t.schemaName();
+        String tKey = t.tableName().toLowerCase(Locale.ROOT);
+        var knownOut = new HashSet<String>();
+
+        try (var fks = meta.getImportedKeys(null, schema, t.tableName())) {
+          while (fks.next()) {
+            String pkTable = fks.getString("PKTABLE_NAME").toLowerCase(Locale.ROOT);
+            String fkCol = fks.getString("FKCOLUMN_NAME").toLowerCase(Locale.ROOT);
+            outDegree.merge(tKey, 1, Integer::sum);
+            inDegree.merge(pkTable, 1, Integer::sum);
+            knownOut.add(fkCol);
+          }
+        } catch (SQLException ignored) {
+          // table may be inaccessible
+        }
+
+        try (var cols = meta.getColumns(null, schema, t.tableName(), "%")) {
+          while (cols.next()) {
+            String colName = cols.getString("COLUMN_NAME").toLowerCase(Locale.ROOT);
+            if (!colName.endsWith("_id") || knownOut.contains(colName)) {
+              continue;
+            }
+            String base = colName.substring(0, colName.length() - 3);
+            String refTable = resolveRefTable(base, tableNames);
+            if (refTable == null || refTable.equals(tKey)) {
+              continue;
+            }
+            outDegree.merge(tKey, 1, Integer::sum);
+            inDegree.merge(refTable, 1, Integer::sum);
+          }
+        } catch (SQLException ignored) {
+          // column scan not supported
+        }
+      }
+
+      return rankCandidates(tables, inDegree, outDegree);
+
+    } catch (SQLException e) {
+      throw new ConnectorException("Root-table detection failed: " + e.getMessage(), e);
+    }
+  }
+
+  private static boolean isPgSystemSchema(String schema) {
+    if (schema == null) {
+      return false;
+    }
+    var s = schema.toLowerCase(Locale.ROOT);
+    return s.equals("information_schema") || s.equals("pg_catalog") || s.startsWith("pg_");
+  }
+
+  private static String resolveRefTable(String base, Set<String> tableNames) {
+    for (var candidate : List.of(base, base + "s", base + "es")) {
+      if (tableNames.contains(candidate)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  private static List<RootTableCandidate> rankCandidates(
+      List<TableRef> tables, Map<String, Integer> inDegree, Map<String, Integer> outDegree) {
+    var candidates = new ArrayList<RootTableCandidate>(tables.size());
+    for (var t : tables) {
+      String key = t.tableName().toLowerCase(Locale.ROOT);
+      int in = inDegree.getOrDefault(key, 0);
+      int out = outDegree.getOrDefault(key, 0);
+      int score = in * 3 - out + nameBonus(t.tableName());
+      String reason =
+          in > 0 || out > 0
+              ? in + " table(s) reference this table, " + out + " outgoing reference(s)"
+              : "no declared relationships found — selected by name pattern";
+      candidates.add(new RootTableCandidate(t.tableName(), score, in, out, reason));
+    }
+    candidates.sort(Comparator.comparingInt(RootTableCandidate::score).reversed());
+    int limit = Math.min(5, candidates.size());
+    return List.copyOf(candidates.subList(0, limit));
+  }
+
+  private static int nameBonus(String tableName) {
+    String lower = tableName.toLowerCase(Locale.ROOT);
+    for (String root :
+        List.of(
+            "order",
+            "customer",
+            "account",
+            "user",
+            "patient",
+            "employee",
+            "invoice",
+            "contract",
+            "project",
+            "subscription",
+            "transaction",
+            "ticket",
+            "request",
+            "case",
+            "sale",
+            "booking",
+            "reservation")) {
+      if (lower.equals(root) || lower.startsWith(root + "_") || lower.endsWith("_" + root)) {
+        return 5;
+      }
+    }
+    return 0;
   }
 
   @Override

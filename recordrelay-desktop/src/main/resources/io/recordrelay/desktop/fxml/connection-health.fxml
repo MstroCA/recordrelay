@@ -16,9 +16,8 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
-            <Label text="Connection Health" styleClass="screen-title"/>
-            <Label text="Kayıtlı tüm bağlantıları test et — gecikme, erişilebilirlik ve detay bilgisi."
-                   styleClass="screen-subtitle"/>
+            <Label text="%health.title" styleClass="screen-title"/>
+            <Label text="%health.subtitle" styleClass="screen-subtitle"/>
         </VBox>
     </top>
 
@@ -29,11 +28,11 @@
 
             <!-- ── Action bar ─────────────────────────────────────────────────── -->
             <HBox spacing="12" alignment="CENTER_LEFT" styleClass="card">
-                <Button fx:id="btnCheck" text="Tümünü Test Et"
+                <Button fx:id="btnCheck" text="%health.btn.check"
                         onAction="#onCheckAll" styleClass="accent-btn"/>
                 <ProgressIndicator fx:id="progressIndicator" prefWidth="22" prefHeight="22"
                                    visible="false" managed="false"/>
-                <Label fx:id="lblStatus" text="Hazır" styleClass="status-label"/>
+                <Label fx:id="lblStatus" text="%status.ready" styleClass="status-label"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="lblSummary" styleClass="hint-label"/>
             </HBox>
@@ -41,16 +40,15 @@
             <!-- ── Results table ─────────────────────────────────────────────── -->
             <TableView fx:id="tblHealth" prefHeight="440" minHeight="200">
                 <columns>
-                    <TableColumn fx:id="colStatus"  text="Durum"      prefWidth="90"  minWidth="70"/>
-                    <TableColumn fx:id="colName"    text="Bağlantı"   prefWidth="180" minWidth="120"/>
-                    <TableColumn fx:id="colType"    text="Tip"        prefWidth="110" minWidth="80"/>
-                    <TableColumn fx:id="colHost"    text="Host"       prefWidth="200" minWidth="120"/>
-                    <TableColumn fx:id="colLatency" text="Gecikme"    prefWidth="100" minWidth="70"/>
-                    <TableColumn fx:id="colDetail"  text="Detay"      prefWidth="280" minWidth="150"/>
+                    <TableColumn fx:id="colStatus"  text="%health.col.status"  prefWidth="90"  minWidth="70"/>
+                    <TableColumn fx:id="colName"    text="%health.col.name"    prefWidth="180" minWidth="120"/>
+                    <TableColumn fx:id="colType"    text="%health.col.type"    prefWidth="110" minWidth="80"/>
+                    <TableColumn fx:id="colHost"    text="%health.col.host"    prefWidth="200" minWidth="120"/>
+                    <TableColumn fx:id="colLatency" text="%health.col.latency" prefWidth="100" minWidth="70"/>
+                    <TableColumn fx:id="colDetail"  text="%health.col.detail"  prefWidth="280" minWidth="150"/>
                 </columns>
                 <placeholder>
-                    <Label text="'Tümünü Test Et' butonuna basarak bağlantıları kontrol edin."
-                           styleClass="placeholder-hint"/>
+                    <Label text="%health.hint" styleClass="placeholder-hint"/>
                 </placeholder>
             </TableView>
 

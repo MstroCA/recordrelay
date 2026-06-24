@@ -19,9 +19,8 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
-            <Label text="Migration Drift" styleClass="screen-title"/>
-            <Label text="Kaynak ve hedef veritabanlarını karşılaştır — eksik tablolar, fazla tablolar, kolon farkları."
-                   styleClass="screen-subtitle"/>
+            <Label text="%drift.title" styleClass="screen-title"/>
+            <Label text="%drift.subtitle" styleClass="screen-subtitle"/>
             <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
         </VBox>
     </top>
@@ -35,28 +34,28 @@
             <HBox spacing="16" styleClass="card" alignment="CENTER_LEFT">
 
                 <VBox spacing="6" HBox.hgrow="ALWAYS">
-                    <Label text="KAYNAK (SOURCE)" styleClass="section-label"/>
-                    <Label text="Bağlantı" styleClass="field-label"/>
+                    <Label text="%drift.section.source" styleClass="section-label"/>
+                    <Label text="%drift.lbl.conn" styleClass="field-label"/>
                     <ComboBox fx:id="cmbSrcConn" maxWidth="Infinity" onAction="#onSrcConnChanged"/>
-                    <Label text="Veritabanı" styleClass="field-label"/>
+                    <Label text="%drift.lbl.db" styleClass="field-label"/>
                     <ComboBox fx:id="cmbSrcDb"   maxWidth="Infinity"/>
                 </VBox>
 
                 <Separator orientation="VERTICAL" prefHeight="110"/>
 
                 <VBox spacing="6" HBox.hgrow="ALWAYS">
-                    <Label text="HEDEF (TARGET)" styleClass="section-label"/>
-                    <Label text="Bağlantı" styleClass="field-label"/>
+                    <Label text="%drift.section.target" styleClass="section-label"/>
+                    <Label text="%drift.lbl.conn" styleClass="field-label"/>
                     <ComboBox fx:id="cmbTgtConn" maxWidth="Infinity" onAction="#onTgtConnChanged"/>
-                    <Label text="Veritabanı" styleClass="field-label"/>
+                    <Label text="%drift.lbl.db" styleClass="field-label"/>
                     <ComboBox fx:id="cmbTgtDb"   maxWidth="Infinity"/>
                 </VBox>
 
                 <VBox spacing="8" alignment="BOTTOM_CENTER" minWidth="130">
                     <Region VBox.vgrow="ALWAYS"/>
-                    <Button fx:id="btnAnalyze" text="Analiz Et"
+                    <Button fx:id="btnAnalyze" text="%btn.analyze"
                             maxWidth="Infinity" onAction="#onAnalyze" styleClass="accent-btn"/>
-                    <Label fx:id="lblStatus" text="Hazır" styleClass="status-label"/>
+                    <Label fx:id="lblStatus" text="%status.ready" styleClass="status-label"/>
                 </VBox>
 
             </HBox>
@@ -70,22 +69,21 @@
                 <Label fx:id="lblSummaryMismatch" styleClass="drift-chip-mismatch"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="lblTotal" styleClass="hint-label"/>
-                <Button fx:id="btnPatch" text="SQL Üret" onAction="#onGeneratePatch"
+                <Button fx:id="btnPatch" text="%drift.btn.patch" onAction="#onGeneratePatch"
                         styleClass="accent-btn" disable="true"/>
             </HBox>
 
             <!-- ── Results table ─────────────────────────────────────────────── -->
             <TableView fx:id="tblDrift" prefHeight="320" minHeight="180">
                 <columns>
-                    <TableColumn fx:id="colKind"          text="Tür"            prefWidth="160" minWidth="120"/>
-                    <TableColumn fx:id="colTable"         text="Tablo"          prefWidth="200" minWidth="120"/>
-                    <TableColumn fx:id="colColumn"        text="Kolon"          prefWidth="180" minWidth="100"/>
-                    <TableColumn fx:id="colSourceDetail"  text="Kaynak Detay"   prefWidth="160" minWidth="80"/>
-                    <TableColumn fx:id="colTargetDetail"  text="Hedef Detay"    prefWidth="160" minWidth="80"/>
+                    <TableColumn fx:id="colKind"         text="%drift.col.kind"       prefWidth="160" minWidth="120"/>
+                    <TableColumn fx:id="colTable"        text="%drift.col.table"      prefWidth="200" minWidth="120"/>
+                    <TableColumn fx:id="colColumn"       text="%drift.col.column"     prefWidth="180" minWidth="100"/>
+                    <TableColumn fx:id="colSourceDetail" text="%drift.col.src.detail" prefWidth="160" minWidth="80"/>
+                    <TableColumn fx:id="colTargetDetail" text="%drift.col.tgt.detail" prefWidth="160" minWidth="80"/>
                 </columns>
                 <placeholder>
-                    <Label text="Kaynak ve hedef seçip 'Analiz Et' butonuna basın."
-                           styleClass="placeholder-hint"/>
+                    <Label text="%drift.empty" styleClass="placeholder-hint"/>
                 </placeholder>
             </TableView>
 
@@ -93,13 +91,13 @@
             <VBox fx:id="patchPanel" styleClass="card" spacing="8"
                   visible="false" managed="false">
                 <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label text="SQL PATCH SCRIPT" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                    <Label text="%drift.section.patch" styleClass="section-label" HBox.hgrow="ALWAYS"/>
                     <Label fx:id="lblPatchStats" styleClass="hint-label"/>
-                    <Button text="Kopyala" onAction="#onCopyPatch" styleClass="nav-btn"/>
+                    <Button text="%drift.btn.copy" onAction="#onCopyPatch" styleClass="nav-btn"/>
                 </HBox>
                 <TextArea fx:id="taPatch" prefHeight="280" editable="false" wrapText="false"
                           styleClass="log-area"
-                          promptText="SQL burada görünür…"/>
+                          promptText="%drift.prompt.patch"/>
             </VBox>
 
         </VBox>

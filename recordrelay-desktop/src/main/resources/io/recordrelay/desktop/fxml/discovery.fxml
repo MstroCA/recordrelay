@@ -16,9 +16,8 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
-            <Label text="Schema Discovery" styleClass="screen-title"/>
-            <Label text="Browse databases and tables to understand data structure."
-                   styleClass="screen-subtitle"/>
+            <Label text="%disc.title" styleClass="screen-title"/>
+            <Label text="%disc.subtitle" styleClass="screen-subtitle"/>
             <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
         </VBox>
     </top>
@@ -30,39 +29,38 @@
             <VBox spacing="10" styleClass="discovery-panel" minWidth="240">
                 <padding><Insets top="12" right="16" bottom="16" left="16"/></padding>
 
-                <Label text="CONNECTION" styleClass="section-label"/>
+                <Label text="%disc.section.conn" styleClass="section-label"/>
                 <ComboBox fx:id="cmbSrcConn" maxWidth="Infinity" onAction="#onSrcConnChanged"/>
 
-                <Label text="Database" styleClass="field-label"/>
+                <Label text="%disc.lbl.database" styleClass="field-label"/>
                 <ComboBox fx:id="cmbSrcDb" maxWidth="Infinity" onAction="#onSrcDbChanged"/>
 
-                <Label text="Table" styleClass="field-label"/>
+                <Label text="%disc.lbl.table" styleClass="field-label"/>
                 <ComboBox fx:id="cmbSrcTable" maxWidth="Infinity"/>
 
                 <Region VBox.vgrow="ALWAYS"/>
                 <Separator/>
 
-                <Button fx:id="btnDiscover" text="Inspect Columns"
+                <Button fx:id="btnDiscover" text="%disc.btn.inspect"
                         maxWidth="Infinity" onAction="#onDiscover" styleClass="accent-btn"/>
-                <Label fx:id="lblDiscoveryStatus" text="Ready" styleClass="status-label"/>
+                <Label fx:id="lblDiscoveryStatus" text="%status.ready" styleClass="status-label"/>
             </VBox>
 
             <!-- ── Right: column list ──────────────────────────────────── -->
             <VBox spacing="8">
                 <padding><Insets top="12" right="16" bottom="16" left="12"/></padding>
 
-                <Label text="Columns" styleClass="screen-subtitle-bold"/>
+                <Label text="%disc.section.columns" styleClass="screen-subtitle-bold"/>
 
                 <TableView fx:id="tblColumns" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colName"      text="Column"    prefWidth="200" minWidth="100"/>
-                        <TableColumn fx:id="colType"      text="Type"      prefWidth="160" minWidth="80"/>
-                        <TableColumn fx:id="colNullable"  text="Nullable"  prefWidth="80"  minWidth="60"/>
-                        <TableColumn fx:id="colPk"        text="PK"        prefWidth="50"  minWidth="40"/>
+                        <TableColumn fx:id="colName"      text="%disc.col.name"     prefWidth="200" minWidth="100"/>
+                        <TableColumn fx:id="colType"      text="%disc.col.type"     prefWidth="160" minWidth="80"/>
+                        <TableColumn fx:id="colNullable"  text="%disc.col.nullable" prefWidth="80"  minWidth="60"/>
+                        <TableColumn fx:id="colPk"        text="%disc.col.pk"       prefWidth="50"  minWidth="40"/>
                     </columns>
                     <placeholder>
-                        <Label text="Select a connection, database, and table, then click Inspect."
-                               styleClass="placeholder-hint"/>
+                        <Label text="%disc.hint" styleClass="placeholder-hint"/>
                     </placeholder>
                 </TableView>
             </VBox>

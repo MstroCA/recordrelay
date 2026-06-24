@@ -14,9 +14,8 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="28" right="28" bottom="12" left="28"/></padding>
-            <Label text="Connections" styleClass="screen-title"/>
-            <Label text="Define and test database connection profiles."
-                   styleClass="screen-subtitle"/>
+            <Label text="%conn.title" styleClass="screen-title"/>
+            <Label text="%conn.subtitle" styleClass="screen-subtitle"/>
             <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
         </VBox>
     </top>
@@ -25,16 +24,15 @@
         <TableView fx:id="table" tableMenuButtonVisible="false">
             <padding><Insets left="28" right="28"/></padding>
             <columns>
-                <TableColumn fx:id="colName"     text="Name"     prefWidth="160" minWidth="100"/>
-                <TableColumn fx:id="colType"     text="Type"     prefWidth="120" minWidth="80"/>
-                <TableColumn fx:id="colHost"     text="Host"     prefWidth="180" minWidth="100"/>
-                <TableColumn fx:id="colPort"     text="Port"     prefWidth="70"  minWidth="50"/>
-                <TableColumn fx:id="colDatabase" text="Database" prefWidth="160" minWidth="80"/>
-                <TableColumn fx:id="colUser"     text="User"     prefWidth="120" minWidth="60"/>
+                <TableColumn fx:id="colName"     text="%conn.col.name"     prefWidth="160" minWidth="100"/>
+                <TableColumn fx:id="colType"     text="%conn.col.type"     prefWidth="120" minWidth="80"/>
+                <TableColumn fx:id="colHost"     text="%conn.col.host"     prefWidth="180" minWidth="100"/>
+                <TableColumn fx:id="colPort"     text="%conn.col.port"     prefWidth="70"  minWidth="50"/>
+                <TableColumn fx:id="colDatabase" text="%conn.col.database" prefWidth="160" minWidth="80"/>
+                <TableColumn fx:id="colUser"     text="%conn.col.user"     prefWidth="120" minWidth="60"/>
             </columns>
             <placeholder>
-                <Label text="No connections yet — click Add to create one."
-                       styleClass="placeholder-hint"/>
+                <Label text="%conn.empty" styleClass="placeholder-hint"/>
             </placeholder>
         </TableView>
     </center>
@@ -42,12 +40,12 @@
     <bottom>
         <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
             <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
-            <Button text="Add…"            onAction="#onAdd"    styleClass="accent-btn"/>
-            <Button fx:id="btnEdit"   text="Edit…"  onAction="#onEdit"/>
-            <Button fx:id="btnTest"   text="Test Connection" onAction="#onTest"/>
-            <Label  fx:id="lblStatus" text="Ready" styleClass="status-label"/>
+            <Button text="%conn.btn.add"    onAction="#onAdd"    styleClass="accent-btn"/>
+            <Button fx:id="btnEdit"   text="%conn.btn.edit"  onAction="#onEdit"/>
+            <Button fx:id="btnTest"   text="%conn.btn.test"  onAction="#onTest"/>
+            <Label  fx:id="lblStatus" text="%status.ready" styleClass="status-label"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="btnRemove" text="Remove" onAction="#onRemove" styleClass="danger-btn"/>
+            <Button fx:id="btnRemove" text="%conn.btn.remove" onAction="#onRemove" styleClass="danger-btn"/>
         </HBox>
     </bottom>
 

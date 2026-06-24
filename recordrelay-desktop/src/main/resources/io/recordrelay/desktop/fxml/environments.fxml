@@ -14,9 +14,8 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="28" right="28" bottom="12" left="28"/></padding>
-            <Label text="Environments" styleClass="screen-title"/>
-            <Label text="Manage logical groupings for your database connections."
-                   styleClass="screen-subtitle"/>
+            <Label text="%env.title" styleClass="screen-title"/>
+            <Label text="%env.subtitle" styleClass="screen-subtitle"/>
             <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
         </VBox>
     </top>
@@ -25,12 +24,11 @@
         <TableView fx:id="table" tableMenuButtonVisible="false">
             <padding><Insets left="28" right="28"/></padding>
             <columns>
-                <TableColumn fx:id="colName" text="Name" prefWidth="220" minWidth="120"/>
-                <TableColumn fx:id="colDesc" text="Description" prefWidth="480" minWidth="200"/>
+                <TableColumn fx:id="colName" text="%env.col.name" prefWidth="220" minWidth="120"/>
+                <TableColumn fx:id="colDesc" text="%env.col.desc" prefWidth="480" minWidth="200"/>
             </columns>
             <placeholder>
-                <Label text="No environments yet — click Add to create one."
-                       styleClass="placeholder-hint"/>
+                <Label text="%env.empty" styleClass="placeholder-hint"/>
             </placeholder>
         </TableView>
     </center>
@@ -38,10 +36,10 @@
     <bottom>
         <HBox spacing="8" styleClass="action-bar">
             <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
-            <Button text="Add…"  onAction="#onAdd"    styleClass="accent-btn"/>
-            <Button fx:id="btnEdit"   text="Edit…"  onAction="#onEdit"/>
+            <Button text="%env.btn.add"  onAction="#onAdd"    styleClass="accent-btn"/>
+            <Button fx:id="btnEdit"   text="%env.btn.edit"  onAction="#onEdit"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="btnRemove" text="Remove" onAction="#onRemove" styleClass="danger-btn"/>
+            <Button fx:id="btnRemove" text="%env.btn.remove" onAction="#onRemove" styleClass="danger-btn"/>
         </HBox>
     </bottom>
 

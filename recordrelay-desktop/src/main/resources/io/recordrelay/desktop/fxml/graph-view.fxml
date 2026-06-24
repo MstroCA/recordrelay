@@ -18,8 +18,7 @@
         <VBox spacing="4">
             <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
             <Label text="%nav.graph.view" styleClass="screen-title"/>
-            <Label text="UML-style FK diagram — scroll to pan, use the zoom slider to resize."
-                   styleClass="screen-subtitle"/>
+            <Label text="%graph.subtitle" styleClass="screen-subtitle"/>
         </VBox>
     </top>
 
@@ -34,20 +33,20 @@
     <bottom>
         <HBox spacing="10" styleClass="action-bar" alignment="CENTER_LEFT">
             <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
-            <Label text="Connection:" styleClass="field-label"/>
+            <Label text="%graph.lbl.conn" styleClass="field-label"/>
             <ComboBox fx:id="cboSource" prefWidth="160"/>
-            <Label text="Root table:" styleClass="field-label"/>
+            <Label text="%graph.lbl.root" styleClass="field-label"/>
             <ComboBox fx:id="cboRootTable" prefWidth="160" editable="true"/>
-            <Button fx:id="btnDiscover" text="Discover" onAction="#onDiscover"
+            <Button fx:id="btnDiscover" text="%graph.btn.discover" onAction="#onDiscover"
                     styleClass="accent-btn"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label text="Zoom:" styleClass="field-label"/>
+            <Label text="%graph.lbl.zoom" styleClass="field-label"/>
             <Button text="−" onAction="#onZoomOut"/>
             <Slider fx:id="sldZoom" min="0.25" max="2.5" value="1.0" prefWidth="110"
                     showTickMarks="false" blockIncrement="0.15"/>
             <Button text="+" onAction="#onZoomIn"/>
             <Button text="1:1" onAction="#onZoomReset"/>
-            <Label fx:id="lblStatus" text="Select a connection." styleClass="status-label"/>
+            <Label fx:id="lblStatus" text="%graph.hint" styleClass="status-label"/>
         </HBox>
     </bottom>
 

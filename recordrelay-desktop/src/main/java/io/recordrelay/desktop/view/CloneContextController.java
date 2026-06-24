@@ -29,6 +29,7 @@ import io.recordrelay.core.clone.domain.MaskingRule;
 import io.recordrelay.core.clone.port.out.CloneProgressListener;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.RootTableCandidate;
+import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.core.spi.ConnectorRegistry;
 import io.recordrelay.desktop.viewmodel.CloneContextViewModel;
 import io.recordrelay.engine.clone.DefaultContextCloneEngine;
@@ -161,7 +162,8 @@ public final class CloneContextController implements Refreshable {
         .addListener(
             (obs, o, exportOn) -> {
               cmbTarget.setDisable(exportOn);
-              lblTargetHeader.setText(exportOn ? "Çıktı Klasörü" : "Target (Hedef Veritabanı)");
+              lblTargetHeader.setText(
+                  exportOn ? Messages.get("cc.lbl.outdir") : Messages.get("cc.lbl.target"));
               hboxOutputDir.setVisible(exportOn);
               hboxOutputDir.setManaged(exportOn);
               btnClone.setDisable(exportOn || vm.busyProperty().get());
@@ -277,7 +279,7 @@ public final class CloneContextController implements Refreshable {
       return;
     }
     btnDetectRoot.setDisable(true);
-    btnDetectRoot.setText("Analiz ediliyor…");
+    btnDetectRoot.setText(Messages.get("cc.btn.detect") + "…");
     rootSuggestPanel.setVisible(false);
     rootSuggestPanel.setManaged(false);
 
@@ -293,8 +295,8 @@ public final class CloneContextController implements Refreshable {
                 Platform.runLater(
                     () -> {
                       btnDetectRoot.setDisable(false);
-                      btnDetectRoot.setText("Tespit Et");
-                      showError("Kafa tablo tespiti başarısız: " + e.getMessage());
+                      btnDetectRoot.setText(Messages.get("cc.btn.detect"));
+                      showError(e.getMessage());
                     });
               }
             },
@@ -304,10 +306,10 @@ public final class CloneContextController implements Refreshable {
 
   private void showRootSuggestions(List<RootTableCandidate> candidates) {
     btnDetectRoot.setDisable(false);
-    btnDetectRoot.setText("Tespit Et");
+    btnDetectRoot.setText(Messages.get("cc.btn.detect"));
 
     if (candidates.isEmpty()) {
-      showError("FK ilişkisi bulunamadı — tabloyu manuel seçin.");
+      showError(Messages.get("cc.detect.no.candidates"));
       return;
     }
 

@@ -22,9 +22,8 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="28" right="28" bottom="12" left="28"/></padding>
-            <Label text="Clone Context" styleClass="screen-title"/>
-            <Label text="Source database'den bir kaydı ve tüm bağlı tablolarını dakikalar içinde hedefe kopyalar."
-                   styleClass="screen-subtitle"/>
+            <Label text="%cc.title" styleClass="screen-title"/>
+            <Label text="%cc.subtitle" styleClass="screen-subtitle"/>
             <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
         </VBox>
     </top>
@@ -36,110 +35,107 @@
 
                 <!-- Step 1: Connections -->
                 <VBox styleClass="card" spacing="10">
-                    <Label text="ADIM 1 — BAĞLANTI SEÇ" styleClass="section-label"/>
+                    <Label text="%cc.step1" styleClass="section-label"/>
                     <HBox spacing="12" alignment="CENTER_LEFT">
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Source (Kaynak Veritabanı)" styleClass="field-label"/>
+                            <Label text="%cc.lbl.source" styleClass="field-label"/>
                             <ComboBox fx:id="cmbSource" maxWidth="Infinity" onAction="#onSourceChanged"/>
                         </VBox>
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label fx:id="lblTargetHeader" text="Target (Hedef Veritabanı)" styleClass="field-label"/>
+                            <Label fx:id="lblTargetHeader" text="%cc.lbl.target" styleClass="field-label"/>
                             <ComboBox fx:id="cmbTarget" maxWidth="Infinity"/>
                             <HBox fx:id="hboxOutputDir" spacing="6" alignment="CENTER_LEFT" visible="false" managed="false">
-                                <TextField fx:id="tfOutputDir" HBox.hgrow="ALWAYS" promptText="Çıktı klasörü…"/>
-                                <Button fx:id="btnBrowseDir" text="Seç…" onAction="#onBrowseDir"/>
+                                <TextField fx:id="tfOutputDir" HBox.hgrow="ALWAYS" promptText="%cc.lbl.outdir"/>
+                                <Button fx:id="btnBrowseDir" text="%cc.btn.browse" onAction="#onBrowseDir"/>
                             </HBox>
                         </VBox>
                     </HBox>
-                    <CheckBox fx:id="chkExportMode" text="Export modu — .rrpkg dosyası olarak kaydet (canlı kopyalama yapmaz)"/>
+                    <CheckBox fx:id="chkExportMode" text="%cc.chk.export"/>
                 </VBox>
 
                 <!-- Step 2: Tables -->
                 <VBox styleClass="card" spacing="10">
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Label text="ADIM 2 — TABLO &amp; KAYIT" styleClass="section-label" HBox.hgrow="ALWAYS"/>
-                        <Button fx:id="btnLoadTables" text="Tabloları Yükle ↻" onAction="#onLoadTables"
+                        <Label text="%cc.step2" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="btnLoadTables" text="%cc.btn.load" onAction="#onLoadTables"
                                 disable="true"/>
                         <Label fx:id="lblTableCount" text="" styleClass="hint-label"/>
                     </HBox>
-                    <Label text="Source seçildiğinde tablolar otomatik yüklenir. Başlangıç tablosunu ve kayıt ID'sini girin."
-                           styleClass="screen-subtitle"/>
-                    <HBox spacing="12" alignment="BOTTOM_LEFT">
+                    <Label text="%cc.hint.load" styleClass="screen-subtitle"/>
+                    <!-- Root table, PK column and entity ID — all labels at top, fields at same level -->
+                    <HBox spacing="12" alignment="TOP_LEFT">
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <HBox alignment="CENTER_LEFT" spacing="8">
-                                <Label text="Başlangıç Tablosu (root table)" styleClass="field-label"
-                                       HBox.hgrow="ALWAYS"/>
-                                <Button fx:id="btnDetectRoot" text="Tespit Et"
+                            <Label text="%cc.lbl.root" styleClass="field-label"/>
+                            <HBox spacing="6">
+                                <ComboBox fx:id="cmbRootTable" HBox.hgrow="ALWAYS"
+                                          promptText="%cc.hint.load" editable="true"/>
+                                <Button fx:id="btnDetectRoot" text="%cc.btn.detect"
                                         onAction="#onDetectRoot" disable="true"
                                         styleClass="nav-btn"/>
                             </HBox>
-                            <ComboBox fx:id="cmbRootTable" maxWidth="Infinity"
-                                      promptText="Source seçince dolar…" editable="true"/>
                         </VBox>
-                        <VBox spacing="4" prefWidth="140">
-                            <Label text="Primary Key Kolonu" styleClass="field-label"/>
+                        <VBox spacing="4" prefWidth="150">
+                            <Label text="%cc.lbl.pk" styleClass="field-label"/>
                             <TextField fx:id="tfPkColumn" text="id" promptText="id"/>
                         </VBox>
                         <VBox spacing="4" HBox.hgrow="ALWAYS">
-                            <Label text="Kayıt ID'si" styleClass="field-label"/>
-                            <TextField fx:id="tfEntityId" promptText="örn. 12345"/>
+                            <Label text="%cc.lbl.entity" styleClass="field-label"/>
+                            <TextField fx:id="tfEntityId" promptText="12345"/>
                         </VBox>
                     </HBox>
 
                     <!-- Root suggestion panel — shown after detection -->
                     <VBox fx:id="rootSuggestPanel" spacing="6" visible="false" managed="false">
-                        <Label text="Önerilen kafa tablolar (tıklayarak seç):" styleClass="hint-label"/>
+                        <Label text="%cc.suggest.hint" styleClass="hint-label"/>
                         <javafx.scene.layout.FlowPane fx:id="rootSuggestFlow" hgap="8" vgap="6"/>
                     </VBox>
 
-                    <Label text="Sistem bu tablodan başlayarak FK ilişkilerini takip eder ve bağlı tüm kayıtları kopyalar."
-                           styleClass="hint-label"/>
+                    <Label text="%cc.hint.fk" styleClass="hint-label"/>
                 </VBox>
 
                 <!-- Step 3: Options -->
                 <VBox styleClass="card" spacing="10">
-                    <Label text="ADIM 3 — SEÇENEKLER" styleClass="section-label"/>
+                    <Label text="%cc.step3" styleClass="section-label"/>
                     <HBox spacing="24" alignment="CENTER_LEFT">
                         <VBox spacing="4">
-                            <Label text="İlişki derinliği (kaç tablo atlayacak)" styleClass="field-label"/>
+                            <Label text="%cc.lbl.depth" styleClass="field-label"/>
                             <HBox spacing="8" alignment="CENTER_LEFT">
                                 <Slider fx:id="sliderDepth" prefWidth="200"/>
                                 <Label fx:id="lblDepthValue" text="3" styleClass="hint-label"/>
                             </HBox>
                         </VBox>
                         <Separator orientation="VERTICAL"/>
-                        <CheckBox fx:id="chkMaskPii" text="PII Maskele (e-posta, telefon, adres, IBAN, TC kimlik)"/>
+                        <CheckBox fx:id="chkMaskPii" text="%cc.chk.pii"/>
                     </HBox>
                 </VBox>
 
                 <!-- Step 4: Field Overrides -->
                 <VBox styleClass="card" spacing="10">
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Label text="ADIM 4 — ALAN DEĞİŞTİRME (İSTEĞE BAĞLI)" styleClass="section-label" HBox.hgrow="ALWAYS"/>
-                        <Button text="+ Ekle" onAction="#onAddOverride"/>
-                        <Button text="Sil" onAction="#onRemoveOverride"/>
+                        <Label text="%cc.step4" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                        <Button text="%cc.btn.add" onAction="#onAddOverride"/>
+                        <Button text="%cc.btn.remove" onAction="#onRemoveOverride"/>
                     </HBox>
-                    <Label text="Hedef ortamda bazı alanların değerini değiştir (örn. created_by, mukellef_vkn). Tablo boş bırakılırsa tüm tablolara uygulanır."
-                           styleClass="hint-label"/>
+                    <Label text="%cc.hint.override" styleClass="hint-label"/>
                     <TableView fx:id="tblOverrides" prefHeight="130" editable="true">
                         <columns>
-                            <TableColumn fx:id="colOvrTable"  text="Tablo (boş=hepsi)" prefWidth="160"/>
-                            <TableColumn fx:id="colOvrColumn" text="Kolon"              prefWidth="160"/>
-                            <TableColumn fx:id="colOvrValue"  text="Yeni Değer"         prefWidth="200"/>
+                            <TableColumn fx:id="colOvrTable"  text="%cc.col.table"  prefWidth="160"/>
+                            <TableColumn fx:id="colOvrColumn" text="%cc.col.column" prefWidth="160"/>
+                            <TableColumn fx:id="colOvrValue"  text="%cc.col.value"  prefWidth="200"/>
                         </columns>
                         <placeholder>
-                            <Label text="Override yok — kayıtlar orijinal değerleriyle yazılır." styleClass="placeholder-hint"/>
+                            <Label text="%cc.override.empty" styleClass="placeholder-hint"/>
                         </placeholder>
                     </TableView>
                 </VBox>
 
                 <!-- Log -->
                 <VBox styleClass="card" spacing="8">
-                    <Label text="LOG" styleClass="section-label"/>
+                    <Label text="%cc.log" styleClass="section-label"/>
                     <ProgressBar fx:id="progressBar" maxWidth="Infinity" prefHeight="14"/>
-                    <Label fx:id="lblStatus" text="Hazır" styleClass="status-label"/>
+                    <Label fx:id="lblStatus" text="%status.ready" styleClass="status-label"/>
                     <TextArea fx:id="taLog" prefHeight="150" editable="false" wrapText="true"
-                              styleClass="log-area" promptText="Kopyalama çıktısı burada görünür…"/>
+                              styleClass="log-area" promptText=""/>
                     <Label fx:id="lblExportedPath" styleClass="hint-label" visible="false" managed="false"/>
                 </VBox>
 
@@ -149,17 +145,17 @@
                 <VBox fx:id="dryRunPanel" styleClass="card" spacing="8"
                       visible="false" managed="false">
                     <HBox alignment="CENTER_LEFT" spacing="8">
-                        <Label text="ÖNİZLEME SONUCU" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                        <Label text="%cc.preview.title" styleClass="section-label" HBox.hgrow="ALWAYS"/>
                         <Label fx:id="lblDryRunSummary" styleClass="hint-label"/>
                     </HBox>
                     <TableView fx:id="tblDryRun" prefHeight="220">
                         <columns>
-                            <TableColumn fx:id="colDryTable"  text="Tablo"        prefWidth="240" minWidth="140"/>
-                            <TableColumn fx:id="colDryRows"   text="Satır Sayısı" prefWidth="120" minWidth="80"/>
-                            <TableColumn fx:id="colDryDepth"  text="Derinlik"     prefWidth="90"  minWidth="60"/>
+                            <TableColumn fx:id="colDryTable"  text="%cc.col.dry.table" prefWidth="240" minWidth="140"/>
+                            <TableColumn fx:id="colDryRows"   text="%cc.col.dry.rows"  prefWidth="120" minWidth="80"/>
+                            <TableColumn fx:id="colDryDepth"  text="%cc.col.dry.depth" prefWidth="90"  minWidth="60"/>
                         </columns>
                         <placeholder>
-                            <Label text="Önizleme verisi yok." styleClass="placeholder-hint"/>
+                            <Label text="%cc.preview.empty" styleClass="placeholder-hint"/>
                         </placeholder>
                     </TableView>
                 </VBox>
@@ -171,10 +167,10 @@
     <bottom>
         <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
             <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
-            <Button fx:id="btnClone"   text="Context Kopyala" onAction="#onClone" styleClass="accent-btn"/>
-            <Button fx:id="btnExport"  text="Paket Dışa Aktar" onAction="#onExport" disable="true"/>
+            <Button fx:id="btnClone"   text="%cc.btn.clone"   onAction="#onClone" styleClass="accent-btn"/>
+            <Button fx:id="btnExport"  text="%cc.btn.export"  onAction="#onExport" disable="true"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="btnDryRun"  text="Önizle" onAction="#onDryRun"/>
+            <Button fx:id="btnDryRun"  text="%cc.btn.preview" onAction="#onDryRun"/>
         </HBox>
     </bottom>
 

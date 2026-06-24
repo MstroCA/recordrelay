@@ -15,9 +15,8 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
-            <Label text="Dashboard" styleClass="screen-title"/>
-            <Label text="Clone history and connection health for this session."
-                   styleClass="screen-subtitle"/>
+            <Label text="%mon.title" styleClass="screen-title"/>
+            <Label text="%mon.subtitle" styleClass="screen-subtitle"/>
         </VBox>
     </top>
 
@@ -30,55 +29,53 @@
                 <HBox spacing="12">
                     <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" alignment="CENTER">
                         <Label fx:id="lblTransferred" text="0" styleClass="kpi-value"/>
-                        <Label text="Records transferred" styleClass="kpi-label"/>
+                        <Label text="%mon.lbl.records" styleClass="kpi-label"/>
                     </VBox>
                     <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" alignment="CENTER">
                         <Label fx:id="lblOperations" text="0" styleClass="kpi-value"/>
-                        <Label text="Operations" styleClass="kpi-label"/>
+                        <Label text="%mon.lbl.operations" styleClass="kpi-label"/>
                     </VBox>
                     <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" alignment="CENTER">
                         <Label fx:id="lblFailed" text="0" styleClass="kpi-value, kpi-danger"/>
-                        <Label text="Failed" styleClass="kpi-label"/>
+                        <Label text="%mon.lbl.failed" styleClass="kpi-label"/>
                     </VBox>
                     <VBox styleClass="card, kpi-card" HBox.hgrow="ALWAYS" alignment="CENTER">
                         <Label fx:id="lblDuration" text="—" styleClass="kpi-value"/>
-                        <Label text="Last duration" styleClass="kpi-label"/>
+                        <Label text="%mon.lbl.duration" styleClass="kpi-label"/>
                     </VBox>
                 </HBox>
 
                 <!-- ── Clone history ─────────────────────────────────── -->
                 <VBox styleClass="card" spacing="6" VBox.vgrow="ALWAYS">
-                    <Label text="CLONE HISTORY" styleClass="section-label"/>
+                    <Label text="%mon.section.history" styleClass="section-label"/>
                     <TableView fx:id="tblHistory" prefHeight="260" tableMenuButtonVisible="false">
                         <columns>
-                            <TableColumn fx:id="colTime"     text="Time"     prefWidth="80"  minWidth="60"/>
-                            <TableColumn fx:id="colHTable"   text="Table"    prefWidth="130" minWidth="80"/>
-                            <TableColumn fx:id="colHId"      text="ID"       prefWidth="100" minWidth="60"/>
-                            <TableColumn fx:id="colHSource"  text="Source"   prefWidth="120" minWidth="80"/>
-                            <TableColumn fx:id="colHTarget"  text="Target"   prefWidth="120" minWidth="80"/>
-                            <TableColumn fx:id="colHRecords" text="Records"  prefWidth="80"  minWidth="60"/>
-                            <TableColumn fx:id="colHDur"     text="Duration" prefWidth="80"  minWidth="60"/>
-                            <TableColumn fx:id="colHStatus"  text="Status"   prefWidth="80"  minWidth="60"/>
+                            <TableColumn fx:id="colTime"     text="%mon.col.time"     prefWidth="80"  minWidth="60"/>
+                            <TableColumn fx:id="colHTable"   text="%mon.col.table"    prefWidth="130" minWidth="80"/>
+                            <TableColumn fx:id="colHId"      text="%mon.col.id"       prefWidth="100" minWidth="60"/>
+                            <TableColumn fx:id="colHSource"  text="%mon.col.source"   prefWidth="120" minWidth="80"/>
+                            <TableColumn fx:id="colHTarget"  text="%mon.col.target"   prefWidth="120" minWidth="80"/>
+                            <TableColumn fx:id="colHRecords" text="%mon.col.records"  prefWidth="80"  minWidth="60"/>
+                            <TableColumn fx:id="colHDur"     text="%mon.col.duration" prefWidth="80"  minWidth="60"/>
+                            <TableColumn fx:id="colHStatus"  text="%mon.col.status"   prefWidth="80"  minWidth="60"/>
                         </columns>
                         <placeholder>
-                            <Label text="No clone operations yet in this session."
-                                   styleClass="placeholder-hint"/>
+                            <Label text="%mon.empty.history" styleClass="placeholder-hint"/>
                         </placeholder>
                     </TableView>
                 </VBox>
 
                 <!-- ── DB Health ─────────────────────────────────────── -->
                 <VBox styleClass="card" spacing="6">
-                    <Label text="CONNECTION HEALTH" styleClass="section-label"/>
+                    <Label text="%mon.section.health" styleClass="section-label"/>
                     <TableView fx:id="tblHealth" prefHeight="160" tableMenuButtonVisible="false">
                         <columns>
-                            <TableColumn fx:id="colConnName" text="Connection" prefWidth="200" minWidth="120"/>
-                            <TableColumn fx:id="colStatus"   text="Status"     prefWidth="120" minWidth="80"/>
-                            <TableColumn fx:id="colDetail"   text="Detail"     prefWidth="400" minWidth="100"/>
+                            <TableColumn fx:id="colConnName" text="%mon.col.conn"   prefWidth="200" minWidth="120"/>
+                            <TableColumn fx:id="colStatus"   text="%mon.col.status" prefWidth="120" minWidth="80"/>
+                            <TableColumn fx:id="colDetail"   text="%mon.col.detail" prefWidth="400" minWidth="100"/>
                         </columns>
                         <placeholder>
-                            <Label text="Click 'Check Health' to test all connections."
-                                   styleClass="placeholder-hint"/>
+                            <Label text="%mon.empty.health" styleClass="placeholder-hint"/>
                         </placeholder>
                     </TableView>
                 </VBox>
@@ -90,11 +87,11 @@
     <bottom>
         <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
             <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
-            <Button fx:id="btnRefresh" text="Check Health" onAction="#onRefreshHealth"
+            <Button fx:id="btnRefresh" text="%mon.btn.health" onAction="#onRefreshHealth"
                     styleClass="accent-btn"/>
-            <Button text="Clear History" onAction="#onClear"/>
+            <Button text="%mon.btn.clear" onAction="#onClear"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="lblHealthStatus" text="Ready" styleClass="status-label"/>
+            <Label fx:id="lblHealthStatus" text="%status.ready" styleClass="status-label"/>
         </HBox>
     </bottom>
 

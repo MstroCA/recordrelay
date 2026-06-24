@@ -21,6 +21,7 @@ import io.recordrelay.cli.engine.RowCountDiffEngine;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.RowCountEntry;
 import io.recordrelay.core.domain.RowCountEntry.RowStatus;
+import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.desktop.viewmodel.MigrationDriftViewModel;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -95,7 +96,7 @@ public final class RowCountDiffController implements Refreshable {
     if (conn == null || conn.isBlank()) {
       return;
     }
-    lblStatus.setText("Veritabanları yükleniyor…");
+    lblStatus.setText(Messages.get("db.loading"));
     new Thread(() -> loadDatabases(conn, true), "rr-rcd-src-db").start();
   }
 
@@ -107,7 +108,7 @@ public final class RowCountDiffController implements Refreshable {
     if (conn == null || conn.isBlank()) {
       return;
     }
-    lblStatus.setText("Veritabanları yükleniyor…");
+    lblStatus.setText(Messages.get("db.loading"));
     new Thread(() -> loadDatabases(conn, false), "rr-rcd-tgt-db").start();
   }
 
@@ -122,7 +123,7 @@ public final class RowCountDiffController implements Refreshable {
     }
 
     btnCompare.setDisable(true);
-    lblStatus.setText("Sayılıyor…");
+    lblStatus.setText(Messages.get("rcd.counting"));
     tblCounts.getItems().clear();
     hboxSummary.setVisible(false);
     hboxSummary.setManaged(false);
@@ -137,7 +138,7 @@ public final class RowCountDiffController implements Refreshable {
               } catch (Exception ex) {
                 Platform.runLater(
                     () -> {
-                      showError("Karşılaştırma hatası: " + ex.getMessage());
+                      showError(Messages.get("rcd.error", ex.getMessage()));
                       btnCompare.setDisable(false);
                     });
               }
@@ -160,10 +161,10 @@ public final class RowCountDiffController implements Refreshable {
             } else {
               vm.targetDatabasesProperty().setAll(dbs);
             }
-            lblStatus.setText("Hazır");
+            lblStatus.setText(Messages.get("status.ready"));
           });
     } catch (Exception e) {
-      Platform.runLater(() -> lblStatus.setText("Hata: " + e.getMessage()));
+      Platform.runLater(() -> lblStatus.setText(Messages.get("err.prefix") + " " + e.getMessage()));
     }
   }
 
@@ -175,18 +176,18 @@ public final class RowCountDiffController implements Refreshable {
     long behind = results.stream().filter(e -> e.status() == RowStatus.TARGET_BEHIND).count();
     long ahead = results.stream().filter(e -> e.status() == RowStatus.TARGET_AHEAD).count();
 
-    lblChipSync.setText("Eşit: " + sync);
-    lblChipBehind.setText("Hedef eksik: " + behind);
-    lblChipAhead.setText("Hedef fazla: " + ahead);
-    lblChipTotal.setText("Toplam " + results.size() + " tablo");
+    lblChipSync.setText(Messages.get("rcd.chip.sync", sync));
+    lblChipBehind.setText(Messages.get("rcd.chip.behind", behind));
+    lblChipAhead.setText(Messages.get("rcd.chip.ahead", ahead));
+    lblChipTotal.setText(Messages.get("rcd.chip.total", results.size()));
 
     hboxSummary.setVisible(true);
     hboxSummary.setManaged(true);
 
     lblStatus.setText(
         (behind + ahead == 0)
-            ? "Tüm tablolar eşit"
-            : (behind + ahead) + " tabloda fark var");
+            ? Messages.get("rcd.status.sync")
+            : Messages.get("rcd.status.diff", behind + ahead));
   }
 
   private void showError(String msg) {
@@ -250,7 +251,7 @@ public final class RowCountDiffController implements Refreshable {
 
   private static String formatCount(long count) {
     if (count == ABSENT) {
-      return "(yok)";
+      return Messages.get("rcd.absent");
     }
     if (count < 0) {
       return "—";
@@ -260,10 +261,10 @@ public final class RowCountDiffController implements Refreshable {
 
   private static String statusLabel(RowStatus status) {
     return switch (status) {
-      case IN_SYNC -> "Eşit";
-      case TARGET_BEHIND -> "↓ Hedef eksik";
-      case TARGET_AHEAD -> "↑ Hedef fazla";
-      case UNSUPPORTED -> "— Desteklenmiyor";
+      case IN_SYNC -> Messages.get("rcd.status.label.sync");
+      case TARGET_BEHIND -> Messages.get("rcd.status.label.behind");
+      case TARGET_AHEAD -> Messages.get("rcd.status.label.ahead");
+      case UNSUPPORTED -> Messages.get("rcd.status.label.unsupported");
     };
   }
 

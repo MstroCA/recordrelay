@@ -25,6 +25,7 @@ import io.recordrelay.core.domain.MigrationDriftItem;
 import io.recordrelay.core.domain.MigrationDriftItem.DriftKind;
 import io.recordrelay.core.domain.MigrationDriftReport;
 import io.recordrelay.core.domain.SchemaPatchScript;
+import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.desktop.viewmodel.MigrationDriftViewModel;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -116,7 +117,7 @@ public final class MigrationDriftController implements Refreshable {
     if (conn == null || conn.isBlank()) {
       return;
     }
-    lblStatus.setText("Veritabanları yükleniyor…");
+    lblStatus.setText(Messages.get("db.loading"));
     new Thread(() -> loadDatabases(conn, true), "rr-drift-src-db").start();
   }
 
@@ -128,7 +129,7 @@ public final class MigrationDriftController implements Refreshable {
     if (conn == null || conn.isBlank()) {
       return;
     }
-    lblStatus.setText("Veritabanları yükleniyor…");
+    lblStatus.setText(Messages.get("db.loading"));
     new Thread(() -> loadDatabases(conn, false), "rr-drift-tgt-db").start();
   }
 
@@ -142,7 +143,7 @@ public final class MigrationDriftController implements Refreshable {
       return;
     }
 
-    lblStatus.setText("Analiz ediliyor…");
+    lblStatus.setText(Messages.get("drift.analyzing"));
     btnAnalyze.setDisable(true);
     tblDrift.getItems().clear();
     hideSummary();
@@ -167,7 +168,7 @@ public final class MigrationDriftController implements Refreshable {
               } catch (Exception ex) {
                 Platform.runLater(
                     () -> {
-                      showError("Analiz hatası: " + ex.getMessage());
+                      showError(Messages.get("drift.error", ex.getMessage()));
                       btnAnalyze.setDisable(false);
                     });
               }
@@ -183,7 +184,7 @@ public final class MigrationDriftController implements Refreshable {
     }
 
     btnPatch.setDisable(true);
-    btnPatch.setText("Üretiliyor…");
+    btnPatch.setText(Messages.get("patch.generating"));
 
     new Thread(
             () -> {
@@ -195,9 +196,9 @@ public final class MigrationDriftController implements Refreshable {
               } catch (Exception ex) {
                 Platform.runLater(
                     () -> {
-                      showError("SQL üretme hatası: " + ex.getMessage());
+                      showError(Messages.get("patch.error", ex.getMessage()));
                       btnPatch.setDisable(false);
-                      btnPatch.setText("SQL Üret");
+                      btnPatch.setText(Messages.get("btn.generate"));
                     });
               }
             },
@@ -230,10 +231,10 @@ public final class MigrationDriftController implements Refreshable {
             } else {
               vm.targetDatabasesProperty().setAll(dbs);
             }
-            lblStatus.setText("Hazır");
+            lblStatus.setText(Messages.get("status.ready"));
           });
     } catch (Exception e) {
-      Platform.runLater(() -> lblStatus.setText("Hata: " + e.getMessage()));
+      Platform.runLater(() -> lblStatus.setText(Messages.get("err.prefix") + " " + e.getMessage()));
     }
   }
 
@@ -247,12 +248,12 @@ public final class MigrationDriftController implements Refreshable {
     long colExtra = report.countByKind(DriftKind.COLUMN_EXTRA);
     long mismatch = report.countByKind(DriftKind.TYPE_MISMATCH);
 
-    lblSummaryMissing.setText("Eksik tablo: " + tblMissing);
-    lblSummaryExtra.setText("Fazla tablo: " + tblExtra);
-    lblSummaryColMiss.setText("Eksik kolon: " + colMissing);
-    lblSummaryColExtra.setText("Fazla kolon: " + colExtra);
-    lblSummaryMismatch.setText("Tip uyuşmazlığı: " + mismatch);
-    lblTotal.setText("Toplam " + report.items().size() + " fark");
+    lblSummaryMissing.setText(Messages.get("drift.summary.missing.tables", tblMissing));
+    lblSummaryExtra.setText(Messages.get("drift.summary.extra.tables", tblExtra));
+    lblSummaryColMiss.setText(Messages.get("drift.summary.missing.cols", colMissing));
+    lblSummaryColExtra.setText(Messages.get("drift.summary.extra.cols", colExtra));
+    lblSummaryMismatch.setText(Messages.get("drift.summary.type.mismatch", mismatch));
+    lblTotal.setText(Messages.get("drift.summary.total", report.items().size()));
 
     hboxSummary.setVisible(true);
     hboxSummary.setManaged(true);
@@ -260,18 +261,18 @@ public final class MigrationDriftController implements Refreshable {
 
     lblStatus.setText(
         report.isClean()
-            ? "Tam eşleşme — fark yok"
-            : report.items().size() + " fark bulundu");
+            ? Messages.get("drift.status.clean")
+            : Messages.get("drift.status.diffs", report.items().size()));
   }
 
   private void showPatchScript(SchemaPatchScript script) {
     taPatch.setText(script.fullScript());
     lblPatchStats.setText(
-        script.safeCount() + " güvenli, " + script.destructiveCount() + " yorum satırı");
+        Messages.get("patch.stats", script.safeCount(), script.destructiveCount()));
     patchPanel.setVisible(true);
     patchPanel.setManaged(true);
     btnPatch.setDisable(false);
-    btnPatch.setText("SQL Üret ▶");
+    btnPatch.setText(Messages.get("patch.btn.run"));
   }
 
   private void showError(String msg) {
@@ -343,11 +344,11 @@ public final class MigrationDriftController implements Refreshable {
 
   private static String kindLabel(DriftKind kind) {
     return switch (kind) {
-      case TABLE_MISSING -> "Eksik Tablo";
-      case TABLE_EXTRA -> "Fazla Tablo";
-      case COLUMN_MISSING -> "Eksik Kolon";
-      case COLUMN_EXTRA -> "Fazla Kolon";
-      case TYPE_MISMATCH -> "Tip Uyuşmazlığı";
+      case TABLE_MISSING -> Messages.get("drift.kind.table.missing");
+      case TABLE_EXTRA -> Messages.get("drift.kind.table.extra");
+      case COLUMN_MISSING -> Messages.get("drift.kind.col.missing");
+      case COLUMN_EXTRA -> Messages.get("drift.kind.col.extra");
+      case TYPE_MISMATCH -> Messages.get("drift.kind.type.mismatch");
     };
   }
 

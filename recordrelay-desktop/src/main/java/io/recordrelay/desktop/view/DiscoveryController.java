@@ -149,8 +149,7 @@ public final class DiscoveryController implements Refreshable {
       Platform.runLater(
           () -> {
             tblColumns.getItems().setAll(cols);
-            lblDiscoveryStatus.setText(
-                cols.size() + " column" + (cols.size() == 1 ? "" : "s"));
+            lblDiscoveryStatus.setText(cols.size() + " column" + (cols.size() == 1 ? "" : "s"));
           });
     } catch (Exception e) {
       Platform.runLater(() -> lblDiscoveryStatus.setText("Error: " + e.getMessage()));

@@ -24,39 +24,39 @@
                 <graphic><FontIcon iconLiteral="mdi2d-database-sync" iconSize="15"/></graphic>
             </Button>
             <Separator/>
-            <Button text="%nav.environments" maxWidth="Infinity"
+            <Button fx:id="btnNavEnv" text="%nav.environments" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showEnvironments">
                 <graphic><FontIcon iconLiteral="mdi2l-layers" iconSize="15"/></graphic>
             </Button>
-            <Button text="%nav.connections" maxWidth="Infinity"
+            <Button fx:id="btnNavConn" text="%nav.connections" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showConnections">
                 <graphic><FontIcon iconLiteral="mdi2d-database" iconSize="15"/></graphic>
             </Button>
-            <Button text="%nav.discovery" maxWidth="Infinity"
+            <Button fx:id="btnNavDisc" text="%nav.discovery" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showDiscovery">
                 <graphic><FontIcon iconLiteral="mdi2m-magnify" iconSize="15"/></graphic>
             </Button>
-            <Button text="%nav.monitor" maxWidth="Infinity"
+            <Button fx:id="btnNavMon" text="%nav.monitor" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showMonitor">
                 <graphic><FontIcon iconLiteral="mdi2v-view-dashboard" iconSize="15"/></graphic>
             </Button>
-            <Button text="%nav.graph.view" maxWidth="Infinity"
+            <Button fx:id="btnNavGraph" text="%nav.graph.view" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showGraphView">
                 <graphic><FontIcon iconLiteral="mdi2s-sitemap" iconSize="15"/></graphic>
             </Button>
-            <Button text="%nav.migration.drift" maxWidth="Infinity"
+            <Button fx:id="btnNavDrift" text="%nav.migration.drift" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showMigrationDrift">
                 <graphic><FontIcon iconLiteral="mdi2s-swap-horizontal" iconSize="15"/></graphic>
             </Button>
-            <Button text="%nav.row.count.diff" maxWidth="Infinity"
+            <Button fx:id="btnNavRowCnt" text="%nav.row.count.diff" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showRowCountDiff">
                 <graphic><FontIcon iconLiteral="mdi2t-table" iconSize="15"/></graphic>
             </Button>
-            <Button text="%nav.query" maxWidth="Infinity"
+            <Button fx:id="btnNavQuery" text="%nav.query" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showQuery">
                 <graphic><FontIcon iconLiteral="mdi2c-code-braces" iconSize="15"/></graphic>
             </Button>
-            <Button text="%nav.connection.health" maxWidth="Infinity"
+            <Button fx:id="btnNavHealth" text="%nav.connection.health" maxWidth="Infinity"
                     styleClass="nav-btn" onAction="#showConnectionHealth">
                 <graphic><FontIcon iconLiteral="mdi2h-heart-pulse" iconSize="15"/></graphic>
             </Button>

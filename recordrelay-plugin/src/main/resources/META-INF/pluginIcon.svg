@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1976D2"/>
+      <stop offset="100%" stop-color="#0D47A1"/>
+    </linearGradient>
+  </defs>
+  <rect width="40" height="40" rx="8" fill="url(#g)"/>
+  <!-- Left database cylinder -->
+  <ellipse cx="10" cy="14" rx="5" ry="2" fill="white" opacity="0.95"/>
+  <rect x="5" y="14" width="10" height="12" fill="white" opacity="0.6"/>
+  <ellipse cx="10" cy="26" rx="5" ry="2" fill="white" opacity="0.95"/>
+  <!-- Transfer arrow -->
+  <line x1="17" y1="20" x2="23" y2="20" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <polyline points="21,17.5 24,20 21,22.5" fill="none" stroke="white" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right database cylinder -->
+  <ellipse cx="30" cy="14" rx="5" ry="2" fill="white" opacity="0.95"/>
+  <rect x="25" y="14" width="10" height="12" fill="white" opacity="0.6"/>
+  <ellipse cx="30" cy="26" rx="5" ry="2" fill="white" opacity="0.95"/>
+</svg>

@@ -22,6 +22,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 /** JavaFX application entry point for RecordRelay Desktop. */
@@ -42,7 +43,8 @@ public final class RecordRelayApp extends Application {
     var scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
     addStylesheet(scene);
 
-    stage.setTitle("RecordRelay 0.1.0-SNAPSHOT");
+    stage.setTitle(readTitle());
+    loadIcons(stage);
     stage.setScene(scene);
     stage.setMinWidth(MIN_WIDTH);
     stage.setMinHeight(MIN_HEIGHT);
@@ -53,6 +55,27 @@ public final class RecordRelayApp extends Application {
     URL css = getClass().getResource("/io/recordrelay/desktop/css/recordrelay.css");
     if (css != null) {
       scene.getStylesheets().add(css.toExternalForm());
+    }
+  }
+
+  private String readTitle() {
+    try (var is = getClass().getResourceAsStream("/io/recordrelay/desktop/app.properties")) {
+      if (is == null) return "RecordRelay";
+      var props = new java.util.Properties();
+      props.load(is);
+      var version = props.getProperty("app.version", "");
+      return version.isEmpty() ? "RecordRelay" : "RecordRelay " + version;
+    } catch (Exception e) {
+      return "RecordRelay";
+    }
+  }
+
+  private void loadIcons(Stage stage) {
+    for (var name : new String[]{"icon-256.png", "icon-64.png"}) {
+      var is = getClass().getResourceAsStream("/io/recordrelay/desktop/" + name);
+      if (is != null) {
+        stage.getIcons().add(new Image(is));
+      }
     }
   }
 

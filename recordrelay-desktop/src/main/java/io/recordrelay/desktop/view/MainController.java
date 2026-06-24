@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javafx.fxml.FXML;
@@ -41,6 +42,18 @@ public final class MainController {
   @FXML private Label lblVersion;
   @FXML private Button btnTheme;
   @FXML private ComboBox<String> cboLanguage;
+
+  @FXML private Button btnNavEnv;
+  @FXML private Button btnNavConn;
+  @FXML private Button btnNavDisc;
+  @FXML private Button btnNavMon;
+  @FXML private Button btnNavGraph;
+  @FXML private Button btnNavDrift;
+  @FXML private Button btnNavRowCnt;
+  @FXML private Button btnNavQuery;
+  @FXML private Button btnNavHealth;
+
+  private List<Button> navButtons;
 
   private static final Map<String, String> LANG_CODES = new LinkedHashMap<>();
 
@@ -67,6 +80,9 @@ public final class MainController {
 
   @FXML
   void initialize() {
+    navButtons = List.of(
+        btnNavEnv, btnNavConn, btnNavDisc, btnNavMon,
+        btnNavGraph, btnNavDrift, btnNavRowCnt, btnNavQuery, btnNavHealth);
     cboLanguage.getItems().addAll(LANG_CODES.keySet());
     cboLanguage.setValue("English");
     lblVersion.setText(readVersion());
@@ -149,6 +165,8 @@ public final class MainController {
     lblStatus.setText(message);
   }
 
+  private static final Map<String, Button> SCREEN_BUTTON_MAP = new HashMap<>();
+
   private void navigate(String screen) {
     currentScreen = screen;
     if (!screenCache.containsKey(screen)) {
@@ -159,6 +177,36 @@ public final class MainController {
     if (ctrl instanceof Refreshable r) {
       r.refresh();
     }
+    updateActiveNavButton(screen);
+  }
+
+  private void updateActiveNavButton(String screen) {
+    if (navButtons == null) {
+      return;
+    }
+    Map<String, Button> map = buildScreenButtonMap();
+    for (var btn : navButtons) {
+      btn.getStyleClass().remove("nav-btn-active");
+    }
+    var active = map.get(screen);
+    if (active != null) {
+      active.getStyleClass().add("nav-btn-active");
+    }
+  }
+
+  private Map<String, Button> buildScreenButtonMap() {
+    if (SCREEN_BUTTON_MAP.isEmpty() && navButtons != null) {
+      SCREEN_BUTTON_MAP.put("environments",    btnNavEnv);
+      SCREEN_BUTTON_MAP.put("connections",     btnNavConn);
+      SCREEN_BUTTON_MAP.put("discovery",       btnNavDisc);
+      SCREEN_BUTTON_MAP.put("monitor",         btnNavMon);
+      SCREEN_BUTTON_MAP.put("graph-view",      btnNavGraph);
+      SCREEN_BUTTON_MAP.put("migration-drift", btnNavDrift);
+      SCREEN_BUTTON_MAP.put("row-count-diff",  btnNavRowCnt);
+      SCREEN_BUTTON_MAP.put("query",           btnNavQuery);
+      SCREEN_BUTTON_MAP.put("connection-health", btnNavHealth);
+    }
+    return SCREEN_BUTTON_MAP;
   }
 
   private void loadFxml(String name) {

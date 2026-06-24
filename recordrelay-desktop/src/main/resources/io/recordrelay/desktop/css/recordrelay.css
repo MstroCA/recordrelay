@@ -8,10 +8,11 @@
 }
 
 .sidebar-title {
-    -fx-font-size: 13px;
+    -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-padding: 4 0 8 4;
-    -fx-text-fill: -color-fg-default;
+    -fx-padding: 4 0 10 4;
+    -fx-text-fill: -color-fg-subtle;
+    -fx-letter-spacing: 0.06em;
 }
 
 .nav-btn {
@@ -19,7 +20,7 @@
     -fx-padding: 8 12 8 10;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-border-width: 1;
+    -fx-border-width: 0 0 0 3;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-font-size: 13px;
@@ -42,6 +43,18 @@
     -fx-icon-color: -color-accent-fg;
 }
 
+/* Active nav button — marks the currently visible screen */
+.nav-btn-active {
+    -fx-background-color: -color-accent-subtle;
+    -fx-border-color: -color-accent-emphasis;
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-weight: bold;
+}
+
+.nav-btn-active .ikonli-font-icon {
+    -fx-icon-color: -color-accent-fg;
+}
+
 .status-label {
     -fx-font-size: 11px;
     -fx-text-fill: -color-success-fg;
@@ -57,13 +70,15 @@
 
 /* ── Screen typography ───────────────────────────────────────────────── */
 .screen-title {
-    -fx-font-size: 22px;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
 }
 
 .screen-subtitle {
     -fx-font-size: 13px;
     -fx-text-fill: -color-fg-muted;
+    -fx-padding: 2 0 0 0;
 }
 
 .placeholder-hint {
@@ -77,10 +92,10 @@
     -fx-background-color: -color-bg-overlay;
     -fx-border-color: -color-border-default;
     -fx-border-width: 1;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
     -fx-padding: 16;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 4, 0, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 0, 2);
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────── */
@@ -90,7 +105,7 @@
 }
 
 .progress-bar > .track {
-    -fx-background-color: -color-accent-subtle;
+    -fx-background-color: -color-neutral-subtle;
     -fx-background-radius: 4;
 }
 
@@ -117,6 +132,7 @@
     -fx-border-radius: 6;
     -fx-cursor: hand;
     -fx-graphic-text-gap: 8;
+    -fx-font-weight: bold;
 }
 
 .accent-btn:hover {
@@ -151,12 +167,14 @@
 .section-label {
     -fx-font-size: 10px;
     -fx-font-weight: bold;
-    -fx-text-fill: -color-fg-muted;
-    -fx-padding: 4 0 2 0;
+    -fx-text-fill: -color-fg-subtle;
+    -fx-padding: 4 0 4 0;
+    -fx-letter-spacing: 0.06em;
 }
 
 .field-label {
     -fx-font-size: 12px;
+    -fx-font-weight: bold;
     -fx-text-fill: -color-fg-default;
 }
 
@@ -181,11 +199,11 @@
 /* ── Dashboard / KPI cards ───────────────────────────────────────────── */
 .kpi-card {
     -fx-min-width: 100;
-    -fx-padding: 14 16 14 16;
+    -fx-padding: 18 20 18 20;
 }
 
 .kpi-value {
-    -fx-font-size: 28px;
+    -fx-font-size: 30px;
     -fx-font-weight: bold;
     -fx-text-fill: -color-fg-default;
 }
@@ -197,7 +215,8 @@
 .kpi-label {
     -fx-font-size: 11px;
     -fx-text-fill: -color-fg-muted;
-    -fx-padding: 2 0 0 0;
+    -fx-padding: 4 0 0 0;
+    -fx-letter-spacing: 0.04em;
 }
 
 .kpi-mono {
@@ -219,22 +238,24 @@
     -fx-background-color: -color-bg-subtle;
     -fx-border-color: -color-border-default;
     -fx-border-width: 1;
-    -fx-border-radius: 4;
+    -fx-border-radius: 6;
 }
 
 /* ── Nav accent button (Clone Context) ──────────────────────────────── */
 .nav-btn-accent {
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 8 12 8 10;
+    -fx-padding: 9 12 9 10;
     -fx-background-color: -color-accent-emphasis;
     -fx-text-fill: white;
     -fx-border-color: transparent;
+    -fx-border-width: 0 0 0 3;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-cursor: hand;
     -fx-graphic-text-gap: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0, 0, 1);
 }
 
 .nav-btn-accent:hover {
@@ -263,9 +284,9 @@
 /* ── Migration Drift — summary chips ────────────────────────────────── */
 .drift-chip-missing, .drift-chip-extra, .drift-chip-colmiss,
 .drift-chip-colextra, .drift-chip-mismatch {
-    -fx-padding: 4 10 4 10;
-    -fx-background-radius: 12;
-    -fx-font-size: 12px;
+    -fx-padding: 4 12 4 12;
+    -fx-background-radius: 20;
+    -fx-font-size: 11px;
     -fx-font-weight: bold;
 }
 .drift-chip-missing  { -fx-background-color: -color-danger-subtle;  -fx-text-fill: -color-danger-fg; }

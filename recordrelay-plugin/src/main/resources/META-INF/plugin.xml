@@ -3,9 +3,10 @@
     <name>RecordRelay</name>
     <vendor>RecordRelay Authors</vendor>
     <description>
-        RecordRelay — reproduce real business data (a single ID, order, or event) along with
-        its relationships from one environment to another in a working state, without leaving
-        your IDE. Compatible with IntelliJ IDEA 2024.1 and later.
+        Clone a database record and its full FK-linked context from one environment to another —
+        source, target, ID, done. Supports PostgreSQL, MySQL, SQL Server, Oracle, MongoDB and more.
+        Includes PII masking, field overrides, schema discovery, and export packages.
+        Compatible with IntelliJ IDEA 2024.1 and later.
     </description>
 
     <depends>com.intellij.modules.platform</depends>

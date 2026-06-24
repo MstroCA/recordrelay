@@ -38,11 +38,13 @@ import javafx.scene.layout.StackPane;
 public final class MainController {
 
   @FXML private StackPane contentPane;
+  @FXML private Label lblSidebarTitle;
   @FXML private Label lblStatus;
   @FXML private Label lblVersion;
   @FXML private Button btnTheme;
   @FXML private ComboBox<String> cboLanguage;
 
+  @FXML private Button btnNavCloneCtx;
   @FXML private Button btnNavEnv;
   @FXML private Button btnNavConn;
   @FXML private Button btnNavDisc;
@@ -107,7 +109,7 @@ public final class MainController {
     Messages.setLocale(Locale.of(LANG_CODES.getOrDefault(selected, "en")));
     screenCache.clear();
     controllerCache.clear();
-    btnTheme.setText(darkMode ? Messages.get("theme.light") : Messages.get("theme.dark"));
+    refreshSidebarTexts();
     navigate(currentScreen);
   }
 
@@ -186,6 +188,22 @@ public final class MainController {
       r.refresh();
     }
     updateActiveNavButton(screen);
+  }
+
+  private void refreshSidebarTexts() {
+    lblSidebarTitle.setText(Messages.get("app.title"));
+    btnNavCloneCtx.setText(Messages.get("nav.clone.context"));
+    btnNavEnv.setText(Messages.get("nav.environments"));
+    btnNavConn.setText(Messages.get("nav.connections"));
+    btnNavDisc.setText(Messages.get("nav.discovery"));
+    btnNavMon.setText(Messages.get("nav.monitor"));
+    btnNavGraph.setText(Messages.get("nav.graph.view"));
+    btnNavDrift.setText(Messages.get("nav.migration.drift"));
+    btnNavRowCnt.setText(Messages.get("nav.row.count.diff"));
+    btnNavQuery.setText(Messages.get("nav.query"));
+    btnNavHealth.setText(Messages.get("nav.connection.health"));
+    btnTheme.setText(darkMode ? Messages.get("theme.light") : Messages.get("theme.dark"));
+    lblStatus.setText(Messages.get("status.ready"));
   }
 
   private void updateActiveNavButton(String screen) {

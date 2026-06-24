@@ -5,7 +5,7 @@
     <description>
         RecordRelay — reproduce real business data (a single ID, order, or event) along with
         its relationships from one environment to another in a working state, without leaving
-        your IDE. Requires IntelliJ IDEA 2024.1 or later.
+        your IDE. Compatible with IntelliJ IDEA 2024.1 and later.
     </description>
 
     <depends>com.intellij.modules.platform</depends>

@@ -54,9 +54,9 @@
 
                 <VBox spacing="8" alignment="BOTTOM_CENTER" minWidth="130">
                     <Region VBox.vgrow="ALWAYS"/>
-                    <Button fx:id="btnAnalyze" text="Analiz Et ▶"
+                    <Button fx:id="btnAnalyze" text="Analiz Et"
                             maxWidth="Infinity" onAction="#onAnalyze" styleClass="accent-btn"/>
-                    <Label fx:id="lblStatus" text="● Hazır" styleClass="status-label"/>
+                    <Label fx:id="lblStatus" text="Hazır" styleClass="status-label"/>
                 </VBox>
 
             </HBox>
@@ -70,7 +70,7 @@
                 <Label fx:id="lblSummaryMismatch" styleClass="drift-chip-mismatch"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="lblTotal" styleClass="hint-label"/>
-                <Button fx:id="btnPatch" text="SQL Üret ▶" onAction="#onGeneratePatch"
+                <Button fx:id="btnPatch" text="SQL Üret" onAction="#onGeneratePatch"
                         styleClass="accent-btn" disable="true"/>
             </HBox>
 

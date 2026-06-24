@@ -293,7 +293,7 @@ public final class CloneContextController implements Refreshable {
                 Platform.runLater(
                     () -> {
                       btnDetectRoot.setDisable(false);
-                      btnDetectRoot.setText("🎯 Tespit Et");
+                      btnDetectRoot.setText("Tespit Et");
                       showError("Kafa tablo tespiti başarısız: " + e.getMessage());
                     });
               }
@@ -304,7 +304,7 @@ public final class CloneContextController implements Refreshable {
 
   private void showRootSuggestions(List<RootTableCandidate> candidates) {
     btnDetectRoot.setDisable(false);
-    btnDetectRoot.setText("🎯 Tespit Et");
+    btnDetectRoot.setText("Tespit Et");
 
     if (candidates.isEmpty()) {
       showError("FK ilişkisi bulunamadı — tabloyu manuel seçin.");
@@ -341,7 +341,7 @@ public final class CloneContextController implements Refreshable {
       return;
     }
     btnDryRun.setDisable(true);
-    btnDryRun.setText("🔍  Önizleniyor…");
+    btnDryRun.setText("Önizleniyor…");
     dryRunPanel.setVisible(false);
     dryRunPanel.setManaged(false);
 
@@ -499,7 +499,7 @@ public final class CloneContextController implements Refreshable {
       Platform.runLater(
           () -> {
             btnDryRun.setDisable(false);
-            btnDryRun.setText("🔍  Önizle");
+            btnDryRun.setText("Önizle");
             showError("Önizleme hatası: " + e.getMessage());
           });
     }
@@ -517,7 +517,7 @@ public final class CloneContextController implements Refreshable {
     dryRunPanel.setVisible(true);
     dryRunPanel.setManaged(true);
     btnDryRun.setDisable(false);
-    btnDryRun.setText("🔍  Önizle");
+    btnDryRun.setText("Önizle");
   }
 
   private void bindDryRunTable() {

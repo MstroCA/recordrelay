@@ -27,10 +27,13 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Slider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Controller for the Graph View screen. Discovers and renders table relationship graphs. */
+/**
+ * Controller for the Graph View screen. Discovers and renders UML-style table relationship graphs.
+ */
 public final class GraphViewController implements Refreshable {
 
   private static final Logger LOG = LoggerFactory.getLogger(GraphViewController.class);
@@ -41,6 +44,7 @@ public final class GraphViewController implements Refreshable {
   @FXML private Label lblStatus;
   @FXML private ScrollPane graphScroll;
   @FXML private RelationshipGraphCanvas graphCanvas;
+  @FXML private Slider sldZoom;
 
   private ConfigStore configStore;
   private ConnProfileResolver resolver;
@@ -55,6 +59,7 @@ public final class GraphViewController implements Refreshable {
       btnDiscover.setDisable(true);
       return;
     }
+    sldZoom.valueProperty().addListener((obs, old, val) -> graphCanvas.setZoom(val.doubleValue()));
     loadConnections();
     cboSource.setOnAction(e -> loadTables());
   }
@@ -75,6 +80,21 @@ public final class GraphViewController implements Refreshable {
     btnDiscover.setDisable(true);
     lblStatus.setText("Discovering relationships…");
     new Thread(() -> discoverGraph(connName, rootTable), "rr-graph").start();
+  }
+
+  @FXML
+  void onZoomIn() {
+    sldZoom.setValue(Math.min(2.5, sldZoom.getValue() + 0.15));
+  }
+
+  @FXML
+  void onZoomOut() {
+    sldZoom.setValue(Math.max(0.25, sldZoom.getValue() - 0.15));
+  }
+
+  @FXML
+  void onZoomReset() {
+    sldZoom.setValue(1.0);
   }
 
   private void loadConnections() {

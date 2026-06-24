@@ -105,8 +105,8 @@ public final class HealthCheckController implements Refreshable {
     lblSummary.setText(ok + " OK  |  " + degraded + " DEGRADED  |  " + down + " DOWN");
     lblStatus.setText(
         down == 0 && degraded == 0
-            ? "✓ Tüm bağlantılar erişilebilir"
-            : "● " + (down + degraded) + " bağlantıda sorun var");
+            ? "Tüm bağlantılar erişilebilir"
+            : (down + degraded) + " bağlantıda sorun var");
   }
 
   private void bindTable() {
@@ -142,9 +142,9 @@ public final class HealthCheckController implements Refreshable {
 
   private static String statusLabel(Status status) {
     return switch (status) {
-      case OK -> "✓ OK";
-      case DEGRADED -> "⚠ DEGRADED";
-      case DOWN -> "✗ DOWN";
+      case OK -> "OK";
+      case DEGRADED -> "DEGRADED";
+      case DOWN -> "DOWN";
     };
   }
 

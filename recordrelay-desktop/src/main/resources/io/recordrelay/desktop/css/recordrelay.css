@@ -8,30 +8,45 @@
 }
 
 .sidebar-title {
-    -fx-font-size: 15px;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-padding: 4 0 8 4;
+    -fx-text-fill: -color-fg-default;
 }
 
 .nav-btn {
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 9 12 9 12;
+    -fx-padding: 8 12 8 10;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
     -fx-font-size: 13px;
     -fx-cursor: hand;
+    -fx-graphic-text-gap: 10;
+    -fx-text-fill: -color-fg-default;
 }
 
 .nav-btn:hover {
     -fx-background-color: -color-accent-subtle;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.nav-btn .ikonli-font-icon {
+    -fx-icon-color: -color-fg-muted;
+    -fx-icon-size: 15px;
+}
+
+.nav-btn:hover .ikonli-font-icon {
+    -fx-icon-color: -color-accent-fg;
 }
 
 .status-label {
     -fx-font-size: 11px;
     -fx-text-fill: -color-success-fg;
     -fx-padding: 4 0 4 4;
+    -fx-font-weight: bold;
 }
 
 /* ── Content pane ────────────────────────────────────────────────────── */
@@ -53,7 +68,7 @@
 
 .placeholder-hint {
     -fx-font-size: 13px;
-    -fx-text-fill: -color-warning-fg;
+    -fx-text-fill: -color-fg-muted;
     -fx-padding: 16 0 0 0;
 }
 
@@ -65,6 +80,7 @@
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 4, 0, 0, 1);
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────── */
@@ -93,20 +109,26 @@
     -fx-padding: 4 0 0 0;
 }
 
-/* ── Accent button (Add actions) ────────────────────────────────────── */
+/* ── Accent button ────────────────────────────────────────────────────── */
 .accent-btn {
     -fx-background-color: -color-accent-emphasis;
     -fx-text-fill: white;
     -fx-background-radius: 6;
     -fx-border-radius: 6;
     -fx-cursor: hand;
+    -fx-graphic-text-gap: 8;
 }
 
 .accent-btn:hover {
     -fx-opacity: 0.88;
 }
 
-/* ── Danger button (destructive actions) ────────────────────────────── */
+.accent-btn .ikonli-font-icon {
+    -fx-icon-color: white;
+    -fx-icon-size: 14px;
+}
+
+/* ── Danger button ────────────────────────────────────────────────────── */
 .danger-btn {
     -fx-background-color: -color-danger-emphasis;
     -fx-text-fill: white;
@@ -127,11 +149,10 @@
 }
 
 .section-label {
-    -fx-font-size: 11px;
+    -fx-font-size: 10px;
     -fx-font-weight: bold;
     -fx-text-fill: -color-fg-muted;
     -fx-padding: 4 0 2 0;
-    -fx-letter-spacing: 0.08em;
 }
 
 .field-label {
@@ -201,10 +222,10 @@
     -fx-border-radius: 4;
 }
 
-/* ── Nav accent button (Clone Context highlight) ─────────────────────── */
+/* ── Nav accent button (Clone Context) ──────────────────────────────── */
 .nav-btn-accent {
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 9 12 9 12;
+    -fx-padding: 8 12 8 10;
     -fx-background-color: -color-accent-emphasis;
     -fx-text-fill: white;
     -fx-border-color: transparent;
@@ -213,10 +234,16 @@
     -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-cursor: hand;
+    -fx-graphic-text-gap: 10;
 }
 
 .nav-btn-accent:hover {
     -fx-opacity: 0.88;
+}
+
+.nav-btn-accent .ikonli-font-icon {
+    -fx-icon-color: white;
+    -fx-icon-size: 15px;
 }
 
 /* ── Graph view scroll pane ──────────────────────────────────────────── */
@@ -226,24 +253,12 @@
 }
 
 /* ── Migration Drift — row colours ──────────────────────────────────── */
-.drift-row-missing {
-    -fx-background-color: derive(-color-danger-subtle, 10%);
-}
-.drift-row-missing:selected {
-    -fx-background-color: derive(-color-danger-subtle, -15%);
-}
-.drift-row-extra {
-    -fx-background-color: derive(-color-warning-subtle, 10%);
-}
-.drift-row-extra:selected {
-    -fx-background-color: derive(-color-warning-subtle, -15%);
-}
-.drift-row-mismatch {
-    -fx-background-color: derive(-color-accent-subtle, 10%);
-}
-.drift-row-mismatch:selected {
-    -fx-background-color: derive(-color-accent-subtle, -15%);
-}
+.drift-row-missing { -fx-background-color: derive(-color-danger-subtle, 10%); }
+.drift-row-missing:selected { -fx-background-color: derive(-color-danger-subtle, -15%); }
+.drift-row-extra { -fx-background-color: derive(-color-warning-subtle, 10%); }
+.drift-row-extra:selected { -fx-background-color: derive(-color-warning-subtle, -15%); }
+.drift-row-mismatch { -fx-background-color: derive(-color-accent-subtle, 10%); }
+.drift-row-mismatch:selected { -fx-background-color: derive(-color-accent-subtle, -15%); }
 
 /* ── Migration Drift — summary chips ────────────────────────────────── */
 .drift-chip-missing, .drift-chip-extra, .drift-chip-colmiss,
@@ -260,21 +275,9 @@
 .drift-chip-mismatch { -fx-background-color: -color-accent-subtle;  -fx-text-fill: -color-accent-fg; }
 
 /* ── Connection Health — row colours ────────────────────────────────── */
-.health-row-ok {
-    -fx-background-color: derive(-color-success-subtle, 10%);
-}
-.health-row-ok:selected {
-    -fx-background-color: derive(-color-success-subtle, -15%);
-}
-.health-row-degraded {
-    -fx-background-color: derive(-color-warning-subtle, 10%);
-}
-.health-row-degraded:selected {
-    -fx-background-color: derive(-color-warning-subtle, -15%);
-}
-.health-row-down {
-    -fx-background-color: derive(-color-danger-subtle, 10%);
-}
-.health-row-down:selected {
-    -fx-background-color: derive(-color-danger-subtle, -15%);
-}
+.health-row-ok { -fx-background-color: derive(-color-success-subtle, 10%); }
+.health-row-ok:selected { -fx-background-color: derive(-color-success-subtle, -15%); }
+.health-row-degraded { -fx-background-color: derive(-color-warning-subtle, 10%); }
+.health-row-degraded:selected { -fx-background-color: derive(-color-warning-subtle, -15%); }
+.health-row-down { -fx-background-color: derive(-color-danger-subtle, 10%); }
+.health-row-down:selected { -fx-background-color: derive(-color-danger-subtle, -15%); }

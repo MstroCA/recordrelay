@@ -94,7 +94,7 @@
                     styleClass="accent-btn"/>
             <Button text="Clear History" onAction="#onClear"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="lblHealthStatus" text="● Ready" styleClass="status-label"/>
+            <Label fx:id="lblHealthStatus" text="Ready" styleClass="status-label"/>
         </HBox>
     </bottom>
 

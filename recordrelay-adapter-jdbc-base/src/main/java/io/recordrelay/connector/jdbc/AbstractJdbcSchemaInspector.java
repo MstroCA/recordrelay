@@ -145,22 +145,68 @@ public abstract class AbstractJdbcSchemaInspector implements SchemaInspector {
       Map<String, Integer> inDegree,
       Map<String, Integer> outDegree)
       throws SQLException {
+    var tableNameSet = new HashSet<String>();
     for (TableRef t : tables) {
-      inDegree.put(t.tableName().toLowerCase(), 0);
-      outDegree.put(t.tableName().toLowerCase(), 0);
+      String key = t.tableName().toLowerCase();
+      inDegree.put(key, 0);
+      outDegree.put(key, 0);
+      tableNameSet.add(key);
     }
     for (TableRef t : tables) {
       String schema = t.schemaName().isBlank() ? null : t.schemaName();
+      var knownOut = new HashSet<String>();
       try (ResultSet fks = meta.getImportedKeys(database.name(), schema, t.tableName())) {
         while (fks.next()) {
           String pkTable = fks.getString("PKTABLE_NAME").toLowerCase();
+          String fkCol = fks.getString("FKCOLUMN_NAME").toLowerCase();
           outDegree.merge(t.tableName().toLowerCase(), 1, Integer::sum);
           inDegree.merge(pkTable, 1, Integer::sum);
+          knownOut.add(fkCol);
         }
       } catch (SQLException ignored) {
         // table may be inaccessible
       }
+      addLogicalFkDegrees(meta, database, t, tableNameSet, knownOut, inDegree, outDegree);
     }
+  }
+
+  private static void addLogicalFkDegrees(
+      DatabaseMetaData meta,
+      DatabaseRef database,
+      TableRef t,
+      Set<String> tableNameSet,
+      Set<String> knownOut,
+      Map<String, Integer> inDegree,
+      Map<String, Integer> outDegree)
+      throws SQLException {
+    String schema = t.schemaName().isBlank() ? null : t.schemaName();
+    String tKey = t.tableName().toLowerCase();
+    try (ResultSet cols = meta.getColumns(database.name(), schema, t.tableName(), "%")) {
+      while (cols.next()) {
+        String colName = cols.getString("COLUMN_NAME").toLowerCase();
+        if (!colName.endsWith("_id") || knownOut.contains(colName)) {
+          continue;
+        }
+        String base = colName.substring(0, colName.length() - 3);
+        String refTable = resolveRefTable(base, tableNameSet);
+        if (refTable == null || refTable.equals(tKey)) {
+          continue;
+        }
+        outDegree.merge(tKey, 1, Integer::sum);
+        inDegree.merge(refTable, 1, Integer::sum);
+      }
+    } catch (SQLException ignored) {
+      // column scan not supported — skip
+    }
+  }
+
+  private static String resolveRefTable(String base, Set<String> tableNameSet) {
+    for (var candidate : List.of(base, base + "s", base + "es")) {
+      if (tableNameSet.contains(candidate)) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   private static List<RootTableCandidate> rankCandidates(

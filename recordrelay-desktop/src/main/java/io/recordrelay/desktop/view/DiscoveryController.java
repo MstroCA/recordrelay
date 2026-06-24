@@ -121,7 +121,7 @@ public final class DiscoveryController implements Refreshable {
       Platform.runLater(
           () -> {
             discoveryVm.sourceDatabasesProperty().setAll(dbs);
-            lblDiscoveryStatus.setText("● Ready");
+            lblDiscoveryStatus.setText("Ready");
           });
     } catch (Exception e) {
       Platform.runLater(() -> lblDiscoveryStatus.setText("Error: " + e.getMessage()));
@@ -135,7 +135,7 @@ public final class DiscoveryController implements Refreshable {
       Platform.runLater(
           () -> {
             discoveryVm.sourceTablesProperty().setAll(tables);
-            lblDiscoveryStatus.setText("● Ready");
+            lblDiscoveryStatus.setText("Ready");
           });
     } catch (Exception e) {
       Platform.runLater(() -> lblDiscoveryStatus.setText("Error: " + e.getMessage()));
@@ -150,7 +150,7 @@ public final class DiscoveryController implements Refreshable {
           () -> {
             tblColumns.getItems().setAll(cols);
             lblDiscoveryStatus.setText(
-                "● " + cols.size() + " column" + (cols.size() == 1 ? "" : "s"));
+                cols.size() + " column" + (cols.size() == 1 ? "" : "s"));
           });
     } catch (Exception e) {
       Platform.runLater(() -> lblDiscoveryStatus.setText("Error: " + e.getMessage()));

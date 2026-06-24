@@ -197,7 +197,7 @@ public final class MigrationDriftController implements Refreshable {
                     () -> {
                       showError("SQL üretme hatası: " + ex.getMessage());
                       btnPatch.setDisable(false);
-                      btnPatch.setText("SQL Üret ▶");
+                      btnPatch.setText("SQL Üret");
                     });
               }
             },
@@ -230,7 +230,7 @@ public final class MigrationDriftController implements Refreshable {
             } else {
               vm.targetDatabasesProperty().setAll(dbs);
             }
-            lblStatus.setText("● Hazır");
+            lblStatus.setText("Hazır");
           });
     } catch (Exception e) {
       Platform.runLater(() -> lblStatus.setText("Hata: " + e.getMessage()));
@@ -260,8 +260,8 @@ public final class MigrationDriftController implements Refreshable {
 
     lblStatus.setText(
         report.isClean()
-            ? "✓ Tam eşleşme — fark yok"
-            : "● " + report.items().size() + " fark bulundu");
+            ? "Tam eşleşme — fark yok"
+            : report.items().size() + " fark bulundu");
   }
 
   private void showPatchScript(SchemaPatchScript script) {

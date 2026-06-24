@@ -52,9 +52,9 @@
 
                 <VBox spacing="8" alignment="BOTTOM_CENTER" minWidth="130">
                     <Region VBox.vgrow="ALWAYS"/>
-                    <Button fx:id="btnCompare" text="Karşılaştır ▶"
+                    <Button fx:id="btnCompare" text="Karşılaştır"
                             maxWidth="Infinity" onAction="#onCompare" styleClass="accent-btn"/>
-                    <Label fx:id="lblStatus" text="● Hazır" styleClass="status-label"/>
+                    <Label fx:id="lblStatus" text="Hazır" styleClass="status-label"/>
                 </VBox>
 
             </HBox>

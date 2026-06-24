@@ -160,7 +160,7 @@ public final class RowCountDiffController implements Refreshable {
             } else {
               vm.targetDatabasesProperty().setAll(dbs);
             }
-            lblStatus.setText("● Hazır");
+            lblStatus.setText("Hazır");
           });
     } catch (Exception e) {
       Platform.runLater(() -> lblStatus.setText("Hata: " + e.getMessage()));
@@ -185,8 +185,8 @@ public final class RowCountDiffController implements Refreshable {
 
     lblStatus.setText(
         (behind + ahead == 0)
-            ? "✓ Tüm tablolar eşit"
-            : "● " + (behind + ahead) + " tabloda fark var");
+            ? "Tüm tablolar eşit"
+            : (behind + ahead) + " tabloda fark var");
   }
 
   private void showError(String msg) {
@@ -260,7 +260,7 @@ public final class RowCountDiffController implements Refreshable {
 
   private static String statusLabel(RowStatus status) {
     return switch (status) {
-      case IN_SYNC -> "✓ Eşit";
+      case IN_SYNC -> "Eşit";
       case TARGET_BEHIND -> "↓ Hedef eksik";
       case TARGET_AHEAD -> "↑ Hedef fazla";
       case UNSUPPORTED -> "— Desteklenmiyor";

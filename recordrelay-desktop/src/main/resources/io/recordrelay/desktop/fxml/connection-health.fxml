@@ -29,11 +29,11 @@
 
             <!-- ── Action bar ─────────────────────────────────────────────────── -->
             <HBox spacing="12" alignment="CENTER_LEFT" styleClass="card">
-                <Button fx:id="btnCheck" text="▶  Tümünü Test Et"
+                <Button fx:id="btnCheck" text="Tümünü Test Et"
                         onAction="#onCheckAll" styleClass="accent-btn"/>
                 <ProgressIndicator fx:id="progressIndicator" prefWidth="22" prefHeight="22"
                                    visible="false" managed="false"/>
-                <Label fx:id="lblStatus" text="● Hazır" styleClass="status-label"/>
+                <Label fx:id="lblStatus" text="Hazır" styleClass="status-label"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Label fx:id="lblSummary" styleClass="hint-label"/>
             </HBox>

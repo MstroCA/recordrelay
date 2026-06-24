@@ -69,7 +69,7 @@
                             <HBox alignment="CENTER_LEFT" spacing="8">
                                 <Label text="Başlangıç Tablosu (root table)" styleClass="field-label"
                                        HBox.hgrow="ALWAYS"/>
-                                <Button fx:id="btnDetectRoot" text="🎯 Tespit Et"
+                                <Button fx:id="btnDetectRoot" text="Tespit Et"
                                         onAction="#onDetectRoot" disable="true"
                                         styleClass="nav-btn"/>
                             </HBox>
@@ -171,10 +171,10 @@
     <bottom>
         <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
             <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
-            <Button fx:id="btnClone"   text="▶  Context Kopyala" onAction="#onClone" styleClass="accent-btn"/>
-            <Button fx:id="btnExport"  text="📦  Paket Dışa Aktar" onAction="#onExport" disable="true"/>
+            <Button fx:id="btnClone"   text="Context Kopyala" onAction="#onClone" styleClass="accent-btn"/>
+            <Button fx:id="btnExport"  text="Paket Dışa Aktar" onAction="#onExport" disable="true"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="btnDryRun"  text="🔍  Önizle" onAction="#onDryRun"/>
+            <Button fx:id="btnDryRun"  text="Önizle" onAction="#onDryRun"/>
         </HBox>
     </bottom>
 

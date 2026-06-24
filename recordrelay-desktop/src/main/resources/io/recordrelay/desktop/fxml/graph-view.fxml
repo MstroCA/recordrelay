@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import io.recordrelay.desktop.view.RelationshipGraphCanvas?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.Group?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Slider?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -15,33 +17,38 @@
     <top>
         <VBox spacing="4">
             <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
-            <Label text="Graph View" styleClass="screen-title"/>
-            <Label text="Visual relationship graph — root table and its FK-connected dependencies."
+            <Label text="%nav.graph.view" styleClass="screen-title"/>
+            <Label text="UML-style FK diagram — scroll to pan, use the zoom slider to resize."
                    styleClass="screen-subtitle"/>
         </VBox>
     </top>
 
     <center>
-        <ScrollPane fx:id="graphScroll" fitToWidth="true" fitToHeight="true"
-                    styleClass="graph-scroll" VBox.vgrow="ALWAYS">
-            <RelationshipGraphCanvas fx:id="graphCanvas"/>
+        <ScrollPane fx:id="graphScroll" pannable="true" styleClass="graph-scroll">
+            <Group>
+                <RelationshipGraphCanvas fx:id="graphCanvas"/>
+            </Group>
         </ScrollPane>
     </center>
 
     <bottom>
-        <VBox spacing="8">
-            <HBox spacing="10" styleClass="action-bar" alignment="CENTER_LEFT">
-                <padding><Insets top="12" right="28" bottom="4" left="28"/></padding>
-                <Label text="Connection:" styleClass="field-label"/>
-                <ComboBox fx:id="cboSource" prefWidth="180"/>
-                <Label text="Root table:" styleClass="field-label"/>
-                <ComboBox fx:id="cboRootTable" prefWidth="180" editable="true"/>
-                <Button fx:id="btnDiscover" text="Discover Graph" onAction="#onDiscover"
-                        styleClass="accent-btn"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Label fx:id="lblStatus" text="Select a connection to begin." styleClass="status-label"/>
-            </HBox>
-        </VBox>
+        <HBox spacing="10" styleClass="action-bar" alignment="CENTER_LEFT">
+            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
+            <Label text="Connection:" styleClass="field-label"/>
+            <ComboBox fx:id="cboSource" prefWidth="160"/>
+            <Label text="Root table:" styleClass="field-label"/>
+            <ComboBox fx:id="cboRootTable" prefWidth="160" editable="true"/>
+            <Button fx:id="btnDiscover" text="Discover" onAction="#onDiscover"
+                    styleClass="accent-btn"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="Zoom:" styleClass="field-label"/>
+            <Button text="−" onAction="#onZoomOut"/>
+            <Slider fx:id="sldZoom" min="0.25" max="2.5" value="1.0" prefWidth="110"
+                    showTickMarks="false" blockIncrement="0.15"/>
+            <Button text="+" onAction="#onZoomIn"/>
+            <Button text="1:1" onAction="#onZoomReset"/>
+            <Label fx:id="lblStatus" text="Select a connection." styleClass="status-label"/>
+        </HBox>
     </bottom>
 
 </BorderPane>

@@ -164,15 +164,13 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
         if (!col.endsWith("_id")) {
           continue;
         }
-        var refTable = deriveTableName(col);
-        if (refTable.equalsIgnoreCase(rootTable)) {
-          continue;
-        }
         var edgeKey = rootTable.toLowerCase(Locale.ROOT) + "." + col;
         if (knownEdgeKeys.contains(edgeKey)) {
           continue;
         }
-        if (!tableExists(conn, refTable)) {
+        var base = col.substring(0, col.length() - 3);
+        var refTable = pickExistingTable(conn, base);
+        if (refTable == null || refTable.equalsIgnoreCase(rootTable)) {
           continue;
         }
         var edge =
@@ -241,7 +239,23 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
     return false;
   }
 
-  /** Derives a probable table name from a {@code *_id} column name. */
+  /**
+   * Tries {@code base}, {@code base+"s"}, {@code base+"es"} against the live schema and returns the
+   * first match, or {@code null} if none of the candidates exist.
+   */
+  private static String pickExistingTable(Connection conn, String base) throws SQLException {
+    for (var candidate : java.util.List.of(base, base + "s", base + "es")) {
+      if (tableExists(conn, candidate)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Derives a probable table name from a {@code *_id} column name (pluralises if needed). Used only
+   * for tests — runtime resolution uses {@link #pickExistingTable} which checks the live schema.
+   */
   static String deriveTableName(String columnName) {
     var lower = columnName.toLowerCase(Locale.ROOT);
     if (!lower.endsWith("_id")) {

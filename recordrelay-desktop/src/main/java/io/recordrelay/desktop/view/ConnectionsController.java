@@ -140,7 +140,7 @@ public final class ConnectionsController implements Refreshable {
     Platform.runLater(
         () -> {
           btnTest.setDisable(false);
-          lblStatus.setText("● Ready");
+          lblStatus.setText("Ready");
           if (result.isEmpty()) {
             showInfoAlert("Connection OK", "\"" + name + "\" is reachable.");
           } else {

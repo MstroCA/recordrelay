@@ -44,7 +44,7 @@
 
                 <Button fx:id="btnDiscover" text="Inspect Columns"
                         maxWidth="Infinity" onAction="#onDiscover" styleClass="accent-btn"/>
-                <Label fx:id="lblDiscoveryStatus" text="● Ready" styleClass="status-label"/>
+                <Label fx:id="lblDiscoveryStatus" text="Ready" styleClass="status-label"/>
             </VBox>
 
             <!-- ── Right: column list ──────────────────────────────────── -->

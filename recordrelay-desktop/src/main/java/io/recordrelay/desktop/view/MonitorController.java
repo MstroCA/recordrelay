@@ -99,7 +99,7 @@ public final class MonitorController implements Refreshable {
   void onClear() {
     CloneHistoryStore.getInstance().clear();
     refreshHistory();
-    lblHealthStatus.setText("● Ready");
+    lblHealthStatus.setText("Ready");
   }
 
   private void refreshHistory() {
@@ -132,7 +132,7 @@ public final class MonitorController implements Refreshable {
         r -> new ReadOnlyStringWrapper(String.format("%,d", r.getValue().totalRecords())));
     colHDur.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().formattedDuration()));
     colHStatus.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().success() ? "✓ OK" : "✗ Error"));
+        r -> new ReadOnlyStringWrapper(r.getValue().success() ? "OK" : "Error"));
     colHStatus.setCellFactory(col -> new HistoryStatusCell());
     tblHistory.setItems(historyItems);
   }
@@ -140,7 +140,7 @@ public final class MonitorController implements Refreshable {
   private void setupHealthTable() {
     colConnName.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().name()));
     colStatus.setCellValueFactory(
-        r -> new ReadOnlyStringWrapper(r.getValue().reachable() ? "✓  OK" : "✗  Error"));
+        r -> new ReadOnlyStringWrapper(r.getValue().reachable() ? "OK" : "Error"));
     colStatus.setCellFactory(col -> new HealthStatusCell());
     colDetail.setCellValueFactory(r -> new ReadOnlyStringWrapper(r.getValue().detail()));
     tblHealth.setItems(vm.healthIndicators());
@@ -157,7 +157,7 @@ public final class MonitorController implements Refreshable {
       Platform.runLater(
           () -> {
             vm.healthIndicators().setAll(results);
-            lblHealthStatus.setText("● Ready");
+            lblHealthStatus.setText("Ready");
             btnRefresh.setDisable(false);
           });
     } catch (Exception e) {
@@ -187,7 +187,7 @@ public final class MonitorController implements Refreshable {
       if (item == null || empty) {
         setText(null);
         setStyle("");
-      } else if (item.startsWith("✓")) {
+      } else if ("OK".equals(item)) {
         setText(item);
         setStyle("-fx-text-fill: -color-success-fg; -fx-font-weight: bold;");
       } else {
@@ -204,7 +204,7 @@ public final class MonitorController implements Refreshable {
       if (item == null || empty) {
         setText(null);
         setStyle("");
-      } else if (item.startsWith("✓")) {
+      } else if ("OK".equals(item)) {
         setText(item);
         setStyle("-fx-text-fill: -color-success-fg; -fx-font-weight: bold;");
       } else {

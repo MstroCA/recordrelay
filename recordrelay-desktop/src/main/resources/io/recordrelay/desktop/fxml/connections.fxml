@@ -45,7 +45,7 @@
             <Button text="Add…"            onAction="#onAdd"    styleClass="accent-btn"/>
             <Button fx:id="btnEdit"   text="Edit…"  onAction="#onEdit"/>
             <Button fx:id="btnTest"   text="Test Connection" onAction="#onTest"/>
-            <Label  fx:id="lblStatus" text="● Ready" styleClass="status-label"/>
+            <Label  fx:id="lblStatus" text="Ready" styleClass="status-label"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Button fx:id="btnRemove" text="Remove" onAction="#onRemove" styleClass="danger-btn"/>
         </HBox>

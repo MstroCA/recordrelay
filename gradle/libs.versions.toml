@@ -58,6 +58,7 @@ jsqlparser = "4.9"
 
 # Desktop UI
 atlantafx = "2.0.1"
+ikonli = "12.3.1"
 testfx = "4.0.18"
 
 # IntelliJ Platform plugin
@@ -131,6 +132,8 @@ jsqlparser = { module = "com.github.jsqlparser:jsqlparser", version.ref = "jsqlp
 
 # Desktop UI
 atlantafx-base = { module = "io.github.mkpaz:atlantafx-base", version.ref = "atlantafx" }
+ikonli-javafx = { module = "org.kordamp.ikonli:ikonli-javafx", version.ref = "ikonli" }
+ikonli-mdi2 = { module = "org.kordamp.ikonli:ikonli-materialdesign2-pack", version.ref = "ikonli" }
 testfx-core = { module = "org.testfx:testfx-core", version.ref = "testfx" }
 testfx-junit5 = { module = "org.testfx:testfx-junit5", version.ref = "testfx" }
 

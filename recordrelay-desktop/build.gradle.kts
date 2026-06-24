@@ -15,6 +15,12 @@ javafx {
     modules = listOf("javafx.controls", "javafx.fxml")
 }
 
+tasks.processResources {
+    filesMatching("io/recordrelay/desktop/app.properties") {
+        expand("version" to project.version)
+    }
+}
+
 // Use the arm64 Oracle JDK for the run task on Apple Silicon so JavaFX
 // native libs (mac-aarch64) match the JVM architecture.
 tasks.named<JavaExec>("run") {
@@ -36,6 +42,8 @@ dependencies {
     implementation(project(":recordrelay-cli"))
     implementation(project(":recordrelay-engine"))
     implementation(libs.atlantafx.base)
+    implementation(libs.ikonli.javafx)
+    implementation(libs.ikonli.mdi2)
     implementation(libs.jackson.databind)
     compileOnly(libs.spotbugs.annotations)
     runtimeOnly(libs.logback.classic)

@@ -26,7 +26,7 @@ intellijPlatform {
             "Universal Data Reproduction & Debug Platform — reproduce production context locally from IntelliJ IDEA."
         ideaVersion {
             sinceBuild = "241"
-            untilBuild = "999.*"
+            untilBuild = "262.*"
         }
     }
     // pluginVerification: run './gradlew :recordrelay-plugin:runPluginVerifier' manually.

@@ -71,7 +71,7 @@ public final class RecordRelayApp extends Application {
   }
 
   private void loadIcons(Stage stage) {
-    for (var name : new String[]{"icon-256.png", "icon-64.png"}) {
+    for (var name : new String[] {"icon-256.png", "icon-64.png"}) {
       var is = getClass().getResourceAsStream("/io/recordrelay/desktop/" + name);
       if (is != null) {
         stage.getIcons().add(new Image(is));

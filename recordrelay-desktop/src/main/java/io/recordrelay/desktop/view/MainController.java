@@ -80,9 +80,17 @@ public final class MainController {
 
   @FXML
   void initialize() {
-    navButtons = List.of(
-        btnNavEnv, btnNavConn, btnNavDisc, btnNavMon,
-        btnNavGraph, btnNavDrift, btnNavRowCnt, btnNavQuery, btnNavHealth);
+    navButtons =
+        List.of(
+            btnNavEnv,
+            btnNavConn,
+            btnNavDisc,
+            btnNavMon,
+            btnNavGraph,
+            btnNavDrift,
+            btnNavRowCnt,
+            btnNavQuery,
+            btnNavHealth);
     cboLanguage.getItems().addAll(LANG_CODES.keySet());
     cboLanguage.setValue("English");
     lblVersion.setText(readVersion());
@@ -196,14 +204,14 @@ public final class MainController {
 
   private Map<String, Button> buildScreenButtonMap() {
     if (SCREEN_BUTTON_MAP.isEmpty() && navButtons != null) {
-      SCREEN_BUTTON_MAP.put("environments",    btnNavEnv);
-      SCREEN_BUTTON_MAP.put("connections",     btnNavConn);
-      SCREEN_BUTTON_MAP.put("discovery",       btnNavDisc);
-      SCREEN_BUTTON_MAP.put("monitor",         btnNavMon);
-      SCREEN_BUTTON_MAP.put("graph-view",      btnNavGraph);
+      SCREEN_BUTTON_MAP.put("environments", btnNavEnv);
+      SCREEN_BUTTON_MAP.put("connections", btnNavConn);
+      SCREEN_BUTTON_MAP.put("discovery", btnNavDisc);
+      SCREEN_BUTTON_MAP.put("monitor", btnNavMon);
+      SCREEN_BUTTON_MAP.put("graph-view", btnNavGraph);
       SCREEN_BUTTON_MAP.put("migration-drift", btnNavDrift);
-      SCREEN_BUTTON_MAP.put("row-count-diff",  btnNavRowCnt);
-      SCREEN_BUTTON_MAP.put("query",           btnNavQuery);
+      SCREEN_BUTTON_MAP.put("row-count-diff", btnNavRowCnt);
+      SCREEN_BUTTON_MAP.put("query", btnNavQuery);
       SCREEN_BUTTON_MAP.put("connection-health", btnNavHealth);
     }
     return SCREEN_BUTTON_MAP;

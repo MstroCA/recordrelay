@@ -22,7 +22,8 @@ intellijPlatform {
         id = "io.recordrelay.plugin"
         name = "RecordRelay"
         version = project.version.toString()
-        description = """
+        description =
+            """
             <h2>Clone database records with their full relationship graph — without leaving IntelliJ</h2>
 
             <p>
@@ -78,7 +79,7 @@ intellijPlatform {
             </ul>
 
             <p><em>Requires IntelliJ IDEA 2024.1 or later (Community or Ultimate).</em></p>
-        """.trimIndent()
+            """.trimIndent()
         ideaVersion {
             sinceBuild = "241"
             untilBuild = "262.*"

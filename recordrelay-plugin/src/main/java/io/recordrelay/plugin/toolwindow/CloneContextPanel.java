@@ -81,7 +81,8 @@ public final class CloneContextPanel extends JPanel {
 
   // Step 3: Options
   private final JSpinner spinDepth = new JSpinner(new SpinnerNumberModel(3, 1, 10, 1));
-  private final JCheckBox chkMaskPii = new JCheckBox("Mask PII (email, phone, IBAN, address, national ID)");
+  private final JCheckBox chkMaskPii =
+      new JCheckBox("Mask PII (email, phone, IBAN, address, national ID)");
 
   // Step 4: Field Overrides
   private final JBTextArea taOverrides = new JBTextArea(4, 40);
@@ -138,9 +139,9 @@ public final class CloneContextPanel extends JPanel {
 
   private static JPanel section(String title, JComponent content) {
     var panel = new JPanel(new BorderLayout());
-    panel.setBorder(BorderFactory.createCompoundBorder(
-        IdeBorderFactory.createTitledBorder(title),
-        JBUI.Borders.empty(4, 8, 6, 8)));
+    panel.setBorder(
+        BorderFactory.createCompoundBorder(
+            IdeBorderFactory.createTitledBorder(title), JBUI.Borders.empty(4, 8, 6, 8)));
     panel.setAlignmentX(Component.LEFT_ALIGNMENT);
     panel.add(content, BorderLayout.CENTER);
     return panel;
@@ -150,14 +151,20 @@ public final class CloneContextPanel extends JPanel {
     var panel = new JPanel(new GridBagLayout());
     var gbc = defaultGbc();
 
-    gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.weightx = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.gridwidth = 2;
+    gbc.weightx = 1.0;
     panel.add(chkExportMode, gbc);
     gbc.gridwidth = 1;
 
     addRow(panel, gbc, 1, "Source:", cmbSource);
     addRow(panel, gbc, 2, "Target:", cmbTarget);
 
-    gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2; gbc.weightx = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 3;
+    gbc.gridwidth = 2;
+    gbc.weightx = 1.0;
     panel.add(pnlOutputDir, gbc);
 
     return panel;
@@ -170,7 +177,10 @@ public final class CloneContextPanel extends JPanel {
     var loadRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
     loadRow.add(btnLoadTables);
     loadRow.add(lblTableCount);
-    gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.weightx = 1.0;
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.gridwidth = 2;
+    gbc.weightx = 1.0;
     panel.add(loadRow, gbc);
     gbc.gridwidth = 1;
 
@@ -192,9 +202,10 @@ public final class CloneContextPanel extends JPanel {
 
   private JComponent buildOverridesForm() {
     var container = new JPanel(new BorderLayout(0, JBUI.scale(4)));
-    var hint = new JLabel(
-        "<html><small>One override per line: <code>column=value</code>"
-            + " &nbsp;or&nbsp; <code>table:column=value</code></small></html>");
+    var hint =
+        new JLabel(
+            "<html><small>One override per line: <code>column=value</code>"
+                + " &nbsp;or&nbsp; <code>table:column=value</code></small></html>");
     container.add(hint, BorderLayout.NORTH);
     taOverrides.setRows(4);
     container.add(new JBScrollPane(taOverrides), BorderLayout.CENTER);
@@ -413,13 +424,20 @@ public final class CloneContextPanel extends JPanel {
 
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener());
 
-      appendLog("Clone complete — " + report.totalRecords() + " records in " + report.formattedDuration());
+      appendLog(
+          "Clone complete — "
+              + report.totalRecords()
+              + " records in "
+              + report.formattedDuration());
       if (!report.warnings().isEmpty()) {
         appendLog("WARNINGS:");
         report.warnings().forEach(w -> appendLog("  ⚠ " + w));
       }
-      var statusText = "Done — " + report.totalRecords() + " records"
-          + (report.warnings().isEmpty() ? "" : " (" + report.warnings().size() + " warnings)");
+      var statusText =
+          "Done — "
+              + report.totalRecords()
+              + " records"
+              + (report.warnings().isEmpty() ? "" : " (" + report.warnings().size() + " warnings)");
       SwingUtilities.invokeLater(() -> lblStatus.setText(statusText));
     } catch (Exception ex) {
       appendLog("ERROR: " + ex.getMessage());

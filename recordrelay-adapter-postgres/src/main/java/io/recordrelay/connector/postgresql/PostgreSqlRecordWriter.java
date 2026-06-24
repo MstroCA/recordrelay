@@ -124,7 +124,9 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
 
   private static String buildQuotedTableName(TableRef table) {
     var q = "\"" + table.tableName().replace("\"", "\"\"") + "\"";
-    return table.schemaName().isEmpty() ? q : "\"" + table.schemaName().replace("\"", "\"\"") + "\"." + q;
+    return table.schemaName().isEmpty()
+        ? q
+        : "\"" + table.schemaName().replace("\"", "\"\"") + "\"." + q;
   }
 
   private void flushBuffer() throws ConnectorException {

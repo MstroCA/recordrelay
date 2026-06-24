@@ -202,7 +202,8 @@ public final class DefaultCloneEngine
     var allRecords = new LinkedHashMap<String, List<DataRecord>>();
     var visited = new HashSet<String>();
     var queue = new ArrayDeque<TraversalNode>();
-    queue.add(new TraversalNode(request.rootTable(), "id", request.rootId(), 0));
+    String rootPkCol = rootPkColumn(graph, request.rootTable());
+    queue.add(new TraversalNode(request.rootTable(), rootPkCol, request.rootId(), 0));
 
     while (!queue.isEmpty()) {
       var node = queue.poll();
@@ -301,7 +302,8 @@ public final class DefaultCloneEngine
     var allRecords = new LinkedHashMap<String, List<DataRecord>>();
     var visited = new HashSet<String>();
     var queue = new ArrayDeque<TraversalNode>();
-    queue.add(new TraversalNode(request.rootTable(), "id", request.rootId(), 0));
+    String rootPkCol = rootPkColumn(graph, request.rootTable());
+    queue.add(new TraversalNode(request.rootTable(), rootPkCol, request.rootId(), 0));
 
     while (!queue.isEmpty()) {
       var node = queue.poll();
@@ -518,5 +520,16 @@ public final class DefaultCloneEngine
     return allRecords.entrySet().stream()
         .map(e -> new ClonedTableSummary(e.getKey(), e.getValue().size()))
         .toList();
+  }
+
+  /**
+   * Infers the primary-key column of {@code rootTable} from the FK graph.
+   *
+   * <p>Any edge pointing <em>to</em> the root table uses {@code toColumn} = the root PK. Falls back
+   * to {@code "id"} when the graph has no incoming edges for the root (e.g. isolated table or
+   * standard naming convention).
+   */
+  private static String rootPkColumn(RelationshipGraph graph, String rootTable) {
+    return graph.edgesTo(rootTable).stream().map(e -> e.toColumn()).findFirst().orElse("id");
   }
 }

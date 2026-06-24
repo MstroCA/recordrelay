@@ -5,9 +5,23 @@ plugins {
     alias(libs.plugins.spotbugs) apply false
 }
 
+fun latestGitTag(): String =
+    try {
+        ProcessBuilder("git", "describe", "--tags", "--abbrev=0")
+            .directory(rootDir)
+            .start()
+            .inputStream
+            .bufferedReader()
+            .readLine()
+            ?.removePrefix("v")
+            ?: "0.1.0-SNAPSHOT"
+    } catch (_: Exception) {
+        "0.1.0-SNAPSHOT"
+    }
+
 allprojects {
     group = "io.recordrelay"
-    version = findProperty("releaseVersion")?.toString() ?: "1.0.13"
+    version = findProperty("releaseVersion")?.toString() ?: latestGitTag()
     repositories {
         mavenCentral()
     }

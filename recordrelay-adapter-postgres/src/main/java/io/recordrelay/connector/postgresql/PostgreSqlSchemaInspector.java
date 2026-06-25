@@ -91,75 +91,110 @@ public final class PostgreSqlSchemaInspector implements SchemaInspector {
     try (var ds = DataSourceFactory.create(profile);
         var conn = ds.getConnection()) {
       var meta = conn.getMetaData();
-
-      var tables = new ArrayList<TableRef>();
-      try (var rs = meta.getTables(null, null, "%", new String[] {"TABLE"})) {
-        while (rs.next()) {
-          String schema = rs.getString("TABLE_SCHEM");
-          if (isPgSystemSchema(schema)) {
-            continue;
-          }
-          String tbl = rs.getString("TABLE_NAME");
-          tables.add(new TableRef(database, schema != null ? schema : "", tbl));
-        }
-      }
-
+      var tables = loadUserTables(meta, database);
       if (tables.isEmpty()) {
         return List.of();
       }
-
-      var tableNames = new HashSet<String>();
-      for (var t : tables) {
-        tableNames.add(t.tableName().toLowerCase(Locale.ROOT));
-      }
-
+      var tableNames = tableNameSet(tables);
       var inDegree = new HashMap<String, Integer>();
       var outDegree = new HashMap<String, Integer>();
       for (var t : tables) {
-        inDegree.put(t.tableName().toLowerCase(Locale.ROOT), 0);
-        outDegree.put(t.tableName().toLowerCase(Locale.ROOT), 0);
+        String key = t.tableName().toLowerCase(Locale.ROOT);
+        inDegree.put(key, 0);
+        outDegree.put(key, 0);
       }
-
-      for (var t : tables) {
-        String schema = t.schemaName().isBlank() ? null : t.schemaName();
-        String tKey = t.tableName().toLowerCase(Locale.ROOT);
-        var knownOut = new HashSet<String>();
-
-        try (var fks = meta.getImportedKeys(null, schema, t.tableName())) {
-          while (fks.next()) {
-            String pkTable = fks.getString("PKTABLE_NAME").toLowerCase(Locale.ROOT);
-            String fkCol = fks.getString("FKCOLUMN_NAME").toLowerCase(Locale.ROOT);
-            outDegree.merge(tKey, 1, Integer::sum);
-            inDegree.merge(pkTable, 1, Integer::sum);
-            knownOut.add(fkCol);
-          }
-        } catch (SQLException ignored) {
-          // table may be inaccessible
-        }
-
-        try (var cols = meta.getColumns(null, schema, t.tableName(), "%")) {
-          while (cols.next()) {
-            String colName = cols.getString("COLUMN_NAME").toLowerCase(Locale.ROOT);
-            if (!colName.endsWith("_id") || knownOut.contains(colName)) {
-              continue;
-            }
-            String base = colName.substring(0, colName.length() - 3);
-            String refTable = resolveRefTable(base, tableNames);
-            if (refTable == null || refTable.equals(tKey)) {
-              continue;
-            }
-            outDegree.merge(tKey, 1, Integer::sum);
-            inDegree.merge(refTable, 1, Integer::sum);
-          }
-        } catch (SQLException ignored) {
-          // column scan not supported
-        }
-      }
-
+      analyzeRelationships(meta, tables, tableNames, inDegree, outDegree);
       return rankCandidates(tables, inDegree, outDegree);
-
     } catch (SQLException e) {
       throw new ConnectorException("Root-table detection failed: " + e.getMessage(), e);
+    }
+  }
+
+  private static List<TableRef> loadUserTables(java.sql.DatabaseMetaData meta, DatabaseRef database)
+      throws SQLException {
+    var tables = new ArrayList<TableRef>();
+    try (var rs = meta.getTables(null, null, "%", new String[] {"TABLE"})) {
+      while (rs.next()) {
+        String schema = rs.getString("TABLE_SCHEM");
+        if (isPgSystemSchema(schema)) {
+          continue;
+        }
+        String tbl = rs.getString("TABLE_NAME");
+        tables.add(new TableRef(database, schema != null ? schema : "", tbl));
+      }
+    }
+    return tables;
+  }
+
+  private static Set<String> tableNameSet(List<TableRef> tables) {
+    var names = new HashSet<String>(tables.size());
+    for (var t : tables) {
+      names.add(t.tableName().toLowerCase(Locale.ROOT));
+    }
+    return names;
+  }
+
+  private static void analyzeRelationships(
+      java.sql.DatabaseMetaData meta,
+      List<TableRef> tables,
+      Set<String> tableNames,
+      Map<String, Integer> inDegree,
+      Map<String, Integer> outDegree) {
+    for (var t : tables) {
+      String schema = t.schemaName().isBlank() ? null : t.schemaName();
+      String tKey = t.tableName().toLowerCase(Locale.ROOT);
+      var knownOut = scanForeignKeys(meta, schema, tKey, t.tableName(), inDegree, outDegree);
+      scanHeuristicColumns(meta, schema, t.tableName(), tableNames, knownOut, inDegree, outDegree);
+    }
+  }
+
+  private static Set<String> scanForeignKeys(
+      java.sql.DatabaseMetaData meta,
+      String schema,
+      String tKey,
+      String tableName,
+      Map<String, Integer> inDegree,
+      Map<String, Integer> outDegree) {
+    var knownOut = new HashSet<String>();
+    try (var fks = meta.getImportedKeys(null, schema, tableName)) {
+      while (fks.next()) {
+        String pkTable = fks.getString("PKTABLE_NAME").toLowerCase(Locale.ROOT);
+        String fkCol = fks.getString("FKCOLUMN_NAME").toLowerCase(Locale.ROOT);
+        outDegree.merge(tKey, 1, Integer::sum);
+        inDegree.merge(pkTable, 1, Integer::sum);
+        knownOut.add(fkCol);
+      }
+    } catch (SQLException ignored) {
+      // table may be inaccessible
+    }
+    return knownOut;
+  }
+
+  private static void scanHeuristicColumns(
+      java.sql.DatabaseMetaData meta,
+      String schema,
+      String tableName,
+      Set<String> tableNames,
+      Set<String> knownOut,
+      Map<String, Integer> inDegree,
+      Map<String, Integer> outDegree) {
+    String tKey = tableName.toLowerCase(Locale.ROOT);
+    try (var cols = meta.getColumns(null, schema, tableName, "%")) {
+      while (cols.next()) {
+        String colName = cols.getString("COLUMN_NAME").toLowerCase(Locale.ROOT);
+        if (!colName.endsWith("_id") || knownOut.contains(colName)) {
+          continue;
+        }
+        String base = colName.substring(0, colName.length() - 3);
+        String refTable = resolveRefTable(base, tableNames);
+        if (refTable == null || refTable.equals(tKey)) {
+          continue;
+        }
+        outDegree.merge(tKey, 1, Integer::sum);
+        inDegree.merge(refTable, 1, Integer::sum);
+      }
+    } catch (SQLException ignored) {
+      // column scan not supported
     }
   }
 

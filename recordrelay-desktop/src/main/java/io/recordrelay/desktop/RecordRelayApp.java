@@ -60,7 +60,9 @@ public final class RecordRelayApp extends Application {
 
   private String readTitle() {
     try (var is = getClass().getResourceAsStream("/io/recordrelay/desktop/app.properties")) {
-      if (is == null) return "RecordRelay";
+      if (is == null) {
+        return "RecordRelay";
+      }
       var props = new java.util.Properties();
       props.load(is);
       var version = props.getProperty("app.version", "");

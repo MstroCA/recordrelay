@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Orchestrates the business-context reproduction workflow.
@@ -129,15 +130,29 @@ public final class DefaultCloneEngine
     var request = job.request();
     long startMs = System.currentTimeMillis();
     var warnings = new ArrayList<String>();
-    LOG.info("Clone job {} starting: {}.{}", job.id(), request.rootTable(), request.rootId());
+    MDC.put("jobId", job.id().substring(0, 8));
+    MDC.put("context", request.rootTable() + ":" + request.rootId());
     try {
+      LOG.info(
+          "Clone job starting  source={} target={} root={}:{}",
+          request.source().name(),
+          request.target().name(),
+          request.rootTable(),
+          request.rootId());
       var report = executeClone(job, request, startMs, warnings, listener);
       CloneHistoryStore.getInstance()
           .record(
               CloneHistorySummary.ofSuccess(
                   report, request.source().name(), request.target().name()));
+      LOG.info(
+          "Clone job completed  tables={} records={} warnings={} elapsed={}ms",
+          report.tableCount(),
+          report.totalRecords(),
+          report.warnings().size(),
+          System.currentTimeMillis() - startMs);
       return report;
     } catch (CloneException e) {
+      LOG.error("Clone job failed  reason={}", e.getMessage(), e);
       CloneHistoryStore.getInstance()
           .record(
               CloneHistorySummary.ofFailure(
@@ -148,6 +163,9 @@ public final class DefaultCloneEngine
                   System.currentTimeMillis() - startMs,
                   e.getMessage()));
       throw e;
+    } finally {
+      MDC.remove("jobId");
+      MDC.remove("context");
     }
   }
 
@@ -158,33 +176,60 @@ public final class DefaultCloneEngine
       List<String> warnings,
       CloneProgressListener listener)
       throws CloneException {
+
+    long t0 = System.currentTimeMillis();
     var graph = relationshipResolver.resolve(request.source(), request.rootTable());
     listener.onRelationshipsDiscovered(graph.edgeCount());
+    LOG.info("  [1/5] graph resolved  edges={} elapsed={}ms", graph.edgeCount(), elapsed(t0));
+
+    long t1 = System.currentTimeMillis();
     var rawRecords = bfsExtractRaw(request, graph, warnings, listener);
+    int totalRaw = rawRecords.values().stream().mapToInt(List::size).sum();
+    LOG.info(
+        "  [2/5] extraction done  tables={} records={} elapsed={}ms",
+        rawRecords.size(),
+        totalRaw,
+        elapsed(t1));
+
+    long t2 = System.currentTimeMillis();
     var identityMapping =
         identityMapper.allocate(
             request.target(), request.rootTable(), rawRecords, request.conflictResolution());
     listener.onIdentitiesAllocated(identityMapping.totalMappings());
+    LOG.info(
+        "  [3/5] identities allocated  mappings={} elapsed={}ms",
+        identityMapping.totalMappings(),
+        elapsed(t2));
+
+    long t3 = System.currentTimeMillis();
     var remappedRecords = FkRemapper.remap(rawRecords, identityMapping, graph, request.rootTable());
     var finalRecords = applyMaskingAll(remappedRecords, request);
+    LOG.info("  [4/5] fk-remap + masking done  elapsed={}ms", elapsed(t3));
+
+    long t4 = System.currentTimeMillis();
     writeToTarget(request, finalRecords, listener, warnings);
-    sequenceSyncer.synchronize(request.target(), identityMapping);
-    long maskedFieldCount = countMaskedFieldsAll(rawRecords, request);
-    var report =
-        new CloneReport(
-            request.rootTable(),
-            request.rootId(),
-            buildSummaries(finalRecords),
-            System.currentTimeMillis() - startMs,
-            List.copyOf(warnings),
-            maskedFieldCount);
+    int written = finalRecords.values().stream().mapToInt(List::size).sum();
     LOG.info(
-        "Clone job {} done: {} tables, {} records, {} identity mappings",
-        job.id(),
-        report.tableCount(),
-        report.totalRecords(),
-        identityMapping.totalMappings());
-    return report;
+        "  [5/5] write done  tables={} records={} warnings={} elapsed={}ms",
+        finalRecords.size(),
+        written,
+        warnings.size(),
+        elapsed(t4));
+
+    sequenceSyncer.synchronize(request.target(), identityMapping);
+
+    long maskedFieldCount = countMaskedFieldsAll(rawRecords, request);
+    return new CloneReport(
+        request.rootTable(),
+        request.rootId(),
+        buildSummaries(finalRecords),
+        System.currentTimeMillis() - startMs,
+        List.copyOf(warnings),
+        maskedFieldCount);
+  }
+
+  private static long elapsed(long fromMs) {
+    return System.currentTimeMillis() - fromMs;
   }
 
   /**
@@ -477,13 +522,14 @@ public final class DefaultCloneEngine
         writer.write(applyFieldOverrides(record, tableName, overrides));
       }
       writer.flush();
+      LOG.debug("  wrote table={}  rows={}", tableName, records.size());
       listener.onImportCompleted(tableName, records.size());
     } catch (ConnectorException e) {
-      var rootCause = e.getCause() != null ? " — " + e.getCause().getMessage() : "";
-      var msg = "Failed to write table " + tableName + ": " + e.getMessage() + rootCause;
+      var cause = rootCauseMessage(e);
+      var msg = "Failed to write table " + tableName + ": " + e.getMessage() + cause;
       warnings.add(msg);
       listener.onWarning(msg);
-      LOG.warn(msg, e);
+      LOG.warn("Write failed  table={}  reason={}  cause={}", tableName, e.getMessage(), cause, e);
       listener.onImportCompleted(tableName, 0);
     } catch (Exception e) {
       throw new CloneException("Unexpected error writing " + tableName, e);
@@ -517,6 +563,18 @@ public final class DefaultCloneEngine
         .flatMap(List::stream)
         .mapToLong(r -> maskingService.countMaskedFields(r, request.masking()))
         .sum();
+  }
+
+  private static String rootCauseMessage(Throwable t) {
+    Throwable cause = t.getCause();
+    if (cause == null) {
+      return "";
+    }
+    StringBuilder sb = new StringBuilder(" — ").append(cause.getMessage());
+    if (cause.getCause() != null) {
+      sb.append(" (").append(cause.getCause().getMessage()).append(")");
+    }
+    return sb.toString();
   }
 
   private List<ClonedTableSummary> buildSummaries(Map<String, List<DataRecord>> allRecords) {

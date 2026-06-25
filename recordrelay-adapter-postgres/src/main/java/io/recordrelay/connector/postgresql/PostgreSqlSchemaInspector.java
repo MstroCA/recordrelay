@@ -45,6 +45,13 @@ public final class PostgreSqlSchemaInspector implements SchemaInspector {
       "SELECT table_schema, table_name "
           + "FROM information_schema.tables "
           + "WHERE table_catalog = ? AND table_type = 'BASE TABLE' "
+          + "  AND table_schema NOT IN ('pg_catalog', 'information_schema') "
+          + "ORDER BY table_schema, table_name";
+
+  private static final String LIST_TABLES_SCHEMA_SQL =
+      "SELECT table_schema, table_name "
+          + "FROM information_schema.tables "
+          + "WHERE table_catalog = ? AND table_type = 'BASE TABLE' "
           + "  AND table_schema = ? "
           + "ORDER BY table_schema, table_name";
 
@@ -67,12 +74,15 @@ public final class PostgreSqlSchemaInspector implements SchemaInspector {
   @Override
   public List<TableRef> listTables(ConnectionProfile profile, DatabaseRef database)
       throws ConnectorException {
-    String schema = profile.properties().getOrDefault("currentSchema", profile.database());
+    String schemaOverride = profile.properties().get("currentSchema");
+    String sql = schemaOverride != null ? LIST_TABLES_SCHEMA_SQL : LIST_TABLES_SQL;
     try (var ds = DataSourceFactory.create(profile);
         var conn = ds.getConnection();
-        var stmt = conn.prepareStatement(LIST_TABLES_SQL)) {
+        var stmt = conn.prepareStatement(sql)) {
       stmt.setString(1, database.name());
-      stmt.setString(2, schema);
+      if (schemaOverride != null) {
+        stmt.setString(2, schemaOverride);
+      }
       var result = new ArrayList<TableRef>();
       try (var rs = stmt.executeQuery()) {
         while (rs.next()) {

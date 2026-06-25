@@ -28,11 +28,12 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
+import javafx.scene.input.ScrollEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Controller for the Graph View screen. Discovers and renders UML-style table relationship graphs.
+ * Controller for the Graph View screen. Discovers and renders ERD-style table relationship graphs.
  */
 public final class GraphViewController implements Refreshable {
 
@@ -53,13 +54,28 @@ public final class GraphViewController implements Refreshable {
   void initialize() {
     try {
       configStore = new ConfigStore();
-      resolver = new ConnProfileResolver(configStore);
+      resolver    = new ConnProfileResolver(configStore);
     } catch (Exception e) {
       lblStatus.setText("Config unavailable: " + e.getMessage());
       btnDiscover.setDisable(true);
       return;
     }
+
     sldZoom.valueProperty().addListener((obs, old, val) -> graphCanvas.setZoom(val.doubleValue()));
+
+    // Ctrl+scroll to zoom
+    graphScroll.addEventFilter(
+        ScrollEvent.SCROLL,
+        e -> {
+          if (e.isControlDown()) {
+            double factor  = e.getDeltaY() > 0 ? 1.1 : 1.0 / 1.1;
+            double newZoom = Math.max(0.25, Math.min(2.5, graphCanvas.getScaleX() * factor));
+            graphCanvas.setZoom(newZoom);
+            sldZoom.setValue(newZoom);
+            e.consume();
+          }
+        });
+
     loadConnections();
     cboSource.setOnAction(e -> loadTables());
   }
@@ -71,7 +87,7 @@ public final class GraphViewController implements Refreshable {
 
   @FXML
   void onDiscover() {
-    var connName = cboSource.getValue();
+    var connName  = cboSource.getValue();
     var rootTable = cboRootTable.getValue();
     if (connName == null || rootTable == null || rootTable.isBlank()) {
       lblStatus.setText("Select a connection and root table first.");
@@ -93,14 +109,31 @@ public final class GraphViewController implements Refreshable {
   }
 
   @FXML
-  void onZoomReset() {
-    sldZoom.setValue(1.0);
+  void onFitToScreen() {
+    if (!graphCanvas.hasContent()) {
+      return;
+    }
+    Platform.runLater(
+        () -> {
+          var vp    = graphScroll.getViewportBounds();
+          double cW = graphCanvas.getPrefWidth();
+          double cH = graphCanvas.getPrefHeight();
+          if (cW <= 0 || cH <= 0) {
+            return;
+          }
+          double zoom = Math.min(vp.getWidth() / cW, vp.getHeight() / cH) * 0.9;
+          zoom = Math.max(0.25, Math.min(2.5, zoom));
+          graphCanvas.setZoom(zoom);
+          sldZoom.setValue(zoom);
+          graphScroll.setHvalue(0.5);
+          graphScroll.setVvalue(0.5);
+        });
   }
 
   private void loadConnections() {
     try {
       var config = configStore.load();
-      var names = config.getConnections().keySet().stream().sorted().toList();
+      var names  = config.getConnections().keySet().stream().sorted().toList();
       cboSource.setItems(FXCollections.observableArrayList(names));
       if (!names.isEmpty() && cboSource.getValue() == null) {
         cboSource.setValue(names.get(0));
@@ -123,7 +156,7 @@ public final class GraphViewController implements Refreshable {
                 var connector = ConnectorRegistry.findConnector(profile);
                 var dbRef =
                     new io.recordrelay.core.domain.DatabaseRef(profile.database(), profile.type());
-                var tables = connector.schemaInspector().listTables(profile, dbRef);
+                var tables    = connector.schemaInspector().listTables(profile, dbRef);
                 var tableNames = tables.stream().map(t -> t.tableName()).sorted().toList();
                 Platform.runLater(
                     () -> {
@@ -156,6 +189,7 @@ public final class GraphViewController implements Refreshable {
                     "Graph ready — %d tables, %d relationships",
                     finalGraph.nodeCount(), finalGraph.edgeCount()));
             btnDiscover.setDisable(false);
+            onFitToScreen();
           });
     } catch (Exception e) {
       LOG.warn("Graph discovery failed", e);

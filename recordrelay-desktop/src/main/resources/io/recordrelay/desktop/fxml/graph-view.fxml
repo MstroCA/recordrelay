@@ -6,6 +6,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
@@ -14,40 +15,91 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="io.recordrelay.desktop.view.GraphViewController">
 
-    <top>
-        <VBox spacing="4">
-            <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
-            <Label text="%nav.graph.view" styleClass="screen-title"/>
-            <Label text="%graph.subtitle" styleClass="screen-subtitle"/>
+    <left>
+        <VBox styleClass="graph-control-panel" prefWidth="238" spacing="0">
+
+            <!-- Title -->
+            <VBox spacing="3">
+                <padding><Insets top="20" right="16" bottom="14" left="16"/></padding>
+                <Label text="%nav.graph.view" styleClass="screen-title"/>
+                <Label text="%graph.subtitle" styleClass="screen-subtitle"/>
+            </VBox>
+
+            <Separator/>
+
+            <!-- Connection -->
+            <VBox spacing="6">
+                <padding><Insets top="14" right="16" bottom="4" left="16"/></padding>
+                <Label text="%graph.lbl.conn" styleClass="section-label"/>
+                <ComboBox fx:id="cboSource" maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Root table -->
+            <VBox spacing="6">
+                <padding><Insets top="10" right="16" bottom="14" left="16"/></padding>
+                <Label text="%graph.lbl.root" styleClass="section-label"/>
+                <ComboBox fx:id="cboRootTable" maxWidth="Infinity" editable="true"/>
+            </VBox>
+
+            <!-- Discover -->
+            <VBox>
+                <padding><Insets top="0" right="16" bottom="16" left="16"/></padding>
+                <Button fx:id="btnDiscover" text="%graph.btn.discover" onAction="#onDiscover"
+                        maxWidth="Infinity" styleClass="accent-btn"/>
+            </VBox>
+
+            <Separator/>
+
+            <!-- Zoom -->
+            <VBox spacing="8">
+                <padding><Insets top="14" right="16" bottom="8" left="16"/></padding>
+                <Label text="%graph.lbl.zoom" styleClass="section-label"/>
+                <HBox spacing="6" alignment="CENTER">
+                    <Button text="−" onAction="#onZoomOut" prefWidth="30" styleClass="graph-zoom-btn"/>
+                    <Slider fx:id="sldZoom" min="0.25" max="2.5" value="1.0"
+                            HBox.hgrow="ALWAYS" showTickMarks="false" blockIncrement="0.15"/>
+                    <Button text="+" onAction="#onZoomIn" prefWidth="30" styleClass="graph-zoom-btn"/>
+                </HBox>
+                <Button text="%graph.btn.fit" onAction="#onFitToScreen"
+                        maxWidth="Infinity" styleClass="graph-secondary-btn"/>
+            </VBox>
+
+            <Separator/>
+
+            <!-- Legend -->
+            <VBox spacing="8">
+                <padding><Insets top="14" right="16" bottom="14" left="16"/></padding>
+                <Label text="%graph.legend.label" styleClass="section-label"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="——" style="-fx-text-fill: #3182CE; -fx-font-size: 15px; -fx-font-weight: bold;"/>
+                    <Label text="%graph.legend.fk" styleClass="hint-label"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="- - -" style="-fx-text-fill: #A0AEC0; -fx-font-size: 12px;"/>
+                    <Label text="%graph.legend.heuristic" styleClass="hint-label"/>
+                </HBox>
+            </VBox>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <!-- Status -->
+            <VBox spacing="4">
+                <padding><Insets top="6" right="16" bottom="16" left="16"/></padding>
+                <Separator/>
+                <Label fx:id="lblStatus" text="%graph.hint" styleClass="hint-label" wrapText="true"/>
+            </VBox>
+
         </VBox>
-    </top>
+    </left>
 
     <center>
-        <ScrollPane fx:id="graphScroll" pannable="true" styleClass="graph-scroll">
+        <ScrollPane fx:id="graphScroll" pannable="true" styleClass="graph-scroll"
+                    fitToHeight="false" fitToWidth="false"
+                    hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
             <Group>
                 <RelationshipGraphCanvas fx:id="graphCanvas"/>
             </Group>
         </ScrollPane>
     </center>
-
-    <bottom>
-        <HBox spacing="10" styleClass="action-bar" alignment="CENTER_LEFT">
-            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
-            <Label text="%graph.lbl.conn" styleClass="field-label"/>
-            <ComboBox fx:id="cboSource" prefWidth="160"/>
-            <Label text="%graph.lbl.root" styleClass="field-label"/>
-            <ComboBox fx:id="cboRootTable" prefWidth="160" editable="true"/>
-            <Button fx:id="btnDiscover" text="%graph.btn.discover" onAction="#onDiscover"
-                    styleClass="accent-btn"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Label text="%graph.lbl.zoom" styleClass="field-label"/>
-            <Button text="−" onAction="#onZoomOut"/>
-            <Slider fx:id="sldZoom" min="0.25" max="2.5" value="1.0" prefWidth="110"
-                    showTickMarks="false" blockIncrement="0.15"/>
-            <Button text="+" onAction="#onZoomIn"/>
-            <Button text="1:1" onAction="#onZoomReset"/>
-            <Label fx:id="lblStatus" text="%graph.hint" styleClass="status-label"/>
-        </HBox>
-    </bottom>
 
 </BorderPane>

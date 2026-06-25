@@ -96,9 +96,17 @@ public final class Messages {
 
   private static ResourceBundle loadBundle(Locale locale) {
     try {
-      return ResourceBundle.getBundle(BUNDLE_BASE, locale);
+      ResourceBundle rb = ResourceBundle.getBundle(BUNDLE_BASE, locale);
+      // Guard against Java's default-locale fallback: if the bundle's locale doesn't match
+      // the requested language (e.g. "en" silently resolved to the JVM's "tr" default),
+      // fall back to the base bundle explicitly.
+      if (!locale.getLanguage().isEmpty()
+          && !rb.getLocale().getLanguage().equals(locale.getLanguage())) {
+        return ResourceBundle.getBundle(BUNDLE_BASE, Locale.ROOT);
+      }
+      return rb;
     } catch (MissingResourceException e) {
-      return ResourceBundle.getBundle(BUNDLE_BASE, Locale.ENGLISH);
+      return ResourceBundle.getBundle(BUNDLE_BASE, Locale.ROOT);
     }
   }
 }

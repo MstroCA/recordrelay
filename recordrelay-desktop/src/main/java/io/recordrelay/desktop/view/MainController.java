@@ -106,7 +106,10 @@ public final class MainController {
       return;
     }
     currentLanguage = selected;
-    Messages.setLocale(Locale.of(LANG_CODES.getOrDefault(selected, "en")));
+    String code = LANG_CODES.getOrDefault(selected, "en");
+    // Locale.ROOT bypasses Java's default-locale fallback chain so that "English"
+    // loads the base messages.properties instead of silently resolving to the JVM locale.
+    Messages.setLocale("en".equals(code) ? Locale.ROOT : Locale.of(code));
     screenCache.clear();
     controllerCache.clear();
     refreshSidebarTexts();

@@ -229,6 +229,7 @@ jobs:
     name: Package Plugin
     needs: verify
     runs-on: ubuntu-latest
+    if: vars.PUBLISH_PLUGIN == 'true'
 
     steps:
       - name: Checkout

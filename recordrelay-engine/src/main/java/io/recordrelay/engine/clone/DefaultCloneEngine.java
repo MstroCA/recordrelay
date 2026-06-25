@@ -479,7 +479,8 @@ public final class DefaultCloneEngine
       writer.flush();
       listener.onImportCompleted(tableName, records.size());
     } catch (ConnectorException e) {
-      var msg = "Failed to write table " + tableName + ": " + e.getMessage();
+      var rootCause = e.getCause() != null ? " — " + e.getCause().getMessage() : "";
+      var msg = "Failed to write table " + tableName + ": " + e.getMessage() + rootCause;
       warnings.add(msg);
       listener.onWarning(msg);
       LOG.warn(msg, e);

@@ -109,7 +109,14 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
     columnOrder = new ArrayList<>(sample.fieldNames());
     var colList = columnOrder.stream().map(this::quoteIdent).collect(Collectors.joining(", "));
     var placeholders = columnOrder.stream().map(c -> "?").collect(Collectors.joining(", "));
-    var sql = "INSERT INTO " + qualifiedTable + " (" + colList + ") VALUES (" + placeholders + ")";
+    var sql =
+        "INSERT INTO "
+            + qualifiedTable
+            + " ("
+            + colList
+            + ") OVERRIDING SYSTEM VALUE VALUES ("
+            + placeholders
+            + ")";
     try {
       insertStmt = conn.prepareStatement(sql);
       LOG.debug("Prepared: {}", sql);

@@ -74,7 +74,11 @@ public final class ConnectionsPanel extends JPanel {
         };
     this.table = new JBTable(model);
     table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    add(buildToolbar(), BorderLayout.NORTH);
+    var north = new JPanel(new BorderLayout());
+    north.add(
+        new PanelHeader("Connections", "Manage database connection profiles"), BorderLayout.NORTH);
+    north.add(buildToolbar(), BorderLayout.SOUTH);
+    add(north, BorderLayout.NORTH);
     add(new JBScrollPane(table), BorderLayout.CENTER);
     loadData();
   }

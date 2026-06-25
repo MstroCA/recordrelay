@@ -102,7 +102,13 @@ public final class DiscoveryPanel extends JPanel {
     var split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, colScroll, mapScroll);
     split.setResizeWeight(0.5);
 
-    add(buildSelectionPanel(), BorderLayout.NORTH);
+    var north = new JPanel(new BorderLayout());
+    north.add(
+        new PanelHeader(
+            "Discovery", "Inspect schema columns and analyse cross-database compatibility"),
+        BorderLayout.NORTH);
+    north.add(buildSelectionPanel(), BorderLayout.SOUTH);
+    add(north, BorderLayout.NORTH);
     add(split, BorderLayout.CENTER);
     add(buildButtonBar(), BorderLayout.SOUTH);
     loadConnectionNames();

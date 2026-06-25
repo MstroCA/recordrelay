@@ -1,28 +1,46 @@
-/* RecordRelay Desktop — custom CSS overrides on top of AtlantaFX PrimerLight/Dark */
+/* RecordRelay Desktop — Professional UI design on AtlantaFX PrimerLight/Dark */
 
-/* ── Sidebar ─────────────────────────────────────────────────────────── */
+/* ── Sidebar shell ────────────────────────────────────────────────────── */
 .sidebar {
     -fx-background-color: -color-bg-subtle;
     -fx-border-color: -color-border-default;
     -fx-border-width: 0 1 0 0;
 }
 
+/* ── Brand header ────────────────────────────────────────────────────── */
+.sidebar-brand {
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #1E88E5, #1565C0);
+    -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.45), 12, 0.2, 0, 4);
+}
+
+.sidebar-brand-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.sidebar-brand-tagline {
+    -fx-font-size: 9px;
+    -fx-text-fill: rgba(255,255,255,0.58);
+}
+
+/* legacy sidebar-title (hidden in new layout, kept for safety) */
 .sidebar-title {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-padding: 4 0 10 4;
     -fx-text-fill: -color-fg-subtle;
-    -fx-letter-spacing: 0.06em;
 }
 
+/* ── Navigation buttons ───────────────────────────────────────────────── */
 .nav-btn {
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 8 12 8 10;
+    -fx-padding: 9 12 9 12;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-border-width: 0 0 0 3;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
+    -fx-border-radius: 0 6 6 0;
+    -fx-background-radius: 0 6 6 0;
     -fx-font-size: 13px;
     -fx-cursor: hand;
     -fx-graphic-text-gap: 10;
@@ -32,6 +50,7 @@
 .nav-btn:hover {
     -fx-background-color: -color-accent-subtle;
     -fx-text-fill: -color-accent-fg;
+    -fx-border-color: transparent transparent transparent -color-accent-muted;
 }
 
 .nav-btn .ikonli-font-icon {
@@ -43,10 +62,10 @@
     -fx-icon-color: -color-accent-fg;
 }
 
-/* Active nav button — marks the currently visible screen */
+/* Active nav item: solid blue left indicator bar */
 .nav-btn-active {
     -fx-background-color: -color-accent-subtle;
-    -fx-border-color: -color-accent-emphasis;
+    -fx-border-color: transparent transparent transparent -color-accent-emphasis;
     -fx-text-fill: -color-accent-fg;
     -fx-font-weight: bold;
 }
@@ -55,20 +74,21 @@
     -fx-icon-color: -color-accent-fg;
 }
 
+/* ── Status / version labels ─────────────────────────────────────────── */
 .status-label {
     -fx-font-size: 11px;
     -fx-text-fill: -color-success-fg;
-    -fx-padding: 4 0 4 4;
+    -fx-padding: 2 0 2 4;
     -fx-font-weight: bold;
 }
 
-/* ── Content pane ────────────────────────────────────────────────────── */
+/* ── Content pane ─────────────────────────────────────────────────────── */
 .content-pane {
     -fx-background-color: -color-bg-default;
     -fx-padding: 0;
 }
 
-/* ── Screen typography ───────────────────────────────────────────────── */
+/* ── Screen typography ────────────────────────────────────────────────── */
 .screen-title {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
@@ -87,7 +107,7 @@
     -fx-padding: 16 0 0 0;
 }
 
-/* ── Cards ───────────────────────────────────────────────────────────── */
+/* ── Cards ────────────────────────────────────────────────────────────── */
 .card {
     -fx-background-color: -color-bg-overlay;
     -fx-border-color: -color-border-default;
@@ -95,12 +115,12 @@
     -fx-border-radius: 10;
     -fx-background-radius: 10;
     -fx-padding: 16;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 10, 0.08, 0, 3);
 }
 
-/* ── Progress bar ────────────────────────────────────────────────────── */
+/* ── Progress bar ─────────────────────────────────────────────────────── */
 .progress-bar > .bar {
-    -fx-background-color: -color-accent-emphasis;
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #42A5F5, #1565C0);
     -fx-background-radius: 4;
 }
 
@@ -109,14 +129,15 @@
     -fx-background-radius: 4;
 }
 
-/* ── Action toolbar (bottom of screens) ─────────────────────────────── */
+/* ── Action toolbar ───────────────────────────────────────────────────── */
 .action-bar {
     -fx-background-color: -color-bg-subtle;
     -fx-border-color: -color-border-default;
     -fx-border-width: 1 0 0 0;
+    -fx-padding: 10 16 10 16;
 }
 
-/* ── Error label ────────────────────────────────────────────────────── */
+/* ── Error label ──────────────────────────────────────────────────────── */
 .error-label {
     -fx-text-fill: -color-danger-fg;
     -fx-font-size: 12px;
@@ -124,19 +145,28 @@
     -fx-padding: 4 0 0 0;
 }
 
-/* ── Accent button ────────────────────────────────────────────────────── */
+/* ── Primary accent button ────────────────────────────────────────────── */
 .accent-btn {
-    -fx-background-color: -color-accent-emphasis;
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #1E88E5, #1565C0);
     -fx-text-fill: white;
     -fx-background-radius: 6;
     -fx-border-radius: 6;
+    -fx-border-color: transparent;
     -fx-cursor: hand;
     -fx-graphic-text-gap: 8;
     -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.4), 6, 0.1, 0, 2);
+    -fx-padding: 8 18 8 18;
 }
 
 .accent-btn:hover {
-    -fx-opacity: 0.88;
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #42A5F5, #1E88E5);
+    -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.55), 10, 0.15, 0, 3);
+}
+
+.accent-btn:pressed {
+    -fx-background-color: #0D47A1;
+    -fx-effect: none;
 }
 
 .accent-btn .ikonli-font-icon {
@@ -151,13 +181,15 @@
     -fx-background-radius: 6;
     -fx-border-radius: 6;
     -fx-cursor: hand;
+    -fx-padding: 8 18 8 18;
+    -fx-effect: dropshadow(gaussian, rgba(180,0,0,0.25), 4, 0.08, 0, 2);
 }
 
 .danger-btn:hover {
     -fx-opacity: 0.88;
 }
 
-/* ── Discovery panel ────────────────────────────────────────────────── */
+/* ── Discovery panel ─────────────────────────────────────────────────── */
 .discovery-panel {
     -fx-background-color: -color-bg-subtle;
     -fx-border-color: -color-border-default;
@@ -169,7 +201,6 @@
     -fx-font-weight: bold;
     -fx-text-fill: -color-fg-subtle;
     -fx-padding: 4 0 4 0;
-    -fx-letter-spacing: 0.06em;
 }
 
 .field-label {
@@ -178,7 +209,7 @@
     -fx-text-fill: -color-fg-default;
 }
 
-/* ── Mapping panel ───────────────────────────────────────────────────── */
+/* ── Mapping panel ────────────────────────────────────────────────────── */
 .screen-subtitle-bold {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
@@ -196,10 +227,16 @@
     -fx-background-color: -color-bg-overlay;
 }
 
-/* ── Dashboard / KPI cards ───────────────────────────────────────────── */
+/* ── KPI / dashboard cards ────────────────────────────────────────────── */
 .kpi-card {
-    -fx-min-width: 100;
+    -fx-min-width: 110;
     -fx-padding: 18 20 18 20;
+    -fx-background-color: -color-bg-overlay;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0.05, 0, 2);
 }
 
 .kpi-value {
@@ -216,7 +253,6 @@
     -fx-font-size: 11px;
     -fx-text-fill: -color-fg-muted;
     -fx-padding: 4 0 0 0;
-    -fx-letter-spacing: 0.04em;
 }
 
 .kpi-mono {
@@ -225,13 +261,14 @@
     -fx-text-fill: -color-fg-default;
 }
 
-/* ── Hint / helper text ──────────────────────────────────────────────── */
+/* ── Hint / helper text ───────────────────────────────────────────────── */
 .hint-label {
     -fx-font-size: 11px;
     -fx-text-fill: -color-fg-muted;
+    -fx-padding: 2 0 2 4;
 }
 
-/* ── Log TextArea ────────────────────────────────────────────────────── */
+/* ── Log / mono text area ─────────────────────────────────────────────── */
 .log-area {
     -fx-font-family: "Menlo", "Consolas", "Courier New", monospace;
     -fx-font-size: 12px;
@@ -241,25 +278,25 @@
     -fx-border-radius: 6;
 }
 
-/* ── Nav accent button (Clone Context) ──────────────────────────────── */
+/* ── Primary nav button — Clone Context (always blue) ─────────────────── */
 .nav-btn-accent {
     -fx-alignment: CENTER_LEFT;
-    -fx-padding: 9 12 9 10;
-    -fx-background-color: -color-accent-emphasis;
+    -fx-padding: 10 12 10 12;
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #1E88E5, #1565C0);
     -fx-text-fill: white;
     -fx-border-color: transparent;
-    -fx-border-width: 0 0 0 3;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-cursor: hand;
     -fx-graphic-text-gap: 10;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.4), 8, 0.1, 0, 2);
 }
 
 .nav-btn-accent:hover {
-    -fx-opacity: 0.88;
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #42A5F5, #1E88E5);
+    -fx-effect: dropshadow(gaussian, rgba(21,101,192,0.6), 12, 0.15, 0, 3);
 }
 
 .nav-btn-accent .ikonli-font-icon {
@@ -267,21 +304,34 @@
     -fx-icon-size: 15px;
 }
 
-/* ── Graph view scroll pane ──────────────────────────────────────────── */
+/* ── Graph view ───────────────────────────────────────────────────────── */
 .graph-scroll {
     -fx-background-color: -color-bg-default;
     -fx-border-color: transparent;
 }
 
-/* ── Migration Drift — row colours ──────────────────────────────────── */
-.drift-row-missing { -fx-background-color: derive(-color-danger-subtle, 10%); }
-.drift-row-missing:selected { -fx-background-color: derive(-color-danger-subtle, -15%); }
-.drift-row-extra { -fx-background-color: derive(-color-warning-subtle, 10%); }
-.drift-row-extra:selected { -fx-background-color: derive(-color-warning-subtle, -15%); }
-.drift-row-mismatch { -fx-background-color: derive(-color-accent-subtle, 10%); }
-.drift-row-mismatch:selected { -fx-background-color: derive(-color-accent-subtle, -15%); }
+/* ── Table column headers ─────────────────────────────────────────────── */
+.table-view .column-header {
+    -fx-background-color: -color-bg-subtle;
+}
 
-/* ── Migration Drift — summary chips ────────────────────────────────── */
+.table-view .column-header .label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-muted;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 6 8 6 8;
+}
+
+/* ── Migration Drift — row colours ───────────────────────────────────── */
+.drift-row-missing          { -fx-background-color: derive(-color-danger-subtle, 10%); }
+.drift-row-missing:selected { -fx-background-color: derive(-color-danger-subtle, -15%); }
+.drift-row-extra            { -fx-background-color: derive(-color-warning-subtle, 10%); }
+.drift-row-extra:selected   { -fx-background-color: derive(-color-warning-subtle, -15%); }
+.drift-row-mismatch         { -fx-background-color: derive(-color-accent-subtle, 10%); }
+.drift-row-mismatch:selected{ -fx-background-color: derive(-color-accent-subtle, -15%); }
+
+/* ── Migration Drift — summary chips ─────────────────────────────────── */
 .drift-chip-missing, .drift-chip-extra, .drift-chip-colmiss,
 .drift-chip-colextra, .drift-chip-mismatch {
     -fx-padding: 4 12 4 12;
@@ -289,16 +339,17 @@
     -fx-font-size: 11px;
     -fx-font-weight: bold;
 }
-.drift-chip-missing  { -fx-background-color: -color-danger-subtle;  -fx-text-fill: -color-danger-fg; }
-.drift-chip-extra    { -fx-background-color: -color-warning-subtle; -fx-text-fill: -color-warning-fg; }
-.drift-chip-colmiss  { -fx-background-color: derive(-color-danger-subtle, 20%);  -fx-text-fill: -color-danger-fg; }
-.drift-chip-colextra { -fx-background-color: derive(-color-warning-subtle, 20%); -fx-text-fill: -color-warning-fg; }
-.drift-chip-mismatch { -fx-background-color: -color-accent-subtle;  -fx-text-fill: -color-accent-fg; }
 
-/* ── Connection Health — row colours ────────────────────────────────── */
-.health-row-ok { -fx-background-color: derive(-color-success-subtle, 10%); }
-.health-row-ok:selected { -fx-background-color: derive(-color-success-subtle, -15%); }
-.health-row-degraded { -fx-background-color: derive(-color-warning-subtle, 10%); }
+.drift-chip-missing  { -fx-background-color: -color-danger-subtle;                      -fx-text-fill: -color-danger-fg;  }
+.drift-chip-extra    { -fx-background-color: -color-warning-subtle;                     -fx-text-fill: -color-warning-fg; }
+.drift-chip-colmiss  { -fx-background-color: derive(-color-danger-subtle,  20%);        -fx-text-fill: -color-danger-fg;  }
+.drift-chip-colextra { -fx-background-color: derive(-color-warning-subtle, 20%);        -fx-text-fill: -color-warning-fg; }
+.drift-chip-mismatch { -fx-background-color: -color-accent-subtle;                      -fx-text-fill: -color-accent-fg;  }
+
+/* ── Connection Health — row colours ──────────────────────────────────── */
+.health-row-ok             { -fx-background-color: derive(-color-success-subtle, 10%); }
+.health-row-ok:selected    { -fx-background-color: derive(-color-success-subtle, -15%); }
+.health-row-degraded       { -fx-background-color: derive(-color-warning-subtle, 10%); }
 .health-row-degraded:selected { -fx-background-color: derive(-color-warning-subtle, -15%); }
-.health-row-down { -fx-background-color: derive(-color-danger-subtle, 10%); }
-.health-row-down:selected { -fx-background-color: derive(-color-danger-subtle, -15%); }
+.health-row-down           { -fx-background-color: derive(-color-danger-subtle, 10%); }
+.health-row-down:selected  { -fx-background-color: derive(-color-danger-subtle, -15%); }

@@ -1,21 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1976D2"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1E88E5"/>
       <stop offset="100%" stop-color="#0D47A1"/>
     </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="white" stop-opacity="0.18"/>
+      <stop offset="55%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="clip">
+      <rect width="40" height="40" rx="9"/>
+    </clipPath>
   </defs>
-  <rect width="40" height="40" rx="8" fill="url(#g)"/>
+
+  <!-- Background -->
+  <rect width="40" height="40" rx="9" fill="url(#bg)"/>
+  <!-- Subtle top-left sheen -->
+  <rect width="40" height="40" rx="9" fill="url(#sheen)" clip-path="url(#clip)"/>
+
   <!-- Left database cylinder -->
-  <ellipse cx="10" cy="14" rx="5" ry="2" fill="white" opacity="0.95"/>
-  <rect x="5" y="14" width="10" height="12" fill="white" opacity="0.6"/>
-  <ellipse cx="10" cy="26" rx="5" ry="2" fill="white" opacity="0.95"/>
-  <!-- Transfer arrow -->
-  <line x1="17" y1="20" x2="23" y2="20" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-  <polyline points="21,17.5 24,20 21,22.5" fill="none" stroke="white" stroke-width="2.5"
+  <ellipse cx="10.5" cy="13.5" rx="5.5" ry="2" fill="white" opacity="0.95"/>
+  <rect x="5" y="13.5" width="11" height="11" fill="white" opacity="0.55"/>
+  <ellipse cx="10.5" cy="24.5" rx="5.5" ry="2" fill="white" opacity="0.95"/>
+  <!-- mid stripe -->
+  <ellipse cx="10.5" cy="19" rx="5.5" ry="1.6" fill="none" stroke="white" stroke-width="1.2" opacity="0.35"/>
+
+  <!-- Transfer arrow — thicker, centred -->
+  <line x1="18" y1="19" x2="22.5" y2="19" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+  <polyline points="21,16.5 24.5,19 21,21.5" fill="none" stroke="white" stroke-width="2.4"
             stroke-linecap="round" stroke-linejoin="round"/>
+
   <!-- Right database cylinder -->
-  <ellipse cx="30" cy="14" rx="5" ry="2" fill="white" opacity="0.95"/>
-  <rect x="25" y="14" width="10" height="12" fill="white" opacity="0.6"/>
-  <ellipse cx="30" cy="26" rx="5" ry="2" fill="white" opacity="0.95"/>
+  <ellipse cx="29.5" cy="13.5" rx="5.5" ry="2" fill="white" opacity="0.95"/>
+  <rect x="24" y="13.5" width="11" height="11" fill="white" opacity="0.55"/>
+  <ellipse cx="29.5" cy="24.5" rx="5.5" ry="2" fill="white" opacity="0.95"/>
+  <ellipse cx="29.5" cy="19" rx="5.5" ry="1.6" fill="none" stroke="white" stroke-width="1.2" opacity="0.35"/>
+
+  <!-- "RR" monogram bottom-right -->
+  <text x="20" y="35" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif"
+        font-weight="800" font-size="8" fill="white" text-anchor="middle" opacity="0.7">RR</text>
 </svg>

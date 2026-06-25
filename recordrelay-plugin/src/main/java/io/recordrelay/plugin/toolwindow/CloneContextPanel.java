@@ -129,6 +129,9 @@ public final class CloneContextPanel extends JPanel {
     center.add(new JBScrollPane(stepsPanel), BorderLayout.CENTER);
     center.add(logSection, BorderLayout.SOUTH);
 
+    add(
+        new PanelHeader("Clone Context", "Copy a record and its FK-linked data between databases"),
+        BorderLayout.NORTH);
     add(center, BorderLayout.CENTER);
     add(buildButtonBar(), BorderLayout.SOUTH);
 

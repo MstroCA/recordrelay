@@ -63,11 +63,17 @@ public final class QueryPanel extends JPanel {
   /** Creates the Query Analyzer panel bound to the given project. */
   public QueryPanel(Project project) {
     this.project = project;
-    setLayout(new BorderLayout(0, 8));
-    setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-    add(buildTopPanel(), BorderLayout.NORTH);
-    add(new JBScrollPane(tblResults), BorderLayout.CENTER);
-    add(lblStatus, BorderLayout.SOUTH);
+    setLayout(new BorderLayout(0, 0));
+    var body = new JPanel(new BorderLayout(0, 8));
+    body.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+    body.add(buildTopPanel(), BorderLayout.NORTH);
+    body.add(new JBScrollPane(tblResults), BorderLayout.CENTER);
+    body.add(lblStatus, BorderLayout.SOUTH);
+    add(
+        new PanelHeader(
+            "Query Analyzer", "Run read-only SELECT queries against any saved connection"),
+        BorderLayout.NORTH);
+    add(body, BorderLayout.CENTER);
 
     loadConnections();
     btnRun.addActionListener(e -> onRun());

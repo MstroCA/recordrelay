@@ -36,6 +36,75 @@ tasks.named<JavaExec>("run") {
     jvmArgs("-Dprism.order=sw", "-Djava.awt.headless=false")
 }
 
+// ── jpackage — native installer with proper app icon ──────────────────
+// Usage: ./gradlew :recordrelay-desktop:jpackage
+//   Windows → build/jpackage/RecordRelay-<version>.msi  (requires WiX 3+)
+//   macOS   → build/jpackage/RecordRelay-<version>.dmg
+//   Linux   → build/jpackage/recordrelay_<version>_amd64.deb
+val jpackageTask by tasks.registering(Exec::class) {
+    group = "distribution"
+    description = "Creates a native installer via jpackage with the RecordRelay icon."
+    dependsOn(tasks.named("installDist"))
+
+    val distDir = layout.buildDirectory.dir("install/recordrelay-desktop")
+    val outputDir = layout.buildDirectory.dir("jpackage")
+    val iconDir = layout.projectDirectory.dir("src/main/package")
+    val appVersion = project.version.toString().replace("-SNAPSHOT", "")
+    val osIcon =
+        when {
+            org.gradle.internal.os.OperatingSystem
+                .current()
+                .isWindows ->
+                iconDir.file("windows/RecordRelay.ico").asFile.absolutePath
+            org.gradle.internal.os.OperatingSystem
+                .current()
+                .isMacOsX ->
+                iconDir.file("macos/RecordRelay.icns").asFile.absolutePath
+            else ->
+                iconDir.file("linux/RecordRelay.png").asFile.absolutePath
+        }
+
+    outputs.dir(outputDir)
+    doFirst {
+        outputDir.get().asFile.mkdirs()
+    }
+    commandLine(
+        "jpackage",
+        "--type",
+        if (org.gradle.internal.os.OperatingSystem
+                .current()
+                .isWindows
+        ) {
+            "msi"
+        } else {
+            "dmg"
+        },
+        "--name",
+        "RecordRelay",
+        "--app-version",
+        appVersion.ifBlank { "1.0" },
+        "--vendor",
+        "RecordRelay Authors",
+        "--description",
+        "Database record relay and migration tool",
+        "--input",
+        distDir
+            .get()
+            .dir("lib")
+            .asFile.absolutePath,
+        "--main-jar",
+        "recordrelay-desktop-${project.version}.jar",
+        "--main-class",
+        "io.recordrelay.desktop.RecordRelayApp",
+        "--dest",
+        outputDir.get().asFile.absolutePath,
+        "--icon",
+        osIcon,
+        "--java-options",
+        "--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED",
+    )
+}
+
 dependencies {
     implementation(project(":recordrelay-core"))
     implementation(project(":recordrelay-domain"))

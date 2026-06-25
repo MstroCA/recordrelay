@@ -73,12 +73,18 @@ public final class MonitorPanel extends JPanel {
 
   /** Creates the panel for the given project. */
   public MonitorPanel(Project project) {
-    super(new BorderLayout(0, 8));
+    super(new BorderLayout(0, 0));
     this.project = project;
     btnRefresh.addActionListener(e -> onRefreshHealth());
     btnClear.addActionListener(e -> onClear());
-    add(buildKpiPanel(), BorderLayout.NORTH);
-    add(buildTablesPanel(), BorderLayout.CENTER);
+    var body = new JPanel(new BorderLayout(0, 8));
+    body.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 0, 0, 0));
+    body.add(buildKpiPanel(), BorderLayout.NORTH);
+    body.add(buildTablesPanel(), BorderLayout.CENTER);
+    add(
+        new PanelHeader("Monitor", "Clone history and connection health overview"),
+        BorderLayout.NORTH);
+    add(body, BorderLayout.CENTER);
     add(buildButtonBar(), BorderLayout.SOUTH);
     refreshHistory();
   }

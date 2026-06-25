@@ -46,11 +46,6 @@ public final class MySqlConnector extends AbstractJdbcConnector {
   }
 
   @Override
-  protected String listDatabasesSql() {
-    return "SHOW DATABASES";
-  }
-
-  @Override
   public SchemaInspector schemaInspector() {
     return new MySqlSchemaInspector();
   }

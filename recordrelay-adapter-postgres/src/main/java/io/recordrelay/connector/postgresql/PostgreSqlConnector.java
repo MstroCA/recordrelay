@@ -25,7 +25,6 @@ import io.recordrelay.core.port.out.RecordReader;
 import io.recordrelay.core.port.out.RecordWriter;
 import io.recordrelay.core.port.out.SchemaInspector;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +38,6 @@ import org.slf4j.LoggerFactory;
 public final class PostgreSqlConnector implements ContextProviderPort {
 
   private static final Logger LOG = LoggerFactory.getLogger(PostgreSqlConnector.class);
-
-  private static final String LIST_DB_SQL =
-      "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname";
 
   @Override
   public String connectorId() {
@@ -68,20 +64,10 @@ public final class PostgreSqlConnector implements ContextProviderPort {
   }
 
   @Override
-  public List<DatabaseRef> listDatabases(ConnectionProfile profile) throws ConnectorException {
-    try (var ds = DataSourceFactory.create(profile);
-        var conn = ds.getConnection();
-        var stmt = conn.createStatement();
-        var rs = stmt.executeQuery(LIST_DB_SQL)) {
-      var result = new ArrayList<DatabaseRef>();
-      while (rs.next()) {
-        result.add(new DatabaseRef(rs.getString("datname"), DatabaseType.POSTGRESQL));
-      }
-      LOG.debug("Listed {} database(s) for profile '{}'", result.size(), profile.name());
-      return List.copyOf(result);
-    } catch (SQLException e) {
-      throw new ConnectorException("Failed to list databases: " + e.getMessage(), e);
-    }
+  public List<DatabaseRef> listDatabases(ConnectionProfile profile) {
+    String db = profile.database();
+    LOG.debug("Returning configured database '{}' for profile '{}'", db, profile.name());
+    return List.of(new DatabaseRef(db, DatabaseType.POSTGRESQL));
   }
 
   @Override

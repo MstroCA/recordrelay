@@ -45,7 +45,7 @@ public final class PostgreSqlSchemaInspector implements SchemaInspector {
       "SELECT table_schema, table_name "
           + "FROM information_schema.tables "
           + "WHERE table_catalog = ? AND table_type = 'BASE TABLE' "
-          + "  AND table_schema NOT IN ('pg_catalog', 'information_schema') "
+          + "  AND table_schema = ? "
           + "ORDER BY table_schema, table_name";
 
   private static final String LIST_COLUMNS_SQL =
@@ -67,10 +67,12 @@ public final class PostgreSqlSchemaInspector implements SchemaInspector {
   @Override
   public List<TableRef> listTables(ConnectionProfile profile, DatabaseRef database)
       throws ConnectorException {
+    String schema = profile.properties().getOrDefault("currentSchema", "public");
     try (var ds = DataSourceFactory.create(profile);
         var conn = ds.getConnection();
         var stmt = conn.prepareStatement(LIST_TABLES_SQL)) {
       stmt.setString(1, database.name());
+      stmt.setString(2, schema);
       var result = new ArrayList<TableRef>();
       try (var rs = stmt.executeQuery()) {
         while (rs.next()) {

@@ -20,7 +20,6 @@ import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.exception.ConnectorException;
 import io.recordrelay.core.port.out.ContextProviderPort;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,13 +42,6 @@ public abstract class AbstractJdbcConnector implements ContextProviderPort {
    */
   protected abstract String jdbcScheme();
 
-  /**
-   * Returns the SQL statement used to list available databases visible to the connecting user.
-   *
-   * @return SQL string whose first result column is the database name
-   */
-  protected abstract String listDatabasesSql();
-
   @Override
   public void testConnection(ConnectionProfile profile) throws ConnectorException {
     try (var ds = JdbcDataSourceFactory.create(profile, jdbcScheme());
@@ -65,19 +57,9 @@ public abstract class AbstractJdbcConnector implements ContextProviderPort {
   }
 
   @Override
-  public List<DatabaseRef> listDatabases(ConnectionProfile profile) throws ConnectorException {
-    try (var ds = JdbcDataSourceFactory.create(profile, jdbcScheme());
-        var conn = ds.getConnection();
-        var stmt = conn.createStatement();
-        var rs = stmt.executeQuery(listDatabasesSql())) {
-      var result = new ArrayList<DatabaseRef>();
-      while (rs.next()) {
-        result.add(new DatabaseRef(rs.getString(1), profile.type()));
-      }
-      log.debug("Listed {} database(s) for '{}'", result.size(), profile.name());
-      return List.copyOf(result);
-    } catch (SQLException e) {
-      throw new ConnectorException("Failed to list databases: " + e.getMessage(), e);
-    }
+  public List<DatabaseRef> listDatabases(ConnectionProfile profile) {
+    String db = profile.database();
+    log.debug("Returning configured database '{}' for '{}'", db, profile.name());
+    return List.of(new DatabaseRef(db, profile.type()));
   }
 }

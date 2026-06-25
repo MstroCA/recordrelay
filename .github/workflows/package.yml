@@ -71,9 +71,11 @@ jobs:
             --type dmg \
             --name "RecordRelay" \
             --app-version "${{ steps.ver.outputs.APP_VERSION }}" \
+            --vendor "RecordRelay Authors" \
             --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
+            --icon recordrelay-desktop/src/main/package/macos/RecordRelay.icns \
             --java-options "-Xmx512m" \
             --dest recordrelay-desktop/build/packages
 
@@ -86,12 +88,16 @@ jobs:
             --type exe \
             --name "RecordRelay" \
             --app-version "${{ steps.ver.outputs.APP_VERSION }}" \
+            --vendor "RecordRelay Authors" \
             --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
+            --icon recordrelay-desktop/src/main/package/windows/RecordRelay.ico \
             --java-options "-Xmx512m" \
             --win-dir-chooser \
             --win-shortcut \
+            --win-menu \
+            --win-menu-group "RecordRelay" \
             --dest recordrelay-desktop/build/packages
 
       - name: Package (Linux)
@@ -102,9 +108,11 @@ jobs:
             --type deb \
             --name "recordrelay" \
             --app-version "${{ steps.ver.outputs.APP_VERSION }}" \
+            --vendor "RecordRelay Authors" \
             --input recordrelay-desktop/build/install/recordrelay-desktop/lib \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
+            --icon recordrelay-desktop/src/main/package/linux/RecordRelay.png \
             --java-options "-Xmx512m" \
             --linux-shortcut \
             --dest recordrelay-desktop/build/packages

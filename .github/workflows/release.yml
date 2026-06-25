@@ -121,10 +121,12 @@ jobs:
             --type dmg \
             --name "RecordRelay" \
             --app-version "${{ steps.ver.outputs.VERSION }}" \
+            --vendor "RecordRelay Authors" \
             --runtime-image recordrelay-desktop/build/custom-runtime \
             --input "${LIB}" \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
+            --icon recordrelay-desktop/src/main/package/macos/RecordRelay.icns \
             --java-options "-Xmx512m" \
             --java-options "--add-modules javafx.controls,javafx.fxml,javafx.base,javafx.graphics" \
             --dest recordrelay-desktop/build/packages
@@ -139,14 +141,18 @@ jobs:
             --type exe \
             --name "RecordRelay" \
             --app-version "${{ steps.ver.outputs.VERSION }}" \
+            --vendor "RecordRelay Authors" \
             --runtime-image recordrelay-desktop/build/custom-runtime \
             --input "${LIB}" \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
+            --icon recordrelay-desktop/src/main/package/windows/RecordRelay.ico \
             --java-options "-Xmx512m" \
             --java-options "--add-modules javafx.controls,javafx.fxml,javafx.base,javafx.graphics" \
             --win-dir-chooser \
             --win-shortcut \
+            --win-menu \
+            --win-menu-group "RecordRelay" \
             --dest recordrelay-desktop/build/packages
 
       - name: Package (Linux)
@@ -159,10 +165,12 @@ jobs:
             --type deb \
             --name "recordrelay" \
             --app-version "${{ steps.ver.outputs.VERSION }}" \
+            --vendor "RecordRelay Authors" \
             --runtime-image recordrelay-desktop/build/custom-runtime \
             --input "${LIB}" \
             --main-jar "$MAIN_JAR" \
             --main-class io.recordrelay.desktop.RecordRelayApp \
+            --icon recordrelay-desktop/src/main/package/linux/RecordRelay.png \
             --java-options "-Xmx512m" \
             --java-options "--add-modules javafx.controls,javafx.fxml,javafx.base,javafx.graphics" \
             --linux-shortcut \

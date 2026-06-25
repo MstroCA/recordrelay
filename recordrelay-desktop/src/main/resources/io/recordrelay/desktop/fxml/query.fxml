@@ -3,10 +3,12 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -14,58 +16,103 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="io.recordrelay.desktop.view.QueryController">
 
+    <!-- ── Title bar ────────────────────────────────────────────────────────── -->
     <top>
         <VBox spacing="4">
-            <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
+            <padding><Insets top="20" right="28" bottom="0" left="28"/></padding>
             <Label text="%nav.query" styleClass="screen-title"/>
             <Label text="%query.placeholder" styleClass="screen-subtitle"/>
             <Label fx:id="lblError" styleClass="error-label" visible="false" managed="false"/>
         </VBox>
     </top>
 
+    <!-- ── Content area ─────────────────────────────────────────────────────── -->
     <center>
-        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="edge-to-edge">
-        <VBox spacing="12">
-            <padding><Insets top="4" right="28" bottom="16" left="28"/></padding>
+        <VBox>
+            <padding><Insets top="8" right="0" bottom="0" left="0"/></padding>
 
-            <!-- ── Connection + Run row ──────────────────────────────────────── -->
-            <HBox spacing="16" styleClass="card" alignment="CENTER_LEFT">
-
-                <VBox spacing="6" HBox.hgrow="ALWAYS">
-                    <Label text="CONNECTION" styleClass="section-label"/>
-                    <ComboBox fx:id="cmbConn" maxWidth="Infinity"/>
-                </VBox>
-
-                <VBox spacing="8" alignment="BOTTOM_CENTER" minWidth="130">
-                    <Region VBox.vgrow="ALWAYS"/>
-                    <Button fx:id="btnRun" text="%query.btn.run"
-                            maxWidth="Infinity" onAction="#onRun" styleClass="accent-btn"/>
-                    <Label fx:id="lblStatus" text="%status.ready" styleClass="status-label"/>
-                </VBox>
-
-            </HBox>
-
-            <!-- ── SQL editor ────────────────────────────────────────────────── -->
-            <VBox styleClass="card" spacing="8">
-                <Label text="SQL" styleClass="section-label"/>
-                <TextArea fx:id="taSql" prefHeight="140" wrapText="false"
-                          promptText="%query.placeholder" styleClass="log-area"/>
-            </VBox>
-
-            <!-- ── Results table ─────────────────────────────────────────────── -->
-            <HBox spacing="8" alignment="CENTER_LEFT">
-                <Label fx:id="lblRows" text="" styleClass="hint-label"/>
+            <!-- Toolbar -->
+            <HBox spacing="8" alignment="CENTER_LEFT" styleClass="card">
+                <padding><Insets top="6" right="16" bottom="6" left="16"/></padding>
+                <Label text="Conn:" styleClass="section-label"/>
+                <ComboBox fx:id="cmbConn" prefWidth="160"/>
+                <Label text="DB:" styleClass="section-label"/>
+                <ComboBox fx:id="cmbDb" prefWidth="130"/>
                 <Region HBox.hgrow="ALWAYS"/>
+                <ToggleButton fx:id="btnFlow" text="Flow" selected="true" prefWidth="60"/>
+                <ToggleButton fx:id="btnSql" text="SQL" prefWidth="60"/>
+                <Region prefWidth="8"/>
+                <Button fx:id="btnRun" text="%query.btn.run" onAction="#onRun"
+                        styleClass="accent-btn" prefWidth="80"/>
+                <Label fx:id="lblStatus" text="%status.ready" styleClass="hint-label"/>
             </HBox>
 
-            <TableView fx:id="tblResults" prefHeight="320" minHeight="180">
-                <placeholder>
-                    <Label text="%query.placeholder" styleClass="placeholder-hint"/>
-                </placeholder>
-            </TableView>
+            <!-- Main split: mode area (top) + results (bottom) -->
+            <SplitPane orientation="VERTICAL" VBox.vgrow="ALWAYS" dividerPositions="0.62">
 
+                <!-- ── Flow mode pane ────────────────────────────────────────── -->
+                <VBox fx:id="flowPane">
+                    <SplitPane dividerPositions="0.17, 0.80" VBox.vgrow="ALWAYS">
+
+                        <!-- Table picker -->
+                        <VBox spacing="4" minWidth="130" prefWidth="155"
+                              style="-fx-border-color: transparent #D0D7E2 transparent transparent; -fx-border-width: 0 1 0 0;">
+                            <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
+                            <Label text="Tables" style="-fx-font-weight: bold; -fx-font-size: 11; -fx-text-fill: #1565C0;"/>
+                            <ListView fx:id="lstTables" VBox.vgrow="ALWAYS"/>
+                            <Button text="+ Add" onAction="#onAddTableToCanvas"
+                                    maxWidth="Infinity"
+                                    style="-fx-background-color: transparent; -fx-text-fill: #1565C0;"/>
+                        </VBox>
+
+                        <!-- Canvas scroll -->
+                        <ScrollPane fx:id="canvasScroll" SplitPane.resizableWithParent="true"
+                                    hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED"
+                                    pannable="false" fitToHeight="false" fitToWidth="false"/>
+
+                        <!-- Conditions panel -->
+                        <ScrollPane fx:id="conditionsScroll" minWidth="180" maxWidth="240"
+                                    hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                                    fitToWidth="true"/>
+
+                    </SplitPane>
+                </VBox>
+
+                <!-- ── SQL mode pane ─────────────────────────────────────────── -->
+                <VBox fx:id="sqlPane" visible="false" managed="false">
+                    <padding><Insets top="8" right="16" bottom="0" left="16"/></padding>
+                    <Label text="SQL" styleClass="section-label"/>
+                    <TextArea fx:id="taSql" VBox.vgrow="ALWAYS" prefHeight="260"
+                              wrapText="false" promptText="%query.placeholder"
+                              styleClass="log-area"/>
+                </VBox>
+
+                <!-- ── Bottom: SQL preview + results ───────────────────────── -->
+                <VBox>
+                    <SplitPane orientation="VERTICAL" dividerPositions="0.3" VBox.vgrow="ALWAYS">
+                        <VBox spacing="4">
+                            <padding><Insets top="6" right="16" bottom="0" left="16"/></padding>
+                            <Label text="Generated SQL" styleClass="section-label"/>
+                            <TextArea fx:id="taSqlPreview" editable="false" wrapText="false"
+                                      prefHeight="90" styleClass="log-area"
+                                      style="-fx-text-fill: #1565C0; -fx-background-color: #F8FAFD;"/>
+                        </VBox>
+                        <VBox spacing="4">
+                            <padding><Insets top="6" right="16" bottom="8" left="16"/></padding>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label fx:id="lblRows" text="" styleClass="hint-label"/>
+                            </HBox>
+                            <TableView fx:id="tblResults" VBox.vgrow="ALWAYS" prefHeight="200">
+                                <placeholder>
+                                    <Label text="%query.placeholder" styleClass="placeholder-hint"/>
+                                </placeholder>
+                            </TableView>
+                        </VBox>
+                    </SplitPane>
+                </VBox>
+
+            </SplitPane>
         </VBox>
-        </ScrollPane>
     </center>
 
 </BorderPane>

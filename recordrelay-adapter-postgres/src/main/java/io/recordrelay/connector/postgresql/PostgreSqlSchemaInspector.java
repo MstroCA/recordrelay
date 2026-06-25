@@ -67,7 +67,7 @@ public final class PostgreSqlSchemaInspector implements SchemaInspector {
   @Override
   public List<TableRef> listTables(ConnectionProfile profile, DatabaseRef database)
       throws ConnectorException {
-    String schema = profile.properties().getOrDefault("currentSchema", "public");
+    String schema = profile.properties().getOrDefault("currentSchema", profile.database());
     try (var ds = DataSourceFactory.create(profile);
         var conn = ds.getConnection();
         var stmt = conn.prepareStatement(LIST_TABLES_SQL)) {

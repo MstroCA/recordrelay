@@ -275,6 +275,11 @@ jobs:
   create-release:
     name: Create GitHub Release
     needs: [package-desktop, package-cli, package-plugin]
+    if: |
+      always() &&
+      needs.package-desktop.result == 'success' &&
+      needs.package-cli.result == 'success' &&
+      (needs.package-plugin.result == 'success' || needs.package-plugin.result == 'skipped')
     runs-on: ubuntu-latest
 
     steps:

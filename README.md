@@ -16,9 +16,56 @@
 RecordRelay is not an ETL tool. It is a **business context reproduction** platform for developers and SREs: it reproduces a real entity — a customer, order, or user — along with all its relationships, from production to a local environment in minutes, or packages it as a `.rrpkg` file to share with others.
 
 **Three deployment targets:**
-- **Desktop** — JavaFX desktop application (AtlantaFX) — one-click reproduction via the Clone Context screen
+- **Desktop** — JavaFX desktop application (AtlantaFX) — 10 screens covering cloning, discovery, query analysis, ERD graph view, schema drift, and more
 - **CLI** — command-line tool that integrates into CI/CD pipelines
-- **IntelliJ Plugin** — Clone, Connections, Discovery, and Monitor tabs directly inside the IDE
+- **IntelliJ Plugin** — Clone, Connections, Discovery, Monitor, and Query tabs directly inside the IDE
+
+---
+
+## Desktop Screens
+
+| Screen | Description |
+|--------|-------------|
+| **Clone Context** | Select source / target connection, enter entity + ID, configure depth and masking, run with live phase log |
+| **Environments** | Manage named environment groups (prod, staging, local) and assign connections to them |
+| **Connections** | Add, edit, and test connection profiles for any supported source |
+| **Discovery** | Browse databases, schemas, and table structures across any connected source |
+| **Monitor** | Real-time clone-job monitor with sliding throughput chart and structured phase log |
+| **Graph View** | ERD-style relationship graph — Bezier FK edges, hover highlights, zoom slider, Ctrl+scroll zoom, fit-to-screen |
+| **Migration Drift** | Side-by-side schema diff between two environments — detects added/removed/changed columns and indexes |
+| **Row Count Diff** | Compare row counts per table across two environments to spot data divergence |
+| **Query Analyzer** | Visual flow query builder (drag tables → connect ports → get SQL) or raw SQL editor with live results |
+| **Connection Health** | Ping all configured connections and report latency and reachability |
+
+---
+
+## Query Analyzer — Visual Flow Builder
+
+The Query Analyzer offers two modes toggled by a toolbar button:
+
+**Flow mode** (default)
+1. Select a connection and database from the toolbar
+2. Double-click any table in the left panel to add it as a node card on the canvas
+3. Click the port button (○) on a column to start a JOIN — click a port on another table to finish it; a dialog asks for `INNER`, `LEFT`, or `RIGHT`
+4. Check/uncheck column checkboxes to control the `SELECT` list
+5. Add `WHERE` filters, `ORDER BY` clauses, and a row `LIMIT` in the right panel
+6. The **Generated SQL** preview updates live — hit **Run** to execute
+
+**SQL mode**
+Raw text editor for hand-written queries, same Run button and results table.
+
+Both the **IntelliJ plugin** (Swing canvas) and the **desktop app** (JavaFX canvas) share the same `QueryFlowModel` in `recordrelay-cli`, keeping SQL generation logic in one place.
+
+---
+
+## Graph View
+
+The Graph View renders an ERD-style relationship map rooted at any table:
+
+- **Bezier FK edges** — cubic curves with directional control points distinguish FK from heuristic links
+- **Hover highlight** — mousing over a node dims unrelated edges so you can trace one relationship at a time
+- **Zoom** — slider, `+` / `−` buttons, Ctrl+scroll, and a **Fit to Screen** button
+- **Root table selection** — choose any table as the root; the graph redraws from that perspective
 
 ---
 
@@ -85,29 +132,29 @@ Hexagonal Architecture (Ports & Adapters): the domain and core modules contain o
 
 ## Modules
 
-| Module | Directory | Description |
-|--------|-----------|-------------|
-| `recordrelay-core` | `recordrelay-core/` | ConnectionProfile, ContextProviderPort SPI, ConnectorRegistry |
-| `recordrelay-domain` | `recordrelay-domain/` | BusinessEntity, RelationshipGraph, ContextClonePlan, IdentityMapping, MaskingConfig |
-| `recordrelay-engine` | `recordrelay-engine/` | Clone orchestration, identity mapping, BFS extraction, replay |
-| `recordrelay-graph-engine` | `recordrelay-graph-engine/` | FK-based and heuristic relationship discovery |
-| `recordrelay-masking-engine` | `recordrelay-masking-engine/` | Deterministic PII masking (EMAIL, PHONE, ADDRESS, IBAN, NATIONAL_ID) |
-| `recordrelay-package-engine` | `recordrelay-package-engine/` | `.rrpkg` v2.1 ZIP export and import |
-| `recordrelay-cli` | `recordrelay-cli/` | Picocli CLI — clone, export, import, replay, diff, discover, analyze, env, conn, status |
-| `recordrelay-desktop` | `recordrelay-desktop/` | JavaFX desktop application — Clone Context, Environments, Connections, Discovery, Monitor |
-| `recordrelay-plugin` | `recordrelay-plugin/` | IntelliJ IDEA plugin — Clone, Connections, Discovery, Monitor tabs |
-| `recordrelay-adapter-jdbc-base` | `recordrelay-adapter-jdbc-base/` | Abstract base for JDBC connectors |
-| `recordrelay-adapter-postgres` | `recordrelay-adapter-postgres/` | PostgreSQL 14+ |
-| `recordrelay-adapter-mysql` | `recordrelay-adapter-mysql/` | MySQL 8+ / MariaDB 10.6+ |
-| `recordrelay-adapter-sqlserver` | `recordrelay-adapter-sqlserver/` | Microsoft SQL Server 2019+ |
-| `recordrelay-adapter-oracle` | `recordrelay-adapter-oracle/` | Oracle 19c+ |
-| `recordrelay-adapter-sqlite` | `recordrelay-adapter-sqlite/` | SQLite (embedded) |
-| `recordrelay-adapter-mongodb` | `recordrelay-adapter-mongodb/` | MongoDB 6+ |
-| `recordrelay-adapter-cassandra` | `recordrelay-adapter-cassandra/` | Apache Cassandra 4+ |
-| `recordrelay-adapter-redis` | `recordrelay-adapter-redis/` | Redis 7+ (Lettuce) |
-| `recordrelay-adapter-elasticsearch` | `recordrelay-adapter-elasticsearch/` | Elasticsearch 8+ |
-| `recordrelay-adapter-file` | `recordrelay-adapter-file/` | CSV, Excel, JSON Lines, YAML, Parquet |
-| `recordrelay-adapter-template` | `recordrelay-adapter-template/` | Template for building custom connectors |
+| Module | Description |
+|--------|-------------|
+| `recordrelay-core` | ConnectionProfile, ContextProviderPort SPI, ConnectorRegistry |
+| `recordrelay-domain` | BusinessEntity, RelationshipGraph, ContextClonePlan, IdentityMapping, MaskingConfig |
+| `recordrelay-engine` | Clone orchestration, identity mapping, BFS extraction, replay |
+| `recordrelay-graph-engine` | FK-based and heuristic relationship discovery |
+| `recordrelay-masking-engine` | Deterministic PII masking (EMAIL, PHONE, ADDRESS, IBAN, NATIONAL_ID) |
+| `recordrelay-package-engine` | `.rrpkg` v2.1 ZIP export and import |
+| `recordrelay-cli` | Picocli CLI commands + shared `QueryFlowModel` (SQL generation for the flow query builder) |
+| `recordrelay-desktop` | JavaFX app — 10 screens: Clone Context, Environments, Connections, Discovery, Monitor, Graph View, Migration Drift, Row Count Diff, Query Analyzer, Connection Health |
+| `recordrelay-plugin` | IntelliJ IDEA plugin — Clone, Connections, Discovery, Monitor, Query tabs |
+| `recordrelay-adapter-jdbc-base` | Abstract base for JDBC connectors |
+| `recordrelay-adapter-postgres` | PostgreSQL 14+ |
+| `recordrelay-adapter-mysql` | MySQL 8+ / MariaDB 10.6+ |
+| `recordrelay-adapter-sqlserver` | Microsoft SQL Server 2019+ |
+| `recordrelay-adapter-oracle` | Oracle 19c+ |
+| `recordrelay-adapter-sqlite` | SQLite (embedded) |
+| `recordrelay-adapter-mongodb` | MongoDB 6+ |
+| `recordrelay-adapter-cassandra` | Apache Cassandra 4+ |
+| `recordrelay-adapter-redis` | Redis 7+ (Lettuce) |
+| `recordrelay-adapter-elasticsearch` | Elasticsearch 8+ |
+| `recordrelay-adapter-file` | CSV, Excel, JSON Lines, YAML, Parquet |
+| `recordrelay-adapter-template` | Template for building custom connectors |
 
 ---
 
@@ -147,6 +194,12 @@ Hexagonal Architecture (Ports & Adapters): the domain and core modules contain o
 
 Download the package for your platform from the [GitHub Releases](https://github.com/MstroCA/recordrelay/releases/latest) page.
 
+| Platform | Package |
+|----------|---------|
+| macOS | `.dmg` |
+| Windows | `.exe` installer (Start menu shortcut included) |
+| Linux | `.deb` |
+
 ### CLI
 
 ```bash
@@ -177,9 +230,12 @@ cd recordrelay
 
 # Build CLI fat JAR
 ./gradlew :recordrelay-cli:shadowJar
-# → recordrelay-cli/build/libs/rr-cli-0.1.0-SNAPSHOT.jar
+# → recordrelay-cli/build/libs/rr-cli-<version>.jar
 
-# Desktop
+# Desktop (run locally)
+./gradlew :recordrelay-desktop:run
+
+# Desktop distribution
 ./gradlew :recordrelay-desktop:installDist
 
 # Plugin ZIP

@@ -54,6 +54,9 @@ public final class MainController {
   @FXML private Button btnNavRowCnt;
   @FXML private Button btnNavQuery;
   @FXML private Button btnNavHealth;
+  @FXML private Button btnNavMaskCoverage;
+  @FXML private Button btnNavPresets;
+  @FXML private Button btnNavSync;
 
   private List<Button> navButtons;
 
@@ -92,7 +95,10 @@ public final class MainController {
             btnNavDrift,
             btnNavRowCnt,
             btnNavQuery,
-            btnNavHealth);
+            btnNavHealth,
+            btnNavMaskCoverage,
+            btnNavPresets,
+            btnNavSync);
     cboLanguage.getItems().addAll(LANG_CODES.keySet());
     cboLanguage.setValue("English");
     lblVersion.setText(readVersion());
@@ -167,6 +173,21 @@ public final class MainController {
   }
 
   @FXML
+  void showMaskingCoverage() {
+    navigate("masking-coverage");
+  }
+
+  @FXML
+  void showClonePresets() {
+    navigate("clone-presets");
+  }
+
+  @FXML
+  void showScheduledSync() {
+    navigate("scheduled-sync");
+  }
+
+  @FXML
   void toggleTheme() {
     darkMode = !darkMode;
     ThemeManager.apply(darkMode);
@@ -205,6 +226,9 @@ public final class MainController {
     btnNavRowCnt.setText(Messages.get("nav.row.count.diff"));
     btnNavQuery.setText(Messages.get("nav.query"));
     btnNavHealth.setText(Messages.get("nav.connection.health"));
+    btnNavMaskCoverage.setText(Messages.get("nav.masking.coverage"));
+    btnNavPresets.setText(Messages.get("nav.presets"));
+    btnNavSync.setText(Messages.get("nav.scheduled.sync"));
     btnTheme.setText(darkMode ? Messages.get("theme.light") : Messages.get("theme.dark"));
     lblStatus.setText(Messages.get("status.ready"));
   }
@@ -234,6 +258,9 @@ public final class MainController {
       SCREEN_BUTTON_MAP.put("row-count-diff", btnNavRowCnt);
       SCREEN_BUTTON_MAP.put("query", btnNavQuery);
       SCREEN_BUTTON_MAP.put("connection-health", btnNavHealth);
+      SCREEN_BUTTON_MAP.put("masking-coverage", btnNavMaskCoverage);
+      SCREEN_BUTTON_MAP.put("clone-presets", btnNavPresets);
+      SCREEN_BUTTON_MAP.put("scheduled-sync", btnNavSync);
     }
     return SCREEN_BUTTON_MAP;
   }

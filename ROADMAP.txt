@@ -1,0 +1,55 @@
+RecordRelay — Geliştirme Yol Haritası
+======================================
+
+YAPILDI:
+  ✅  1. Dry Run / Preview Modu          — CLI (--dry-run), Desktop, Plugin
+  ✅  2. Scheduled Sync                  — CLI (rr sync add/list/run/remove), Desktop ekranı
+  ✅  3. Clone Bookmarks / Presets       — CLI (rr preset save/list/run/remove), Desktop ekranı
+  ✅  4. Multi-Entity Clone              — CloneCommand'a --also-entity / --also-id eklendi
+  ✅ 10. Masking Coverage Raporu         — CLI (rr mask coverage --from prod), Desktop ekranı
+  ✅ 12. Docker / Testcontainers         — CLI (rr clone --testcontainer), DockerLauncher engine
+  ✅ 13. Webhook Bildirimleri            — CLI (--webhook <url>), sync --webhook, WebhookNotifier engine
+  ✅ 14. REST API / Server Modu          — CLI (rr serve --port 8080), 6 endpoint, JDK HttpServer
+
+YAPILACAKLAR:
+
+  5. AWS DynamoDB Adaptörü
+     recordrelay-adapter-dynamodb modülü.
+     Serverless uygulamalar için kritik eksikti.
+
+  6. Snowflake Adaptörü
+     recordrelay-adapter-snowflake.
+     Data warehouse sorgulama ve export için.
+
+  7. BigQuery Adaptörü
+     recordrelay-adapter-bigquery.
+     GCP ekosistemi kullanan takımlar için.
+
+  8. Package Registry (.rrpkg sunucusu)
+     Takım içi veri paketi paylaşımı: rr push / rr pull.
+     S3, GCS veya basit HTTP server backend'i.
+
+  9. VS Code Eklentisi
+     Mevcut IntelliJ plugin'inin VS Code karşılığı.
+     TypeScript + vscode API ile Clone, Discovery, Monitor panelleri.
+
+ 10. ✅ YAPILDI (yukarıya taşındı)
+
+ 11. Sentetik Veri Üretimi
+     Prod erişimi olmadan gerçekçi sahte veri üret (şema + istatistikten).
+     recordrelay-synthetic-engine modülü.
+
+ 12. ✅ YAPILDI (yukarıya taşındı)
+
+ 13. ✅ YAPILDI (yukarıya taşındı)
+
+ 14. ✅ YAPILDI (yukarıya taşındı)
+
+ 15. Point-in-Time Clone
+     Belirli bir timestamp'teki verinin klonlanması.
+     rr clone --entity customer --id 123 --from prod --target local --at "2026-06-01T10:00"
+     CDC veya audit tablosu gerektiriyor.
+
+ 16. İlişki Graf Editörü
+     Graph View şu an read-only. FK veya heuristic yakalamadığı ilişkileri
+     kullanıcının elle çizip kaydedebileceği edit modu.

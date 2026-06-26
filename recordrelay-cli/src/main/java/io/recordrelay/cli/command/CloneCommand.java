@@ -18,6 +18,9 @@ package io.recordrelay.cli.command;
 import io.recordrelay.cli.ExitCode;
 import io.recordrelay.cli.RecordRelayCli;
 import io.recordrelay.cli.engine.ConnProfileResolver;
+import io.recordrelay.cli.engine.DockerLauncher;
+import io.recordrelay.cli.engine.WebhookNotifier;
+import io.recordrelay.cli.engine.WebhookNotifier.WebhookPayload;
 import io.recordrelay.core.clone.domain.BugReport;
 import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
@@ -155,6 +158,20 @@ public final class CloneCommand implements Callable<Integer> {
       arity = "0..*")
   List<String> fieldOverrides;
 
+  // ── Multi-entity support ──────────────────────────────────────────────────
+
+  @Option(
+      names = {"--also-entity"},
+      description = "Additional entity name to clone alongside the primary entity. Repeatable.",
+      arity = "0..*")
+  List<String> alsoEntities;
+
+  @Option(
+      names = {"--also-id"},
+      description = "Primary key value for the corresponding --also-entity. Repeatable.",
+      arity = "0..*")
+  List<String> alsoIds;
+
   // ── Dry run ───────────────────────────────────────────────────────────────
 
   @Option(
@@ -163,15 +180,39 @@ public final class CloneCommand implements Callable<Integer> {
           "Preview which tables and rows would be cloned without writing anything to the target.")
   boolean dryRun;
 
+  // ── Docker / Testcontainers ───────────────────────────────────────────────
+
+  @Option(
+      names = {"--testcontainer"},
+      description =
+          "After cloning, start a fresh Docker container for the target DB type,"
+              + " clone into it, and print the connection string.")
+  boolean testcontainer;
+
+  // ── Webhook notification ──────────────────────────────────────────────────
+
+  @Option(
+      names = {"--webhook"},
+      description =
+          "POST a JSON notification to this URL when the clone completes or fails."
+              + " Supports Slack incoming webhooks, Teams connectors, and any custom endpoint.")
+  String webhookUrl;
+
+  /** Bundles the resolved clone parameters to avoid long parameter lists. */
+  private record CloneParams(
+      io.recordrelay.cli.output.Printer printer,
+      ConnProfileResolver resolver,
+      io.recordrelay.core.domain.ConnectionProfile srcProfile,
+      MaskingConfig masking,
+      FieldOverrideConfig overrides,
+      DockerLauncher.ContainerInfo container) {}
+
   @Override
   public Integer call() {
     try {
       var printer = parent.printer();
-      var store = parent.configStore();
-      var resolver = new ConnProfileResolver(store);
+      var resolver = new ConnProfileResolver(parent.configStore());
       var srcProfile = resolver.resolve(source);
-      var masking = buildMaskingConfig();
-      var overrides = buildFieldOverrideConfig();
       var resolved = resolveEntityAndId();
       var entityName = resolved[0];
       var rootId = resolved[1];
@@ -179,15 +220,98 @@ public final class CloneCommand implements Callable<Integer> {
       if (dryRun) {
         return performDryRun(printer, srcProfile, entityName, rootId);
       }
-      if (export || target == null) {
-        return performExport(printer, srcProfile, entityName, rootId, masking);
+      if (export || (target == null && !testcontainer)) {
+        return performExport(printer, srcProfile, entityName, rootId, buildMaskingConfig());
       }
-      return performLiveClone(
-          printer, resolver, srcProfile, entityName, rootId, masking, overrides);
+
+      var container = startContainerIfRequested(printer, srcProfile);
+      var params =
+          new CloneParams(
+              printer,
+              resolver,
+              srcProfile,
+              buildMaskingConfig(),
+              buildFieldOverrideConfig(),
+              container);
+
+      long startMs = System.currentTimeMillis();
+      try {
+        int exitCode = runPrimaryClone(params, entityName, rootId, startMs);
+        if (exitCode != ExitCode.SUCCESS) {
+          return exitCode;
+        }
+        exitCode = runExtraEntities(params);
+        if (exitCode != ExitCode.SUCCESS) {
+          return exitCode;
+        }
+      } catch (Exception ex) {
+        fireWebhook(entityName, rootId, 0, System.currentTimeMillis() - startMs, ex.getMessage());
+        throw ex;
+      }
+
+      if (container != null) {
+        printer.printLine("");
+        printer.printLine("Testcontainer connection string:");
+        printer.printLine("  " + container.connectionString());
+        printer.printLine("Stop with: docker stop " + container.shortId());
+      }
+      fireWebhook(entityName, rootId, 0, System.currentTimeMillis() - startMs, null);
+      return ExitCode.SUCCESS;
 
     } catch (Exception e) {
       return EnvCommand.handleError(parent, e, ExitCode.CLONE_FAILED);
     }
+  }
+
+  private DockerLauncher.ContainerInfo startContainerIfRequested(
+      io.recordrelay.cli.output.Printer printer,
+      io.recordrelay.core.domain.ConnectionProfile srcProfile)
+      throws Exception {
+    if (!testcontainer) {
+      return null;
+    }
+    printer.printLine("Starting Docker container for " + srcProfile.type() + "…");
+    var container = DockerLauncher.launch(srcProfile.type(), srcProfile.database());
+    target = "__testcontainer__";
+    printer.printLine(
+        "  Container ready: "
+            + container.shortId()
+            + "  port="
+            + container.hostPort()
+            + "  conn="
+            + container.connectionString());
+    return container;
+  }
+
+  private int runPrimaryClone(CloneParams p, String entityName, String rootId, long startMs)
+      throws Exception {
+    int exitCode = performLiveClone(p, entityName, rootId);
+    if (exitCode != ExitCode.SUCCESS) {
+      fireWebhook(
+          entityName, rootId, 0, System.currentTimeMillis() - startMs, "exit code " + exitCode);
+    }
+    return exitCode;
+  }
+
+  private int runExtraEntities(CloneParams p) throws Exception {
+    if (alsoEntities == null || alsoEntities.isEmpty()) {
+      return ExitCode.SUCCESS;
+    }
+    for (int i = 0; i < alsoEntities.size(); i++) {
+      var extraEntity = alsoEntities.get(i);
+      var extraId = (alsoIds != null && i < alsoIds.size()) ? alsoIds.get(i) : null;
+      if (extraId == null) {
+        p.printer()
+            .printLine("WARN: --also-id missing for --also-entity " + extraEntity + " — skipped.");
+        continue;
+      }
+      p.printer().printLine("");
+      int exitCode = performLiveClone(p, extraEntity, extraId);
+      if (exitCode != ExitCode.SUCCESS) {
+        return exitCode;
+      }
+    }
+    return ExitCode.SUCCESS;
   }
 
   private Integer performDryRun(
@@ -208,7 +332,12 @@ public final class CloneCommand implements Callable<Integer> {
                     io.recordrelay.core.clone.domain.BusinessEntity.of(entityName, fallbackTable));
     var plan =
         io.recordrelay.core.clone.domain.ContextClonePlan.liveClone(
-            entity, rootId, srcProfile, srcProfile, depth, io.recordrelay.core.clone.domain.MaskingConfig.none());
+            entity,
+            rootId,
+            srcProfile,
+            srcProfile,
+            depth,
+            io.recordrelay.core.clone.domain.MaskingConfig.none());
 
     var report = DefaultContextCloneEngine.createDefault().dryRunContext(plan);
 
@@ -255,37 +384,67 @@ public final class CloneCommand implements Callable<Integer> {
     return ExitCode.SUCCESS;
   }
 
-  private Integer performLiveClone(
-      io.recordrelay.cli.output.Printer printer,
-      ConnProfileResolver resolver,
-      io.recordrelay.core.domain.ConnectionProfile srcProfile,
-      String entityName,
-      String rootId,
-      MaskingConfig masking,
-      FieldOverrideConfig overrides)
+  private void fireWebhook(
+      String entity, String entityId, long records, long durationMs, String error) {
+    if (webhookUrl == null || webhookUrl.isBlank()) {
+      return;
+    }
+    var payload =
+        error == null
+            ? WebhookPayload.success(
+                "clone.completed", entity, entityId, source, target, records, durationMs)
+            : WebhookPayload.failure("clone.failed", entity, entityId, source, target, error);
+    WebhookNotifier.notify(webhookUrl, payload);
+  }
+
+  private Integer performLiveClone(CloneParams p, String entityName, String rootId)
       throws Exception {
-    var tgtProfile = resolver.resolve(target);
-    printer.printLine(
-        String.format(
-            "Cloning %s #%s from '%s' → '%s' (depth=%d)",
-            entityName, rootId, source, target, depth));
+    io.recordrelay.core.domain.ConnectionProfile tgtProfile;
+    if (p.container() != null) {
+      tgtProfile =
+          new io.recordrelay.core.domain.ConnectionProfile(
+              "testcontainer",
+              "testcontainer",
+              "test",
+              p.container().type(),
+              p.container().host(),
+              p.container().hostPort(),
+              p.srcProfile().database(),
+              new io.recordrelay.core.domain.Credentials("rr_test", "rr_test"),
+              java.util.Map.of());
+    } else {
+      tgtProfile = p.resolver().resolve(target);
+    }
+    p.printer()
+        .printLine(
+            String.format(
+                "Cloning %s #%s from '%s' → '%s' (depth=%d)",
+                entityName, rootId, source, target, depth));
 
     CloneReport report;
     var registryEntity = BuiltinEntityRegistry.INSTANCE.findByName(entityName);
     if (registryEntity.isPresent()) {
       var plan =
           ContextClonePlan.liveCloneWithOverrides(
-              registryEntity.get(), rootId, srcProfile, tgtProfile, depth, masking, overrides);
-      report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener(printer));
+              registryEntity.get(),
+              rootId,
+              p.srcProfile(),
+              tgtProfile,
+              depth,
+              p.masking(),
+              p.overrides());
+      report =
+          DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener(p.printer()));
     } else {
       var request =
-          CloneRequest.builder(srcProfile, tgtProfile, table, id)
+          CloneRequest.builder(p.srcProfile(), tgtProfile, table, id)
               .depth(depth)
-              .masking(masking)
-              .fieldOverrides(overrides)
+              .masking(p.masking())
+              .fieldOverrides(p.overrides())
               .build();
       report =
-          DefaultCloneEngine.createDefault().clone(CloneJob.of(request), buildListener(printer));
+          DefaultCloneEngine.createDefault()
+              .clone(CloneJob.of(request), buildListener(p.printer()));
     }
 
     printReport(report);

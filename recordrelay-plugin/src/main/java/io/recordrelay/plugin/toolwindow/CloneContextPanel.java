@@ -29,6 +29,7 @@ import com.intellij.util.ui.JBUI;
 import io.recordrelay.core.clone.domain.BusinessEntity;
 import io.recordrelay.core.clone.domain.ConflictResolution;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
+import io.recordrelay.core.clone.domain.DryRunReport;
 import io.recordrelay.core.clone.domain.FieldOverride;
 import io.recordrelay.core.clone.domain.FieldOverrideConfig;
 import io.recordrelay.core.clone.domain.MaskerType;
@@ -99,6 +100,7 @@ public final class CloneContextPanel extends JPanel {
   // Actions & log
   private final JButton btnClone = new JButton("Clone Context");
   private final JButton btnExport = new JButton("Export Context");
+  private final JButton btnDryRun = new JButton("Preview (Dry Run)");
   private final JBTextArea taLog = new JBTextArea(8, 40);
   private final JLabel lblStatus = new JLabel("Ready");
 
@@ -297,8 +299,10 @@ public final class CloneContextPanel extends JPanel {
     var panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
     btnClone.addActionListener(e -> onClone());
     btnExport.addActionListener(e -> onExport());
+    btnDryRun.addActionListener(e -> onDryRun());
     panel.add(btnClone);
     panel.add(btnExport);
+    panel.add(btnDryRun);
     panel.add(lblStatus);
     return panel;
   }
@@ -365,6 +369,80 @@ public final class CloneContextPanel extends JPanel {
   }
 
   // ── Action handlers ────────────────────────────────────────────────────────
+
+  private void onDryRun() {
+    String err = validate(false);
+    if (err != null) {
+      JOptionPane.showMessageDialog(this, err, "Validation", JOptionPane.WARNING_MESSAGE);
+      return;
+    }
+    btnDryRun.setEnabled(false);
+    taLog.setText("");
+    lblStatus.setText("Running preview…");
+
+    ProgressManager.getInstance()
+        .run(
+            new Task.Backgroundable(project, "RecordRelay — dry run preview…", false) {
+              private DryRunReport report;
+              private String error;
+
+              @Override
+              public void run(@NotNull com.intellij.openapi.progress.ProgressIndicator indicator) {
+                try {
+                  var resolver = RecordRelayService.getInstance().resolver();
+                  var srcProfile = resolver.resolve((String) cmbSource.getSelectedItem());
+                  var entity = buildEntity();
+                  var entityId = tfEntityId.getText().trim();
+                  int depth = (int) spinDepth.getValue();
+
+                  var plan =
+                      ContextClonePlan.liveClone(
+                          entity, entityId, srcProfile, srcProfile, depth, MaskingConfig.none());
+                  report = DefaultContextCloneEngine.createDefault().dryRunContext(plan);
+                } catch (Exception ex) {
+                  error = ex.getMessage();
+                }
+              }
+
+              @Override
+              public void onSuccess() {
+                SwingUtilities.invokeLater(
+                    () -> {
+                      btnDryRun.setEnabled(true);
+                      if (error != null) {
+                        lblStatus.setText("Preview failed");
+                        appendLog("ERROR: " + error);
+                      } else {
+                        showDryRunResult(report);
+                      }
+                    });
+              }
+
+              @Override
+              public void onFinished() {
+                SwingUtilities.invokeLater(() -> btnDryRun.setEnabled(true));
+              }
+            });
+  }
+
+  private void showDryRunResult(DryRunReport report) {
+    var sb = new StringBuilder();
+    sb.append(
+        String.format(
+            "PREVIEW: %d table(s), %d row(s) — %d ms%n%n",
+            report.tableCount(), report.totalRows(), report.durationMillis()));
+    sb.append(String.format("%-40s %8s %6s%n", "TABLE", "ROWS", "DEPTH"));
+    sb.append("-".repeat(56)).append("\n");
+    for (var entry : report.tables()) {
+      sb.append(
+          String.format("%-40s %8d %6d%n", entry.tableName(), entry.rowCount(), entry.minDepth()));
+    }
+    sb.append("%nNo data was written.");
+    taLog.setText(sb.toString());
+    taLog.setCaretPosition(0);
+    lblStatus.setText(
+        String.format("Preview: %d tables, %d rows", report.tableCount(), report.totalRows()));
+  }
 
   private void onClone() {
     String err = validate(false);

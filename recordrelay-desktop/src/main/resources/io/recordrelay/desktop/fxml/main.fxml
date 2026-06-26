@@ -94,6 +94,21 @@
                         onAction="#showConnectionHealth">
                     <graphic><FontIcon iconLiteral="mdi2h-heart-pulse" iconSize="15"/></graphic>
                 </Button>
+                <Button fx:id="btnNavMaskCoverage" text="%nav.masking.coverage"
+                        maxWidth="Infinity" styleClass="nav-btn"
+                        onAction="#showMaskingCoverage">
+                    <graphic><FontIcon iconLiteral="mdi2s-shield-check" iconSize="15"/></graphic>
+                </Button>
+                <Button fx:id="btnNavPresets" text="%nav.presets"
+                        maxWidth="Infinity" styleClass="nav-btn"
+                        onAction="#showClonePresets">
+                    <graphic><FontIcon iconLiteral="mdi2b-bookmark-multiple" iconSize="15"/></graphic>
+                </Button>
+                <Button fx:id="btnNavSync" text="%nav.scheduled.sync"
+                        maxWidth="Infinity" styleClass="nav-btn"
+                        onAction="#showScheduledSync">
+                    <graphic><FontIcon iconLiteral="mdi2c-clock-outline" iconSize="15"/></graphic>
+                </Button>
             </VBox>
 
             <Region VBox.vgrow="ALWAYS"/>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.recordrelay.desktop.view.ClonePresetsController">
+
+    <top>
+        <VBox spacing="4">
+            <padding><Insets top="28" right="28" bottom="12" left="28"/></padding>
+            <Label text="%preset.title" styleClass="screen-title"/>
+            <Label text="%preset.subtitle" styleClass="screen-subtitle"/>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="edge-to-edge">
+            <VBox spacing="16">
+                <padding><Insets top="4" right="28" bottom="16" left="28"/></padding>
+
+                <!-- Preset table -->
+                <VBox styleClass="card" spacing="10">
+                    <Label text="%preset.saved" styleClass="section-label"/>
+                    <TableView fx:id="tblPresets" prefHeight="200">
+                        <columns>
+                            <TableColumn fx:id="colName"        text="%preset.col.name"        prefWidth="150"/>
+                            <TableColumn fx:id="colEntity"      text="%preset.col.entity"      prefWidth="180"/>
+                            <TableColumn fx:id="colConnections" text="%preset.col.connections" prefWidth="200"/>
+                            <TableColumn fx:id="colOptions"     text="%preset.col.options"     prefWidth="120"/>
+                            <TableColumn fx:id="colDescription" text="%preset.col.desc"        prefWidth="200"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="%preset.empty" styleClass="placeholder-hint"/>
+                        </placeholder>
+                    </TableView>
+                </VBox>
+
+                <!-- Save form -->
+                <VBox styleClass="card" spacing="10">
+                    <Label text="%preset.save.header" styleClass="section-label"/>
+
+                    <HBox spacing="12" alignment="CENTER_LEFT">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="%preset.lbl.name" styleClass="field-label"/>
+                            <TextField fx:id="tfName" promptText="prod-customer-123"/>
+                        </VBox>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="%preset.lbl.desc" styleClass="field-label"/>
+                            <TextField fx:id="tfDescription" promptText="%preset.lbl.desc.hint"/>
+                        </VBox>
+                    </HBox>
+
+                    <HBox spacing="12" alignment="CENTER_LEFT">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="%preset.lbl.entity" styleClass="field-label"/>
+                            <TextField fx:id="tfEntityName" promptText="customer"/>
+                        </VBox>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="%preset.lbl.id" styleClass="field-label"/>
+                            <TextField fx:id="tfEntityId" promptText="12345"/>
+                        </VBox>
+                    </HBox>
+
+                    <HBox spacing="12" alignment="CENTER_LEFT">
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="%preset.lbl.source" styleClass="field-label"/>
+                            <ComboBox fx:id="cmbSource" maxWidth="Infinity"/>
+                        </VBox>
+                        <VBox spacing="4" HBox.hgrow="ALWAYS">
+                            <Label text="%preset.lbl.target" styleClass="field-label"/>
+                            <ComboBox fx:id="cmbTarget" maxWidth="Infinity"/>
+                        </VBox>
+                        <VBox spacing="4">
+                            <Label text="%preset.lbl.depth" styleClass="field-label"/>
+                            <Spinner fx:id="spinDepth" prefWidth="80"/>
+                        </VBox>
+                        <CheckBox fx:id="chkMaskPii" text="%preset.chk.mask"/>
+                    </HBox>
+
+                    <VBox spacing="4">
+                        <Label text="%preset.lbl.overrides" styleClass="field-label"/>
+                        <TextArea fx:id="taOverrides" prefHeight="80" wrapText="false"/>
+                        <Label text="%preset.hint.overrides" styleClass="hint-label"/>
+                    </VBox>
+                </VBox>
+
+                <!-- Log -->
+                <VBox styleClass="card" spacing="8">
+                    <Label text="%preset.log" styleClass="section-label"/>
+                    <Label fx:id="lblStatus" text="%status.ready" styleClass="status-label"/>
+                    <TextArea fx:id="taLog" prefHeight="120" editable="false" wrapText="true"
+                              styleClass="log-area"/>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox spacing="8" styleClass="action-bar" alignment="CENTER_LEFT">
+            <padding><Insets top="12" right="28" bottom="16" left="28"/></padding>
+            <Button fx:id="btnSave"   text="%preset.btn.save"   onAction="#onSave"   styleClass="accent-btn"/>
+            <Button fx:id="btnRun"    text="%preset.btn.run"    onAction="#onRun"/>
+            <Button fx:id="btnRemove" text="%preset.btn.remove" onAction="#onRemove"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

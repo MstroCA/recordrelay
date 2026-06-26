@@ -155,6 +155,14 @@ public final class CloneCommand implements Callable<Integer> {
       arity = "0..*")
   List<String> fieldOverrides;
 
+  // ── Dry run ───────────────────────────────────────────────────────────────
+
+  @Option(
+      names = {"--dry-run"},
+      description =
+          "Preview which tables and rows would be cloned without writing anything to the target.")
+  boolean dryRun;
+
   @Override
   public Integer call() {
     try {
@@ -168,6 +176,9 @@ public final class CloneCommand implements Callable<Integer> {
       var entityName = resolved[0];
       var rootId = resolved[1];
 
+      if (dryRun) {
+        return performDryRun(printer, srcProfile, entityName, rootId);
+      }
       if (export || target == null) {
         return performExport(printer, srcProfile, entityName, rootId, masking);
       }
@@ -177,6 +188,46 @@ public final class CloneCommand implements Callable<Integer> {
     } catch (Exception e) {
       return EnvCommand.handleError(parent, e, ExitCode.CLONE_FAILED);
     }
+  }
+
+  private Integer performDryRun(
+      io.recordrelay.cli.output.Printer printer,
+      io.recordrelay.core.domain.ConnectionProfile srcProfile,
+      String entityName,
+      String rootId)
+      throws Exception {
+    printer.printLine(
+        String.format("Dry run: %s #%s from '%s' (depth=%d)", entityName, rootId, source, depth));
+
+    var fallbackTable = table != null ? table : entityName + "s";
+    var entity =
+        BuiltinEntityRegistry.INSTANCE
+            .findByName(entityName)
+            .orElseGet(
+                () ->
+                    io.recordrelay.core.clone.domain.BusinessEntity.of(entityName, fallbackTable));
+    var plan =
+        io.recordrelay.core.clone.domain.ContextClonePlan.liveClone(
+            entity, rootId, srcProfile, srcProfile, depth, io.recordrelay.core.clone.domain.MaskingConfig.none());
+
+    var report = DefaultContextCloneEngine.createDefault().dryRunContext(plan);
+
+    var rows = new java.util.ArrayList<java.util.List<String>>();
+    for (var entry : report.tables()) {
+      rows.add(
+          java.util.List.of(
+              entry.tableName(),
+              String.valueOf(entry.rowCount()),
+              String.valueOf(entry.minDepth())));
+    }
+    printer.printTable(java.util.List.of("TABLE", "ROWS", "DEPTH"), rows);
+    printer.printLine("");
+    printer.printLine(
+        String.format(
+            "Total: %d table(s), %d row(s) — %d ms",
+            report.tableCount(), report.totalRows(), report.durationMillis()));
+    printer.printLine("No data was written.");
+    return ExitCode.SUCCESS;
   }
 
   private Integer performExport(

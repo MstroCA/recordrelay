@@ -18,6 +18,7 @@ package io.recordrelay.desktop.view;
 import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.engine.ConnProfileResolver;
 import io.recordrelay.core.clone.domain.BusinessEntity;
+import io.recordrelay.core.clone.domain.ConflictResolution;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
 import io.recordrelay.core.clone.domain.DryRunReport;
 import io.recordrelay.core.clone.domain.DryRunTableEntry;
@@ -84,6 +85,7 @@ public final class CloneContextController implements Refreshable {
   @FXML private Slider sliderDepth;
   @FXML private Label lblDepthValue;
   @FXML private CheckBox chkMaskPii;
+  @FXML private ComboBox<ConflictResolution> cmbConflict;
 
   // ── Step 4: Field Overrides ────────────────────────────────────────────────
   @FXML private TableView<OverrideRow> tblOverrides;
@@ -127,6 +129,7 @@ public final class CloneContextController implements Refreshable {
     }
 
     setupDepthSlider();
+    setupConflictCombo();
     setupExportModeToggle();
     setupOverrideTable();
     bindViewModel();
@@ -154,6 +157,29 @@ public final class CloneContextController implements Refreshable {
     sliderDepth
         .valueProperty()
         .addListener((obs, o, n) -> lblDepthValue.setText(String.valueOf(n.intValue())));
+  }
+
+  private void setupConflictCombo() {
+    cmbConflict.getItems().setAll(ConflictResolution.values());
+    cmbConflict.setValue(ConflictResolution.REGENERATE_IDENTITIES);
+    cmbConflict.setConverter(
+        new javafx.util.StringConverter<>() {
+          @Override
+          public String toString(ConflictResolution v) {
+            if (v == null) return "";
+            return switch (v) {
+              case REGENERATE_IDENTITIES -> "Regenerate IDs (default)";
+              case SKIP_EXISTING -> "Skip existing rows";
+              case ISOLATE_NAMESPACE -> "Isolate namespace";
+              case FAIL_SAFE -> "Fail if target has data";
+            };
+          }
+
+          @Override
+          public ConflictResolution fromString(String s) {
+            return ConflictResolution.REGENERATE_IDENTITIES;
+          }
+        });
   }
 
   private void setupExportModeToggle() {
@@ -405,6 +431,10 @@ public final class CloneContextController implements Refreshable {
       var masking = buildMasking();
       int depth = (int) sliderDepth.getValue();
 
+      var conflict =
+          cmbConflict.getValue() != null
+              ? cmbConflict.getValue()
+              : ConflictResolution.REGENERATE_IDENTITIES;
       var plan =
           ContextClonePlan.liveCloneWithOverrides(
               entity,
@@ -413,7 +443,8 @@ public final class CloneContextController implements Refreshable {
               tgtProfile,
               depth,
               masking,
-              buildFieldOverrides());
+              buildFieldOverrides(),
+              conflict);
 
       vm.appendLog(
           "Kopyalanıyor: "

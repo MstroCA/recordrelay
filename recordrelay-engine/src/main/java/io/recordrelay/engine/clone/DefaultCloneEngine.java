@@ -20,6 +20,7 @@ import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
 import io.recordrelay.core.clone.domain.CloneRequest;
 import io.recordrelay.core.clone.domain.ClonedTableSummary;
+import io.recordrelay.core.clone.domain.ConflictResolution;
 import io.recordrelay.core.clone.domain.DryRunReport;
 import io.recordrelay.core.clone.domain.DryRunTableEntry;
 import io.recordrelay.core.clone.domain.FieldOverrideConfig;
@@ -470,6 +471,7 @@ public final class DefaultCloneEngine
       List<String> warnings)
       throws CloneException {
     var targetConnector = ConnectorRegistry.findConnector(request.target());
+    boolean skip = request.conflictResolution() == ConflictResolution.SKIP_EXISTING;
     for (var entry : allRecords.entrySet()) {
       if (!entry.getValue().isEmpty()) {
         writeTable(
@@ -478,6 +480,7 @@ public final class DefaultCloneEngine
             entry.getKey(),
             entry.getValue(),
             request.fieldOverrides(),
+            skip,
             listener,
             warnings);
       }
@@ -499,6 +502,7 @@ public final class DefaultCloneEngine
             entry.getKey(),
             entry.getValue(),
             FieldOverrideConfig.none(),
+            false,
             listener,
             warnings);
       }
@@ -511,13 +515,14 @@ public final class DefaultCloneEngine
       String tableName,
       List<DataRecord> records,
       FieldOverrideConfig overrides,
+      boolean skipExisting,
       CloneProgressListener listener,
       List<String> warnings)
       throws CloneException {
     listener.onImportStarted(tableName);
     var tableRef = new TableRef(new DatabaseRef(target.database(), target.type()), "", tableName);
     try (var writer = connector.createWriter()) {
-      writer.open(target, tableRef);
+      writer.open(target, tableRef, skipExisting);
       for (var record : records) {
         writer.write(applyFieldOverrides(record, tableName, overrides));
       }

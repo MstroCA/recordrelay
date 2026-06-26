@@ -46,6 +46,7 @@ public abstract class AbstractJdbcRecordWriter implements RecordWriter {
   private List<String> columnOrder;
   private String qualifiedTable;
   private final List<DataRecord> buffer = new ArrayList<>(DEFAULT_BATCH);
+  protected boolean skipExisting;
 
   /**
    * Returns the JDBC URL sub-protocol for this engine.
@@ -53,6 +54,13 @@ public abstract class AbstractJdbcRecordWriter implements RecordWriter {
    * @return JDBC scheme (e.g., "mysql")
    */
   protected abstract String jdbcScheme();
+
+  @Override
+  public void open(ConnectionProfile profile, TableRef table, boolean skipExisting)
+      throws ConnectorException {
+    this.skipExisting = skipExisting;
+    open(profile, table);
+  }
 
   @Override
   public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
@@ -111,11 +119,16 @@ public abstract class AbstractJdbcRecordWriter implements RecordWriter {
     }
   }
 
+  /** Returns the INSERT verb for this writer. Subclasses may override for skip-existing support. */
+  protected String insertVerb() {
+    return "INSERT INTO ";
+  }
+
   private void initInsert(DataRecord sample) throws ConnectorException {
     columnOrder = new ArrayList<>(sample.fieldNames());
     var cols = String.join(", ", columnOrder);
     var placeholders = columnOrder.stream().map(c -> "?").collect(Collectors.joining(", "));
-    var sql = "INSERT INTO " + qualifiedTable + " (" + cols + ") VALUES (" + placeholders + ")";
+    var sql = insertVerb() + qualifiedTable + " (" + cols + ") VALUES (" + placeholders + ")";
     try {
       insertStmt = conn.prepareStatement(sql);
       LOG.debug("Prepared INSERT: {}", sql);

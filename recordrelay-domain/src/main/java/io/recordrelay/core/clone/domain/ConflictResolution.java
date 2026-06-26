@@ -48,5 +48,16 @@ public enum ConflictResolution {
    * io.recordrelay.core.clone.exception.CloneException} if a conflict is detected before the first
    * write.
    */
-  FAIL_SAFE
+  FAIL_SAFE,
+
+  /**
+   * Skip any record that would violate a unique or primary-key constraint in the target.
+   *
+   * <p>Translates to database-specific syntax: PostgreSQL uses {@code ON CONFLICT DO NOTHING},
+   * MySQL/MariaDB uses {@code INSERT IGNORE}, SQLite uses {@code INSERT OR IGNORE}.
+   *
+   * <p>Useful when the target may already contain the same data (e.g. same-to-same DB cloning or
+   * repeated imports).
+   */
+  SKIP_EXISTING
 }

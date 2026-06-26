@@ -47,6 +47,14 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
   private String qualifiedTable;
   private final List<DataRecord> buffer = new ArrayList<>(DEFAULT_BATCH_SIZE);
   private int batchSize = DEFAULT_BATCH_SIZE;
+  private boolean skipExisting;
+
+  @Override
+  public void open(ConnectionProfile profile, TableRef table, boolean skipExisting)
+      throws ConnectorException {
+    this.skipExisting = skipExisting;
+    open(profile, table);
+  }
 
   @Override
   public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
@@ -116,7 +124,8 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
             + colList
             + ") OVERRIDING SYSTEM VALUE VALUES ("
             + placeholders
-            + ")";
+            + ")"
+            + (skipExisting ? " ON CONFLICT DO NOTHING" : "");
     try {
       insertStmt = conn.prepareStatement(sql);
       LOG.debug("Prepared: {}", sql);

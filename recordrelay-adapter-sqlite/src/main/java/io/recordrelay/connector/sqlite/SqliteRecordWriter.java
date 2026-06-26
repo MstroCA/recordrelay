@@ -41,6 +41,14 @@ public final class SqliteRecordWriter implements RecordWriter {
   private List<String> columnOrder;
   private String tableName;
   private final List<DataRecord> buffer = new ArrayList<>(DEFAULT_BATCH);
+  private boolean skipExisting;
+
+  @Override
+  public void open(ConnectionProfile profile, TableRef table, boolean skipExisting)
+      throws ConnectorException {
+    this.skipExisting = skipExisting;
+    open(profile, table);
+  }
 
   @Override
   public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
@@ -99,7 +107,8 @@ public final class SqliteRecordWriter implements RecordWriter {
     columnOrder = new ArrayList<>(sample.fieldNames());
     var cols = String.join(", ", columnOrder);
     var placeholders = columnOrder.stream().map(c -> "?").collect(Collectors.joining(", "));
-    var sql = "INSERT INTO " + tableName + " (" + cols + ") VALUES (" + placeholders + ")";
+    var verb = skipExisting ? "INSERT OR IGNORE INTO " : "INSERT INTO ";
+    var sql = verb + tableName + " (" + cols + ") VALUES (" + placeholders + ")";
     try {
       insertStmt = conn.prepareStatement(sql);
     } catch (SQLException e) {

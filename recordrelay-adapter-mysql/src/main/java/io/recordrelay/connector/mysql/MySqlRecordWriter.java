@@ -24,4 +24,9 @@ public final class MySqlRecordWriter extends AbstractJdbcRecordWriter {
   protected String jdbcScheme() {
     return "mysql";
   }
+
+  @Override
+  protected String insertVerb() {
+    return skipExisting ? "INSERT IGNORE INTO " : "INSERT INTO ";
+  }
 }

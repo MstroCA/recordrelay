@@ -26,6 +26,18 @@ public interface RecordWriter extends AutoCloseable {
   /** Opens a writer targeting {@code table} using {@code profile}. */
   void open(ConnectionProfile profile, TableRef table) throws ConnectorException;
 
+  /**
+   * Opens a writer with conflict-skip semantics.
+   *
+   * <p>When {@code skipExisting} is {@code true} the writer uses database-specific syntax to
+   * silently skip rows that would violate a unique constraint (e.g. {@code ON CONFLICT DO
+   * NOTHING}). Implementations that do not support this mode fall back to a plain insert.
+   */
+  default void open(ConnectionProfile profile, TableRef table, boolean skipExisting)
+      throws ConnectorException {
+    open(profile, table);
+  }
+
   /** Writes a single record to the target table. */
   void write(DataRecord record) throws ConnectorException;
 

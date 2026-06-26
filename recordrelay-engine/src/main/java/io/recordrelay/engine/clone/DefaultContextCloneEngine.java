@@ -101,7 +101,8 @@ public final class DefaultContextCloneEngine implements ContextCloneUseCase {
                 plan.masking(),
                 plan.outputDirectory(),
                 plan.bugReport(),
-                plan.fieldOverrides());
+                plan.fieldOverrides(),
+                plan.conflictResolution());
     var request = resolver.resolve(dryPlan);
     return delegate.dryRun(CloneJob.of(request));
   }
@@ -130,7 +131,8 @@ public final class DefaultContextCloneEngine implements ContextCloneUseCase {
                 plan.masking(),
                 plan.outputDirectory(),
                 plan.bugReport(),
-                plan.fieldOverrides());
+                plan.fieldOverrides(),
+                plan.conflictResolution());
 
     var request = resolver.resolve(exportPlan);
     var job = CloneJob.of(request);

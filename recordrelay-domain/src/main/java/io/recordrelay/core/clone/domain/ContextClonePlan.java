@@ -40,7 +40,8 @@ public record ContextClonePlan(
     MaskingConfig masking,
     Path outputDirectory,
     BugReport bugReport,
-    FieldOverrideConfig fieldOverrides) {
+    FieldOverrideConfig fieldOverrides,
+    ConflictResolution conflictResolution) {
 
   public ContextClonePlan {
     Objects.requireNonNull(entity, "entity");
@@ -54,6 +55,8 @@ public record ContextClonePlan(
     }
     masking = masking == null ? MaskingConfig.none() : masking;
     fieldOverrides = fieldOverrides == null ? FieldOverrideConfig.none() : fieldOverrides;
+    conflictResolution =
+        conflictResolution == null ? ConflictResolution.REGENERATE_IDENTITIES : conflictResolution;
   }
 
   /** Creates a simple live-clone plan (source → target, no package export). */
@@ -65,7 +68,16 @@ public record ContextClonePlan(
       int depth,
       MaskingConfig masking) {
     return new ContextClonePlan(
-        entity, entityId, source, target, depth, masking, null, null, FieldOverrideConfig.none());
+        entity,
+        entityId,
+        source,
+        target,
+        depth,
+        masking,
+        null,
+        null,
+        FieldOverrideConfig.none(),
+        ConflictResolution.REGENERATE_IDENTITIES);
   }
 
   /** Creates a live-clone plan with field overrides applied in the target. */
@@ -78,7 +90,39 @@ public record ContextClonePlan(
       MaskingConfig masking,
       FieldOverrideConfig fieldOverrides) {
     return new ContextClonePlan(
-        entity, entityId, source, target, depth, masking, null, null, fieldOverrides);
+        entity,
+        entityId,
+        source,
+        target,
+        depth,
+        masking,
+        null,
+        null,
+        fieldOverrides,
+        ConflictResolution.REGENERATE_IDENTITIES);
+  }
+
+  /** Creates a live-clone plan with field overrides and conflict resolution strategy. */
+  public static ContextClonePlan liveCloneWithOverrides(
+      BusinessEntity entity,
+      String entityId,
+      ConnectionProfile source,
+      ConnectionProfile target,
+      int depth,
+      MaskingConfig masking,
+      FieldOverrideConfig fieldOverrides,
+      ConflictResolution conflictResolution) {
+    return new ContextClonePlan(
+        entity,
+        entityId,
+        source,
+        target,
+        depth,
+        masking,
+        null,
+        null,
+        fieldOverrides,
+        conflictResolution);
   }
 
   /** Creates a bug-reproduction export plan (source → .rrpkg file, no live target). */
@@ -98,7 +142,8 @@ public record ContextClonePlan(
         masking,
         outputDirectory,
         bugReport,
-        FieldOverrideConfig.none());
+        FieldOverrideConfig.none(),
+        ConflictResolution.REGENERATE_IDENTITIES);
   }
 
   /** Returns true when this plan targets a live database (not just an export). */

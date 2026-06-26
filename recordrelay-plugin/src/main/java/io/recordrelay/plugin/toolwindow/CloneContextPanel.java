@@ -21,11 +21,13 @@ import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.IdeBorderFactory;
+import com.intellij.ui.SimpleListCellRenderer;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.JBUI;
 import io.recordrelay.core.clone.domain.BusinessEntity;
+import io.recordrelay.core.clone.domain.ConflictResolution;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
 import io.recordrelay.core.clone.domain.FieldOverride;
 import io.recordrelay.core.clone.domain.FieldOverrideConfig;
@@ -83,6 +85,8 @@ public final class CloneContextPanel extends JPanel {
   private final JSpinner spinDepth = new JSpinner(new SpinnerNumberModel(3, 1, 10, 1));
   private final JCheckBox chkMaskPii =
       new JCheckBox("Mask PII (email, phone, IBAN, address, national ID)");
+  private final ComboBox<ConflictResolution> cmbConflict =
+      new ComboBox<>(ConflictResolution.values());
 
   // Step 4: Field Overrides
   private final JBTextArea taOverrides = new JBTextArea(4, 40);
@@ -200,6 +204,22 @@ public final class CloneContextPanel extends JPanel {
     depthRow.add(spinDepth);
     panel.add(depthRow);
     panel.add(chkMaskPii);
+    var conflictRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+    conflictRow.add(new JLabel("On conflict:"));
+    cmbConflict.setRenderer(
+        SimpleListCellRenderer.create(
+            (renderer, v, idx) ->
+                renderer.setText(
+                    v == null
+                        ? ""
+                        : switch (v) {
+                          case REGENERATE_IDENTITIES -> "Regenerate IDs (default)";
+                          case SKIP_EXISTING -> "Skip existing rows";
+                          case ISOLATE_NAMESPACE -> "Isolate namespace";
+                          case FAIL_SAFE -> "Fail if target has data";
+                        })));
+    conflictRow.add(cmbConflict);
+    panel.add(conflictRow);
     return panel;
   }
 
@@ -421,9 +441,17 @@ public final class CloneContextPanel extends JPanel {
               + depth
               + ")");
 
+      var conflict = (ConflictResolution) cmbConflict.getSelectedItem();
       var plan =
           ContextClonePlan.liveCloneWithOverrides(
-              entity, entityId, srcProfile, tgtProfile, depth, masking, buildFieldOverrides());
+              entity,
+              entityId,
+              srcProfile,
+              tgtProfile,
+              depth,
+              masking,
+              buildFieldOverrides(),
+              conflict != null ? conflict : ConflictResolution.REGENERATE_IDENTITIES);
 
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener());
 

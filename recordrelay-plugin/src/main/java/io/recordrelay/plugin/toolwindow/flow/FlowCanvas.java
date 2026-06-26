@@ -230,6 +230,7 @@ public final class FlowCanvas extends javax.swing.JPanel {
       case INNER -> JOIN_COLOR;
       case LEFT -> new JBColor(0x66BB6A, 0x81C784);
       case RIGHT -> new JBColor(0xFFA726, 0xFFB74D);
+      default -> JOIN_COLOR;
     };
   }
 

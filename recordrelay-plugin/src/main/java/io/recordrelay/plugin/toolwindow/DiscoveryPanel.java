@@ -117,10 +117,22 @@ public final class DiscoveryPanel extends JPanel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   private void applyRenderers() {
-    cmbSrcDb.setRenderer(SimpleListCellRenderer.create("— select database —", DatabaseRef::name));
-    cmbTgtDb.setRenderer(SimpleListCellRenderer.create("— select database —", DatabaseRef::name));
-    cmbSrcTable.setRenderer(SimpleListCellRenderer.create("— select table —", TableRef::tableName));
-    cmbTgtTable.setRenderer(SimpleListCellRenderer.create("— select table —", TableRef::tableName));
+    cmbSrcDb.setRenderer(
+        SimpleListCellRenderer.create(
+            (renderer, db, idx) ->
+                renderer.setText(db != null ? db.name() : "— select database —")));
+    cmbTgtDb.setRenderer(
+        SimpleListCellRenderer.create(
+            (renderer, db, idx) ->
+                renderer.setText(db != null ? db.name() : "— select database —")));
+    cmbSrcTable.setRenderer(
+        SimpleListCellRenderer.create(
+            (renderer, t, idx) ->
+                renderer.setText(t != null ? t.tableName() : "— select table —")));
+    cmbTgtTable.setRenderer(
+        SimpleListCellRenderer.create(
+            (renderer, t, idx) ->
+                renderer.setText(t != null ? t.tableName() : "— select table —")));
 
     cmbSrcConn.addActionListener(e -> onConnSelected(true));
     cmbTgtConn.addActionListener(e -> onConnSelected(false));

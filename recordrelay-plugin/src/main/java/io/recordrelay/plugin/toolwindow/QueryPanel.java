@@ -176,7 +176,9 @@ public final class QueryPanel extends JPanel {
     var bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
     bar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new JBColor(0xD0D7E2, 0x4A4D52)));
 
-    cmbDb.setRenderer(SimpleListCellRenderer.create("— database —", DatabaseRef::name));
+    cmbDb.setRenderer(
+        SimpleListCellRenderer.create(
+            (renderer, db, idx) -> renderer.setText(db != null ? db.name() : "— database —")));
 
     bar.add(new JLabel("Conn:"));
     bar.add(cmbConn);

@@ -33,17 +33,9 @@ YAPILACAKLAR:
      Mevcut IntelliJ plugin'inin VS Code karşılığı.
      TypeScript + vscode API ile Clone, Discovery, Monitor panelleri.
 
- 10. ✅ YAPILDI (yukarıya taşındı)
-
  11. Sentetik Veri Üretimi
      Prod erişimi olmadan gerçekçi sahte veri üret (şema + istatistikten).
      recordrelay-synthetic-engine modülü.
-
- 12. ✅ YAPILDI (yukarıya taşındı)
-
- 13. ✅ YAPILDI (yukarıya taşındı)
-
- 14. ✅ YAPILDI (yukarıya taşındı)
 
  15. Point-in-Time Clone
      Belirli bir timestamp'teki verinin klonlanması.

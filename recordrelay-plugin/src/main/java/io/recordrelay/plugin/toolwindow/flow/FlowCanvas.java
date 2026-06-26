@@ -51,8 +51,8 @@ public final class FlowCanvas extends javax.swing.JPanel {
   private static final int GRID = 20;
   private static final Stroke CONNECTION_STROKE = new BasicStroke(2f);
   private static final Stroke PENDING_STROKE =
-      new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f,
-          new float[]{6f, 4f}, 0f);
+      new BasicStroke(
+          1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, new float[] {6f, 4f}, 0f);
 
   private static final JBColor CANVAS_BG = new JBColor(0xF5F7FA, 0x1E1F22);
   private static final JBColor GRID_DOT = new JBColor(0xDDE3EC, 0x3A3C40);
@@ -89,20 +89,25 @@ public final class FlowCanvas extends javax.swing.JPanel {
    * Adds a new table node card at the given canvas position.
    *
    * @param entry the model entry returned by {@link QueryFlowModel#addNode}
-   * @param x     left edge in canvas coordinates
-   * @param y     top edge in canvas coordinates
+   * @param x left edge in canvas coordinates
+   * @param y top edge in canvas coordinates
    */
   public void addTableNode(NodeEntry entry, int x, int y) {
-    var panel = new TableNodePanel(entry, model, this::onPortClick, () -> {
-      model.removeNode(entry.alias());
-      var removed = nodeMap.remove(entry.alias());
-      if (removed != null) {
-        remove(removed);
-      }
-      refreshNodePanelBounds();
-      revalidate();
-      repaint();
-    });
+    var panel =
+        new TableNodePanel(
+            entry,
+            model,
+            this::onPortClick,
+            () -> {
+              model.removeNode(entry.alias());
+              var removed = nodeMap.remove(entry.alias());
+              if (removed != null) {
+                remove(removed);
+              }
+              refreshNodePanelBounds();
+              revalidate();
+              repaint();
+            });
     panel.setBounds(x, y, TableNodePanel.NODE_WIDTH, panel.getPreferredSize().height);
     nodeMap.put(entry.alias(), panel);
     add(panel);
@@ -168,10 +173,9 @@ public final class FlowCanvas extends javax.swing.JPanel {
       if (fromPanel == null || toPanel == null) {
         continue;
       }
-      var fromPt = SwingUtilities.convertPoint(
-          fromPanel, fromPanel.getPortPoint(join.fromColumn()), this);
-      var toPt = SwingUtilities.convertPoint(
-          toPanel, toPanel.getPortPoint(join.toColumn()), this);
+      var fromPt =
+          SwingUtilities.convertPoint(fromPanel, fromPanel.getPortPoint(join.fromColumn()), this);
+      var toPt = SwingUtilities.convertPoint(toPanel, toPanel.getPortPoint(join.toColumn()), this);
 
       Color lineColor = joinColor(join.joinType());
       g2.setColor(lineColor);
@@ -201,8 +205,8 @@ public final class FlowCanvas extends javax.swing.JPanel {
     if (fromPanel == null) {
       return;
     }
-    var fromPt = SwingUtilities.convertPoint(
-        fromPanel, fromPanel.getPortPoint(pendingFromCol), this);
+    var fromPt =
+        SwingUtilities.convertPoint(fromPanel, fromPanel.getPortPoint(pendingFromCol), this);
 
     g2.setStroke(PENDING_STROKE);
     g2.setColor(PENDING_COLOR);
@@ -251,8 +255,9 @@ public final class FlowCanvas extends javax.swing.JPanel {
         .createPopupChooserBuilder(items)
         .setTitle("Join Type")
         .setItemChosenCallback(
-            chosen -> model.addJoin(
-                pendingFromAlias, pendingFromCol, toAlias, toCol, JoinType.valueOf(chosen)))
+            chosen ->
+                model.addJoin(
+                    pendingFromAlias, pendingFromCol, toAlias, toCol, JoinType.valueOf(chosen)))
         .createPopup()
         .showInFocusCenter();
   }
@@ -330,9 +335,8 @@ public final class FlowCanvas extends javax.swing.JPanel {
 
   private void refreshNodePanelBounds() {
     for (var panel : nodeMap.values()) {
-      panel.setBounds(panel.getX(), panel.getY(),
-          TableNodePanel.NODE_WIDTH, panel.getPreferredSize().height);
+      panel.setBounds(
+          panel.getX(), panel.getY(), TableNodePanel.NODE_WIDTH, panel.getPreferredSize().height);
     }
   }
-
 }

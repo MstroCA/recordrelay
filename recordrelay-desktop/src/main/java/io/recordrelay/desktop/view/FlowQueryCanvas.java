@@ -82,17 +82,19 @@ public final class FlowQueryCanvas extends Pane {
     widthProperty().addListener((obs, old, w) -> drawGrid());
     heightProperty().addListener((obs, old, h) -> drawGrid());
 
-    setOnMouseMoved(e -> {
-      if (pendingLine != null) {
-        pendingLine.setEndX(e.getX());
-        pendingLine.setEndY(e.getY());
-      }
-    });
-    setOnMouseClicked(e -> {
-      if (pendingAlias != null) {
-        cancelConnect();
-      }
-    });
+    setOnMouseMoved(
+        e -> {
+          if (pendingLine != null) {
+            pendingLine.setEndX(e.getX());
+            pendingLine.setEndY(e.getY());
+          }
+        });
+    setOnMouseClicked(
+        e -> {
+          if (pendingAlias != null) {
+            cancelConnect();
+          }
+        });
 
     model.addChangeListener(this::redrawConnections);
     setPrefSize(MIN_W, MIN_H);
@@ -105,8 +107,8 @@ public final class FlowQueryCanvas extends Pane {
    * Adds a new table node card at the given position on the canvas.
    *
    * @param entry the model entry from {@link QueryFlowModel#addNode}
-   * @param x     left edge in canvas coordinates
-   * @param y     top edge in canvas coordinates
+   * @param x left edge in canvas coordinates
+   * @param y top edge in canvas coordinates
    */
   public void addTableNode(NodeEntry entry, double x, double y) {
     var card = buildCard(entry, x, y);
@@ -139,8 +141,7 @@ public final class FlowQueryCanvas extends Pane {
     card.setPrefWidth(NODE_W);
     card.getChildren().add(buildCardHeader(entry));
     for (var col : entry.columns()) {
-      card.getChildren().add(
-          buildColumnRow(entry, col.name(), col.nativeType(), col.primaryKey()));
+      card.getChildren().add(buildColumnRow(entry, col.name(), col.nativeType(), col.primaryKey()));
     }
     installDrag(card);
     return card;
@@ -163,11 +164,12 @@ public final class FlowQueryCanvas extends Pane {
     closeBtn.setTextFill(Color.WHITE);
     closeBtn.setFont(Font.font("System", FontWeight.BOLD, 14));
     closeBtn.setCursor(Cursor.HAND);
-    closeBtn.setOnMouseClicked(e -> {
-      model.removeNode(entry.alias());
-      removeCard(entry.alias());
-      e.consume();
-    });
+    closeBtn.setOnMouseClicked(
+        e -> {
+          model.removeNode(entry.alias());
+          removeCard(entry.alias());
+          e.consume();
+        });
     header.getChildren().addAll(title, closeBtn);
     return header;
   }
@@ -181,7 +183,8 @@ public final class FlowQueryCanvas extends Pane {
 
     var cb = new CheckBox();
     cb.setSelected(entry.isSelected(colName));
-    cb.selectedProperty().addListener((obs, old, sel) -> model.toggleColumn(entry.alias(), colName));
+    cb.selectedProperty()
+        .addListener((obs, old, sel) -> model.toggleColumn(entry.alias(), colName));
 
     var nameLabel = new Label(isPk ? "🔑 " + colName : colName);
     nameLabel.setFont(Font.font("System", 10));
@@ -195,10 +198,11 @@ public final class FlowQueryCanvas extends Pane {
     port.setStroke(PORT_COLOR.darker());
     port.setCursor(Cursor.CROSSHAIR);
     port.setUserData(colName);
-    port.setOnMouseClicked(e -> {
-      onPortClick(entry.alias(), colName);
-      e.consume();
-    });
+    port.setOnMouseClicked(
+        e -> {
+          onPortClick(entry.alias(), colName);
+          e.consume();
+        });
     port.setOnMouseEntered(e -> port.setFill(PORT_ACTIVE));
     port.setOnMouseExited(e -> port.setFill(PORT_COLOR));
 
@@ -217,27 +221,29 @@ public final class FlowQueryCanvas extends Pane {
   // ── Drag ─────────────────────────────────────────────────────────────────────
 
   private void installDrag(VBox card) {
-    card.setOnMousePressed(e -> {
-      if (pendingAlias != null) {
-        return;
-      }
-      dragDelta[0] = card.getLayoutX() - e.getSceneX();
-      dragDelta[1] = card.getLayoutY() - e.getSceneY();
-      card.setCursor(Cursor.MOVE);
-      e.consume();
-    });
-    card.setOnMouseDragged(e -> {
-      if (pendingAlias != null) {
-        return;
-      }
-      double nx = Math.max(0, snapToGrid(e.getSceneX() + dragDelta[0]));
-      double ny = Math.max(0, snapToGrid(e.getSceneY() + dragDelta[1]));
-      card.setLayoutX(nx);
-      card.setLayoutY(ny);
-      expandCanvas(nx + NODE_W + 40, ny + card.prefHeight(NODE_W) + 40);
-      redrawConnections();
-      e.consume();
-    });
+    card.setOnMousePressed(
+        e -> {
+          if (pendingAlias != null) {
+            return;
+          }
+          dragDelta[0] = card.getLayoutX() - e.getSceneX();
+          dragDelta[1] = card.getLayoutY() - e.getSceneY();
+          card.setCursor(Cursor.MOVE);
+          e.consume();
+        });
+    card.setOnMouseDragged(
+        e -> {
+          if (pendingAlias != null) {
+            return;
+          }
+          double nx = Math.max(0, snapToGrid(e.getSceneX() + dragDelta[0]));
+          double ny = Math.max(0, snapToGrid(e.getSceneY() + dragDelta[1]));
+          card.setLayoutX(nx);
+          card.setLayoutY(ny);
+          expandCanvas(nx + NODE_W + 40, ny + card.prefHeight(NODE_W) + 40);
+          redrawConnections();
+          e.consume();
+        });
     card.setOnMouseReleased(e -> card.setCursor(Cursor.DEFAULT));
   }
 
@@ -295,11 +301,16 @@ public final class FlowQueryCanvas extends Pane {
     }
     Color color = joinColor(join.joinType());
     double cpOff = Math.max(60, Math.abs(toPt.getX() - fromPt.getX()) / 2);
-    var curve = new CubicCurve(
-        fromPt.getX(), fromPt.getY(),
-        fromPt.getX() + cpOff, fromPt.getY(),
-        toPt.getX() - cpOff, toPt.getY(),
-        toPt.getX(), toPt.getY());
+    var curve =
+        new CubicCurve(
+            fromPt.getX(),
+            fromPt.getY(),
+            fromPt.getX() + cpOff,
+            fromPt.getY(),
+            toPt.getX() - cpOff,
+            toPt.getY(),
+            toPt.getX(),
+            toPt.getY());
     curve.setFill(Color.TRANSPARENT);
     curve.setStroke(color);
     curve.setStrokeWidth(2);
@@ -314,8 +325,8 @@ public final class FlowQueryCanvas extends Pane {
     var lbl = new Label(text);
     lbl.setFont(Font.font("System", 9));
     lbl.setTextFill(Color.WHITE);
-    lbl.setStyle("-fx-background-color: " + hex + "; -fx-padding: 1 4 1 4;"
-        + " -fx-background-radius: 3;");
+    lbl.setStyle(
+        "-fx-background-color: " + hex + "; -fx-padding: 1 4 1 4;" + " -fx-background-radius: 3;");
     lbl.setLayoutX(mx - 26);
     lbl.setLayoutY(my - 9);
     connectionLayer.getChildren().add(lbl);
@@ -326,9 +337,8 @@ public final class FlowQueryCanvas extends Pane {
     if (card == null) {
       return null;
     }
-    NodeEntry entry = model.nodes().stream()
-        .filter(n -> n.alias().equals(alias))
-        .findFirst().orElse(null);
+    NodeEntry entry =
+        model.nodes().stream().filter(n -> n.alias().equals(alias)).findFirst().orElse(null);
     if (entry == null) {
       return null;
     }
@@ -388,8 +398,10 @@ public final class FlowQueryCanvas extends Pane {
     dialog.setTitle("Join Type");
     dialog.setHeaderText(null);
     dialog.setContentText("Join type:");
-    dialog.showAndWait().ifPresent(chosen ->
-        model.addJoin(fromAlias, fromCol, toAlias, toCol, JoinType.valueOf(chosen)));
+    dialog
+        .showAndWait()
+        .ifPresent(
+            chosen -> model.addJoin(fromAlias, fromCol, toAlias, toCol, JoinType.valueOf(chosen)));
   }
 
   private void cancelConnect() {
@@ -408,20 +420,30 @@ public final class FlowQueryCanvas extends Pane {
       if (entry.getKey().equals(excludeAlias)) {
         continue;
       }
-      entry.getValue().lookupAll(".circle").forEach(n -> {
-        if (n instanceof Circle c) {
-          c.setFill(PORT_ACTIVE);
-        }
-      });
+      entry
+          .getValue()
+          .lookupAll(".circle")
+          .forEach(
+              n -> {
+                if (n instanceof Circle c) {
+                  c.setFill(PORT_ACTIVE);
+                }
+              });
     }
   }
 
   private void resetPortColors() {
-    cardMap.values().forEach(card -> card.lookupAll(".circle").forEach(n -> {
-      if (n instanceof Circle c) {
-        c.setFill(PORT_COLOR);
-      }
-    }));
+    cardMap
+        .values()
+        .forEach(
+            card ->
+                card.lookupAll(".circle")
+                    .forEach(
+                        n -> {
+                          if (n instanceof Circle c) {
+                            c.setFill(PORT_COLOR);
+                          }
+                        }));
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -435,7 +457,8 @@ public final class FlowQueryCanvas extends Pane {
   }
 
   private static String toHex(Color c) {
-    return String.format("#%02X%02X%02X",
+    return String.format(
+        "#%02X%02X%02X",
         (int) (c.getRed() * 255), (int) (c.getGreen() * 255), (int) (c.getBlue() * 255));
   }
 }

@@ -81,11 +81,12 @@ public final class QueryController implements Refreshable {
     flowModel.addChangeListener(() -> taSqlPreview.setText(flowModel.toSql()));
 
     lstTables.setCellFactory(lv -> new TableRefCell());
-    lstTables.setOnMouseClicked(e -> {
-      if (e.getClickCount() == 2) {
-        onAddTableToCanvas();
-      }
-    });
+    lstTables.setOnMouseClicked(
+        e -> {
+          if (e.getClickCount() == 2) {
+            onAddTableToCanvas();
+          }
+        });
 
     btnFlow.setOnAction(e -> switchMode(true));
     btnSql.setOnAction(e -> switchMode(false));
@@ -130,11 +131,11 @@ public final class QueryController implements Refreshable {
 
   private static void applyToggleStyle(ToggleButton btn, boolean active) {
     if (active) {
-      btn.setStyle("-fx-background-color: #1E88E5; -fx-text-fill: white;"
-          + " -fx-background-radius: 4;");
+      btn.setStyle(
+          "-fx-background-color: #1E88E5; -fx-text-fill: white;" + " -fx-background-radius: 4;");
     } else {
-      btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #555;"
-          + " -fx-background-radius: 4;");
+      btn.setStyle(
+          "-fx-background-color: transparent; -fx-text-fill: #555;" + " -fx-background-radius: 4;");
     }
   }
 
@@ -165,11 +166,12 @@ public final class QueryController implements Refreshable {
       Platform.runLater(() -> showResults(result));
     } catch (Exception ex) {
       String msg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getName();
-      Platform.runLater(() -> {
-        showError(Messages.get("query.error", msg));
-        btnRun.setDisable(false);
-        lblStatus.setText(Messages.get("status.ready"));
-      });
+      Platform.runLater(
+          () -> {
+            showError(Messages.get("query.error", msg));
+            btnRun.setDisable(false);
+            lblStatus.setText(Messages.get("status.ready"));
+          });
     }
   }
 
@@ -191,10 +193,11 @@ public final class QueryController implements Refreshable {
     try {
       var profile = resolver.resolve(conn);
       var cols = new DiscoveryEngine().inspectColumns(profile, table);
-      Platform.runLater(() -> {
-        var entry = flowModel.addNode(table, cols);
-        flowCanvas.addTableNode(entry, posX, 20);
-      });
+      Platform.runLater(
+          () -> {
+            var entry = flowModel.addNode(table, cols);
+            flowCanvas.addTableNode(entry, posX, 20);
+          });
     } catch (Exception ex) {
       Platform.runLater(() -> showError("Column load failed: " + ex.getMessage()));
     }
@@ -229,20 +232,24 @@ public final class QueryController implements Refreshable {
     if (conn == null || conn.isBlank()) {
       return;
     }
-    new Thread(() -> {
-      try {
-        var profile = resolver.resolve(conn);
-        var dbs = new DiscoveryEngine().discoverDatabases(profile);
-        Platform.runLater(() -> {
-          cmbDb.getItems().setAll(dbs);
-          if (!dbs.isEmpty()) {
-            cmbDb.setValue(dbs.get(0));
-          }
-        });
-      } catch (Exception ex) {
-        Platform.runLater(() -> showError("DB load failed: " + ex.getMessage()));
-      }
-    }, "rr-db-load").start();
+    new Thread(
+            () -> {
+              try {
+                var profile = resolver.resolve(conn);
+                var dbs = new DiscoveryEngine().discoverDatabases(profile);
+                Platform.runLater(
+                    () -> {
+                      cmbDb.getItems().setAll(dbs);
+                      if (!dbs.isEmpty()) {
+                        cmbDb.setValue(dbs.get(0));
+                      }
+                    });
+              } catch (Exception ex) {
+                Platform.runLater(() -> showError("DB load failed: " + ex.getMessage()));
+              }
+            },
+            "rr-db-load")
+        .start();
   }
 
   private void loadTables() {
@@ -251,16 +258,20 @@ public final class QueryController implements Refreshable {
     if (conn == null || db == null) {
       return;
     }
-    new Thread(() -> {
-      try {
-        var profile = resolver.resolve(conn);
-        var connector = ConnectorRegistry.findConnector(profile);
-        var tables = connector.schemaInspector().listTables(profile, db);
-        Platform.runLater(() -> lstTables.setItems(FXCollections.observableArrayList(tables)));
-      } catch (Exception ex) {
-        Platform.runLater(() -> showError("Table load failed: " + ex.getMessage()));
-      }
-    }, "rr-tbl-load").start();
+    new Thread(
+            () -> {
+              try {
+                var profile = resolver.resolve(conn);
+                var connector = ConnectorRegistry.findConnector(profile);
+                var tables = connector.schemaInspector().listTables(profile, db);
+                Platform.runLater(
+                    () -> lstTables.setItems(FXCollections.observableArrayList(tables)));
+              } catch (Exception ex) {
+                Platform.runLater(() -> showError("Table load failed: " + ex.getMessage()));
+              }
+            },
+            "rr-tbl-load")
+        .start();
   }
 
   // ── Results rendering ────────────────────────────────────────────────────────────
@@ -273,10 +284,11 @@ public final class QueryController implements Refreshable {
     for (int i = 0; i < columns.size(); i++) {
       final int idx = i;
       TableColumn<List<String>, String> col = new TableColumn<>(columns.get(i));
-      col.setCellValueFactory(cd -> {
-        var row = cd.getValue();
-        return new SimpleStringProperty(idx < row.size() ? row.get(idx) : "");
-      });
+      col.setCellValueFactory(
+          cd -> {
+            var row = cd.getValue();
+            return new SimpleStringProperty(idx < row.size() ? row.get(idx) : "");
+          });
       col.setPrefWidth(120);
       tblResults.getColumns().add(col);
     }

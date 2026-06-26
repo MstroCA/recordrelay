@@ -38,8 +38,8 @@ import javafx.scene.text.FontWeight;
 /**
  * Right-side conditions panel for the desktop flow query builder.
  *
- * <p>Displays WHERE filters, ORDER BY clauses, and a LIMIT spinner. Rebuilds
- * whenever the model changes. Each control is wired to mutate the model directly.
+ * <p>Displays WHERE filters, ORDER BY clauses, and a LIMIT spinner. Rebuilds whenever the model
+ * changes. Each control is wired to mutate the model directly.
  */
 public final class FlowConditionsPane extends VBox {
 
@@ -126,16 +126,18 @@ public final class FlowConditionsPane extends VBox {
     valField.setManaged(!filter.operator().startsWith("IS"));
     HBox.setHgrow(valField, Priority.ALWAYS);
 
-    opCombo.setOnAction(e -> {
-      String op = opCombo.getValue();
-      boolean isNull = op != null && op.startsWith("IS");
-      valField.setVisible(!isNull);
-      valField.setManaged(!isNull);
-      updateFilter(index, colCombo, opCombo, valField);
-    });
+    opCombo.setOnAction(
+        e -> {
+          String op = opCombo.getValue();
+          boolean isNull = op != null && op.startsWith("IS");
+          valField.setVisible(!isNull);
+          valField.setManaged(!isNull);
+          updateFilter(index, colCombo, opCombo, valField);
+        });
     colCombo.setOnAction(e -> updateFilter(index, colCombo, opCombo, valField));
-    valField.textProperty().addListener((obs, old, val) ->
-        updateFilter(index, colCombo, opCombo, valField));
+    valField
+        .textProperty()
+        .addListener((obs, old, val) -> updateFilter(index, colCombo, opCombo, valField));
 
     var row1 = new HBox(4, colCombo, removeBtn(() -> model.removeFilter(index)));
     var row2 = new HBox(4, opCombo, valField);
@@ -143,13 +145,14 @@ public final class FlowConditionsPane extends VBox {
     HBox.setHgrow(opCombo, Priority.ALWAYS);
 
     var panel = new VBox(2, row1, row2);
-    panel.setStyle("-fx-background-color: white; -fx-border-color: #D0D7E2;"
-        + " -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4;");
+    panel.setStyle(
+        "-fx-background-color: white; -fx-border-color: #D0D7E2;"
+            + " -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4;");
     return panel;
   }
 
-  private void updateFilter(int index, ComboBox<String> colCombo,
-      ComboBox<String> opCombo, TextField valField) {
+  private void updateFilter(
+      int index, ComboBox<String> colCombo, ComboBox<String> opCombo, TextField valField) {
     String colFull = colCombo.getValue();
     String op = opCombo.getValue();
     if (colFull == null || op == null || index >= model.filters().size()) {
@@ -171,40 +174,46 @@ public final class FlowConditionsPane extends VBox {
     dirCombo.getItems().addAll("ASC", "DESC");
     dirCombo.setValue(ob.ascending() ? "ASC" : "DESC");
 
-    Runnable update = () -> {
-      String colFull = colCombo.getValue();
-      String dir = dirCombo.getValue();
-      if (colFull == null || dir == null) {
-        return;
-      }
-      String[] parts = colFull.split("\\.", 2);
-      if (parts.length >= 2) {
-        model.removeOrderBy(index);
-        model.addOrderBy(parts[0], parts[1], "ASC".equals(dir));
-      }
-    };
+    Runnable update =
+        () -> {
+          String colFull = colCombo.getValue();
+          String dir = dirCombo.getValue();
+          if (colFull == null || dir == null) {
+            return;
+          }
+          String[] parts = colFull.split("\\.", 2);
+          if (parts.length >= 2) {
+            model.removeOrderBy(index);
+            model.addOrderBy(parts[0], parts[1], "ASC".equals(dir));
+          }
+        };
     colCombo.setOnAction(e -> update.run());
     dirCombo.setOnAction(e -> update.run());
 
     var row = new HBox(4, colCombo, dirCombo, removeBtn(() -> model.removeOrderBy(index)));
     HBox.setHgrow(colCombo, Priority.ALWAYS);
-    row.setStyle("-fx-background-color: white; -fx-border-color: #D0D7E2;"
-        + " -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4;");
+    row.setStyle(
+        "-fx-background-color: white; -fx-border-color: #D0D7E2;"
+            + " -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4;");
     return row;
   }
 
   // ── LIMIT row ───────────────────────────────────────────────────────────────────
 
   private HBox buildLimitRow() {
-    var factory = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 100000, model.getLimit(), 10);
+    var factory =
+        new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 100000, model.getLimit(), 10);
     var spinner = new Spinner<Integer>(factory);
     spinner.setEditable(true);
     spinner.setPrefWidth(90);
-    spinner.valueProperty().addListener((obs, old, val) -> {
-      if (val != null) {
-        model.setLimit(val);
-      }
-    });
+    spinner
+        .valueProperty()
+        .addListener(
+            (obs, old, val) -> {
+              if (val != null) {
+                model.setLimit(val);
+              }
+            });
     return new HBox(6, new Label("rows:"), spinner);
   }
 

@@ -28,8 +28,8 @@ import java.util.List;
  * <p>Holds table nodes (with selected columns), JOIN edges, WHERE filters, ORDER BY clauses, and a
  * row limit. Generates a SQL SELECT statement from the current state via {@link #toSql()}.
  *
- * <p>This class is UI-framework agnostic — used by both the IntelliJ plugin (Swing) and the
- * desktop application (JavaFX).
+ * <p>This class is UI-framework agnostic — used by both the IntelliJ plugin (Swing) and the desktop
+ * application (JavaFX).
  */
 public final class QueryFlowModel {
 
@@ -95,11 +95,7 @@ public final class QueryFlowModel {
 
   /** An edge connecting two column ports — rendered as a JOIN clause. */
   public record JoinEntry(
-      String fromAlias,
-      String fromColumn,
-      String toAlias,
-      String toColumn,
-      JoinType joinType) {}
+      String fromAlias, String fromColumn, String toAlias, String toColumn, JoinType joinType) {}
 
   /** A WHERE predicate: {@code tableAlias.column operator 'value'}. */
   public record WhereFilter(String tableAlias, String column, String operator, String value) {}
@@ -297,8 +293,11 @@ public final class QueryFlowModel {
 
   private static void appendFrom(StringBuilder sb, List<NodeEntry> ordered) {
     var root = ordered.get(0);
-    sb.append("FROM ").append(root.table().qualifiedName())
-        .append(" AS ").append(root.alias()).append("\n");
+    sb.append("FROM ")
+        .append(root.table().qualifiedName())
+        .append(" AS ")
+        .append(root.alias())
+        .append("\n");
   }
 
   private void appendJoins(StringBuilder sb, List<NodeEntry> ordered) {
@@ -306,18 +305,30 @@ public final class QueryFlowModel {
     joined.add(ordered.get(0).alias());
     for (int i = 1; i < ordered.size(); i++) {
       var node = ordered.get(i);
-      var join = joins.stream()
-          .filter(j -> isConnectionBetween(j, node.alias(), joined))
-          .findFirst();
+      var join =
+          joins.stream().filter(j -> isConnectionBetween(j, node.alias(), joined)).findFirst();
       if (join.isPresent()) {
         var j = join.get();
-        sb.append(j.joinType().keyword).append(" ")
-            .append(node.table().qualifiedName()).append(" AS ").append(node.alias())
-            .append(" ON ").append(j.fromAlias()).append(".").append(j.fromColumn())
-            .append(" = ").append(j.toAlias()).append(".").append(j.toColumn()).append("\n");
+        sb.append(j.joinType().keyword)
+            .append(" ")
+            .append(node.table().qualifiedName())
+            .append(" AS ")
+            .append(node.alias())
+            .append(" ON ")
+            .append(j.fromAlias())
+            .append(".")
+            .append(j.fromColumn())
+            .append(" = ")
+            .append(j.toAlias())
+            .append(".")
+            .append(j.toColumn())
+            .append("\n");
       } else {
-        sb.append("CROSS JOIN ").append(node.table().qualifiedName())
-            .append(" AS ").append(node.alias()).append("\n");
+        sb.append("CROSS JOIN ")
+            .append(node.table().qualifiedName())
+            .append(" AS ")
+            .append(node.alias())
+            .append("\n");
       }
       joined.add(node.alias());
     }
@@ -390,8 +401,7 @@ public final class QueryFlowModel {
     return result;
   }
 
-  private void enqueueConnected(
-      String alias, LinkedHashSet<String> visited, List<String> queue) {
+  private void enqueueConnected(String alias, LinkedHashSet<String> visited, List<String> queue) {
     for (var j : joins) {
       if (j.fromAlias().equals(alias) && !visited.contains(j.toAlias())) {
         queue.add(j.toAlias());

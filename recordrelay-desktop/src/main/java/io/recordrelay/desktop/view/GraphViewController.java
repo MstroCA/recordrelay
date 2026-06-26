@@ -54,7 +54,7 @@ public final class GraphViewController implements Refreshable {
   void initialize() {
     try {
       configStore = new ConfigStore();
-      resolver    = new ConnProfileResolver(configStore);
+      resolver = new ConnProfileResolver(configStore);
     } catch (Exception e) {
       lblStatus.setText("Config unavailable: " + e.getMessage());
       btnDiscover.setDisable(true);
@@ -68,7 +68,7 @@ public final class GraphViewController implements Refreshable {
         ScrollEvent.SCROLL,
         e -> {
           if (e.isControlDown()) {
-            double factor  = e.getDeltaY() > 0 ? 1.1 : 1.0 / 1.1;
+            double factor = e.getDeltaY() > 0 ? 1.1 : 1.0 / 1.1;
             double newZoom = Math.max(0.25, Math.min(2.5, graphCanvas.getScaleX() * factor));
             graphCanvas.setZoom(newZoom);
             sldZoom.setValue(newZoom);
@@ -87,7 +87,7 @@ public final class GraphViewController implements Refreshable {
 
   @FXML
   void onDiscover() {
-    var connName  = cboSource.getValue();
+    var connName = cboSource.getValue();
     var rootTable = cboRootTable.getValue();
     if (connName == null || rootTable == null || rootTable.isBlank()) {
       lblStatus.setText("Select a connection and root table first.");
@@ -115,7 +115,7 @@ public final class GraphViewController implements Refreshable {
     }
     Platform.runLater(
         () -> {
-          var vp    = graphScroll.getViewportBounds();
+          var vp = graphScroll.getViewportBounds();
           double cW = graphCanvas.getPrefWidth();
           double cH = graphCanvas.getPrefHeight();
           if (cW <= 0 || cH <= 0) {
@@ -133,7 +133,7 @@ public final class GraphViewController implements Refreshable {
   private void loadConnections() {
     try {
       var config = configStore.load();
-      var names  = config.getConnections().keySet().stream().sorted().toList();
+      var names = config.getConnections().keySet().stream().sorted().toList();
       cboSource.setItems(FXCollections.observableArrayList(names));
       if (!names.isEmpty() && cboSource.getValue() == null) {
         cboSource.setValue(names.get(0));
@@ -156,7 +156,7 @@ public final class GraphViewController implements Refreshable {
                 var connector = ConnectorRegistry.findConnector(profile);
                 var dbRef =
                     new io.recordrelay.core.domain.DatabaseRef(profile.database(), profile.type());
-                var tables    = connector.schemaInspector().listTables(profile, dbRef);
+                var tables = connector.schemaInspector().listTables(profile, dbRef);
                 var tableNames = tables.stream().map(t -> t.tableName()).sorted().toList();
                 Platform.runLater(
                     () -> {

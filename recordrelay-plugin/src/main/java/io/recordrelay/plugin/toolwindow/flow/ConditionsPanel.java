@@ -152,8 +152,9 @@ public final class ConditionsPanel extends JScrollPane {
     var panel = new JPanel();
     panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
     panel.setBackground(ROW_BG);
-    panel.setBorder(BorderFactory.createCompoundBorder(
-        BorderFactory.createLineBorder(ROW_BORDER, 1, true), JBUI.Borders.empty(4, 6)));
+    panel.setBorder(
+        BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(ROW_BORDER, 1, true), JBUI.Borders.empty(4, 6)));
     panel.setAlignmentX(LEFT_ALIGNMENT);
 
     var colCombo = buildColumnCombo(filter.tableAlias() + "." + filter.column());
@@ -165,12 +166,13 @@ public final class ConditionsPanel extends JScrollPane {
     valField.setFont(valField.getFont().deriveFont(JBUI.scaleFontSize(10f)));
     valField.setVisible(!filter.operator().startsWith("IS"));
 
-    opCombo.addActionListener(e -> {
-      String op = (String) opCombo.getSelectedItem();
-      valField.setVisible(op != null && !op.startsWith("IS"));
-      panel.revalidate();
-      updateFilter(index, colCombo, opCombo, valField);
-    });
+    opCombo.addActionListener(
+        e -> {
+          String op = (String) opCombo.getSelectedItem();
+          valField.setVisible(op != null && !op.startsWith("IS"));
+          panel.revalidate();
+          updateFilter(index, colCombo, opCombo, valField);
+        });
     colCombo.addActionListener(e -> updateFilter(index, colCombo, opCombo, valField));
     attachDocListener(valField, () -> updateFilter(index, colCombo, opCombo, valField));
 
@@ -195,26 +197,29 @@ public final class ConditionsPanel extends JScrollPane {
   }
 
   private static void attachDocListener(JTextField field, Runnable action) {
-    field.getDocument().addDocumentListener(new DocumentListener() {
-      @Override
-      public void insertUpdate(DocumentEvent e) {
-        action.run();
-      }
+    field
+        .getDocument()
+        .addDocumentListener(
+            new DocumentListener() {
+              @Override
+              public void insertUpdate(DocumentEvent e) {
+                action.run();
+              }
 
-      @Override
-      public void removeUpdate(DocumentEvent e) {
-        action.run();
-      }
+              @Override
+              public void removeUpdate(DocumentEvent e) {
+                action.run();
+              }
 
-      @Override
-      public void changedUpdate(DocumentEvent e) {
-        action.run();
-      }
-    });
+              @Override
+              public void changedUpdate(DocumentEvent e) {
+                action.run();
+              }
+            });
   }
 
-  private void updateFilter(int index, ComboBox<String> colCombo,
-      ComboBox<String> opCombo, JTextField valField) {
+  private void updateFilter(
+      int index, ComboBox<String> colCombo, ComboBox<String> opCombo, JTextField valField) {
     String colFull = (String) colCombo.getSelectedItem();
     String op = (String) opCombo.getSelectedItem();
     if (colFull == null || op == null) {
@@ -239,22 +244,23 @@ public final class ConditionsPanel extends JScrollPane {
     panel.setAlignmentX(LEFT_ALIGNMENT);
 
     var colCombo = buildColumnCombo(ob.tableAlias() + "." + ob.column());
-    var dirCombo = new ComboBox<>(new String[]{"ASC", "DESC"});
+    var dirCombo = new ComboBox<>(new String[] {"ASC", "DESC"});
     dirCombo.setSelectedItem(ob.ascending() ? "ASC" : "DESC");
     dirCombo.setFont(dirCombo.getFont().deriveFont(JBUI.scaleFontSize(10f)));
 
-    java.awt.event.ActionListener onChange = e -> {
-      String colFull = (String) colCombo.getSelectedItem();
-      String dir = (String) dirCombo.getSelectedItem();
-      if (colFull == null || dir == null) {
-        return;
-      }
-      String[] parts = colFull.split("\\.", 2);
-      if (parts.length >= 2) {
-        model.removeOrderBy(index);
-        model.addOrderBy(parts[0], parts[1], "ASC".equals(dir));
-      }
-    };
+    java.awt.event.ActionListener onChange =
+        e -> {
+          String colFull = (String) colCombo.getSelectedItem();
+          String dir = (String) dirCombo.getSelectedItem();
+          if (colFull == null || dir == null) {
+            return;
+          }
+          String[] parts = colFull.split("\\.", 2);
+          if (parts.length >= 2) {
+            model.removeOrderBy(index);
+            model.addOrderBy(parts[0], parts[1], "ASC".equals(dir));
+          }
+        };
     colCombo.addActionListener(onChange);
     dirCombo.addActionListener(onChange);
 

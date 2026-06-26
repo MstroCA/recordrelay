@@ -20,8 +20,8 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
-import com.intellij.ui.SimpleListCellRenderer;
 import com.intellij.ui.JBColor;
+import com.intellij.ui.SimpleListCellRenderer;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
@@ -30,6 +30,7 @@ import com.intellij.util.ui.JBUI;
 import io.recordrelay.cli.engine.ConnProfileResolver;
 import io.recordrelay.cli.engine.DiscoveryEngine;
 import io.recordrelay.cli.engine.QueryRunner;
+import io.recordrelay.cli.flow.QueryFlowModel;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.QueryResult;
 import io.recordrelay.core.domain.TableRef;
@@ -37,7 +38,6 @@ import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.plugin.service.RecordRelayService;
 import io.recordrelay.plugin.toolwindow.flow.ConditionsPanel;
 import io.recordrelay.plugin.toolwindow.flow.FlowCanvas;
-import io.recordrelay.cli.flow.QueryFlowModel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -63,9 +63,10 @@ import org.jetbrains.annotations.NotNull;
  * Tool-window panel for running read-only SELECT queries.
  *
  * <p>Offers two modes toggled by a button in the toolbar:
+ *
  * <ul>
- *   <li><b>Flow mode</b> – visual query builder: drag tables onto a canvas, check columns,
- *       connect them with JOIN lines, add WHERE/ORDER BY conditions. SQL is generated automatically.
+ *   <li><b>Flow mode</b> – visual query builder: drag tables onto a canvas, check columns, connect
+ *       them with JOIN lines, add WHERE/ORDER BY conditions. SQL is generated automatically.
  *   <li><b>SQL mode</b> – classic text-area for hand-written queries.
  * </ul>
  */
@@ -117,33 +118,37 @@ public final class QueryPanel extends JPanel {
 
     flowModel.addChangeListener(this::syncSqlPreview);
 
-    add(new PanelHeader("Query Analyzer",
-        "Visual flow builder or hand-written SQL — toggled by the toolbar"), BorderLayout.NORTH);
+    add(
+        new PanelHeader(
+            "Query Analyzer", "Visual flow builder or hand-written SQL — toggled by the toolbar"),
+        BorderLayout.NORTH);
     add(buildBody(), BorderLayout.CENTER);
 
     loadConnections();
 
-    cmbConn.addActionListener(e -> {
-      cmbDb.removeAllItems();
-      flowModel.clear();
-      flowCanvas.clear();
-      tableListModel.clear();
-      nextNodeX = 20;
-      loadDatabases();
-    });
+    cmbConn.addActionListener(
+        e -> {
+          cmbDb.removeAllItems();
+          flowModel.clear();
+          flowCanvas.clear();
+          tableListModel.clear();
+          nextNodeX = 20;
+          loadDatabases();
+        });
     cmbDb.addActionListener(e -> loadTables());
 
     btnFlow.addActionListener(e -> switchMode(true));
     btnSql.addActionListener(e -> switchMode(false));
     btnRun.addActionListener(e -> onRun());
-    tableList.addMouseListener(new java.awt.event.MouseAdapter() {
-      @Override
-      public void mouseClicked(java.awt.event.MouseEvent e) {
-        if (e.getClickCount() == 2) {
-          onAddTableToCanvas();
-        }
-      }
-    });
+    tableList.addMouseListener(
+        new java.awt.event.MouseAdapter() {
+          @Override
+          public void mouseClicked(java.awt.event.MouseEvent e) {
+            if (e.getClickCount() == 2) {
+              onAddTableToCanvas();
+            }
+          }
+        });
 
     switchMode(true);
   }
@@ -169,8 +174,7 @@ public final class QueryPanel extends JPanel {
 
   private JPanel buildToolbar() {
     var bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-    bar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
-        new JBColor(0xD0D7E2, 0x4A4D52)));
+    bar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new JBColor(0xD0D7E2, 0x4A4D52)));
 
     cmbDb.setRenderer(SimpleListCellRenderer.create("— database —", DatabaseRef::name));
 
@@ -213,9 +217,10 @@ public final class QueryPanel extends JPanel {
 
   private JPanel buildTablePicker() {
     var panel = new JPanel(new BorderLayout(0, 4));
-    panel.setBorder(BorderFactory.createCompoundBorder(
-        BorderFactory.createMatteBorder(0, 0, 0, 1, new JBColor(0xD0D7E2, 0x4A4D52)),
-        JBUI.Borders.empty(6)));
+    panel.setBorder(
+        BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 0, 1, new JBColor(0xD0D7E2, 0x4A4D52)),
+            JBUI.Borders.empty(6)));
     panel.setPreferredSize(new Dimension(160, 0));
 
     var title = new JLabel("Tables");
@@ -223,19 +228,20 @@ public final class QueryPanel extends JPanel {
     title.setForeground(new JBColor(0x1565C0, 0x64B5F6));
     panel.add(title, BorderLayout.NORTH);
 
-    tableList.setCellRenderer(new javax.swing.DefaultListCellRenderer() {
-      @Override
-      public java.awt.Component getListCellRendererComponent(
-          javax.swing.JList<?> list, Object value, int index, boolean sel, boolean focus) {
-        var lbl = (JLabel) super.getListCellRendererComponent(list, value, index, sel, focus);
-        if (value instanceof TableRef t) {
-          lbl.setText(t.tableName());
-          lbl.setFont(lbl.getFont().deriveFont(JBUI.scaleFontSize(11f)));
-          lbl.setBorder(JBUI.Borders.empty(2, 4));
-        }
-        return lbl;
-      }
-    });
+    tableList.setCellRenderer(
+        new javax.swing.DefaultListCellRenderer() {
+          @Override
+          public java.awt.Component getListCellRendererComponent(
+              javax.swing.JList<?> list, Object value, int index, boolean sel, boolean focus) {
+            var lbl = (JLabel) super.getListCellRendererComponent(list, value, index, sel, focus);
+            if (value instanceof TableRef t) {
+              lbl.setText(t.tableName());
+              lbl.setFont(lbl.getFont().deriveFont(JBUI.scaleFontSize(11f)));
+              lbl.setBorder(JBUI.Borders.empty(2, 4));
+            }
+            return lbl;
+          }
+        });
     tableList.setToolTipText("Double-click to add table to canvas");
     panel.add(new JBScrollPane(tableList), BorderLayout.CENTER);
 
@@ -314,8 +320,12 @@ public final class QueryPanel extends JPanel {
   private void loadConnections() {
     cmbConn.removeAllItems();
     try {
-      RecordRelayService.getInstance().configStore().load()
-          .getConnections().keySet().forEach(cmbConn::addItem);
+      RecordRelayService.getInstance()
+          .configStore()
+          .load()
+          .getConnections()
+          .keySet()
+          .forEach(cmbConn::addItem);
     } catch (Exception e) {
       lblStatus.setText("Config error: " + e.getMessage());
     }
@@ -327,26 +337,27 @@ public final class QueryPanel extends JPanel {
       return;
     }
     var ref = new AtomicReference<List<DatabaseRef>>();
-    ProgressManager.getInstance().run(
-        new Task.Backgroundable(project, "Loading databases…", false) {
-          @Override
-          public void run(@NotNull ProgressIndicator indicator) {
-            try {
-              var profile = RecordRelayService.getInstance().resolver().resolve(conn);
-              ref.set(new DiscoveryEngine().discoverDatabases(profile));
-            } catch (Exception ex) {
-              ref.set(List.of());
-            }
-          }
+    ProgressManager.getInstance()
+        .run(
+            new Task.Backgroundable(project, "Loading databases…", false) {
+              @Override
+              public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                  var profile = RecordRelayService.getInstance().resolver().resolve(conn);
+                  ref.set(new DiscoveryEngine().discoverDatabases(profile));
+                } catch (Exception ex) {
+                  ref.set(List.of());
+                }
+              }
 
-          @Override
-          public void onSuccess() {
-            cmbDb.removeAllItems();
-            if (ref.get() != null) {
-              ref.get().forEach(cmbDb::addItem);
-            }
-          }
-        });
+              @Override
+              public void onSuccess() {
+                cmbDb.removeAllItems();
+                if (ref.get() != null) {
+                  ref.get().forEach(cmbDb::addItem);
+                }
+              }
+            });
   }
 
   private void loadTables() {
@@ -357,26 +368,27 @@ public final class QueryPanel extends JPanel {
     }
     tableListModel.clear();
     var ref = new AtomicReference<List<TableRef>>();
-    ProgressManager.getInstance().run(
-        new Task.Backgroundable(project, "Loading tables…", false) {
-          @Override
-          public void run(@NotNull ProgressIndicator indicator) {
-            try {
-              var profile = RecordRelayService.getInstance().resolver().resolve(conn);
-              ref.set(new DiscoveryEngine().discoverTables(profile, db));
-            } catch (Exception ex) {
-              ref.set(List.of());
-            }
-          }
+    ProgressManager.getInstance()
+        .run(
+            new Task.Backgroundable(project, "Loading tables…", false) {
+              @Override
+              public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                  var profile = RecordRelayService.getInstance().resolver().resolve(conn);
+                  ref.set(new DiscoveryEngine().discoverTables(profile, db));
+                } catch (Exception ex) {
+                  ref.set(List.of());
+                }
+              }
 
-          @Override
-          public void onSuccess() {
-            tableListModel.clear();
-            if (ref.get() != null) {
-              ref.get().forEach(tableListModel::addElement);
-            }
-          }
-        });
+              @Override
+              public void onSuccess() {
+                tableListModel.clear();
+                if (ref.get() != null) {
+                  ref.get().forEach(tableListModel::addElement);
+                }
+              }
+            });
   }
 
   // ── Flow: add table to canvas ──────────────────────────────────────────────────
@@ -395,28 +407,29 @@ public final class QueryPanel extends JPanel {
     nextNodeX += NODE_SPACING;
 
     var ref = new AtomicReference<io.recordrelay.core.domain.ColumnMeta[]>();
-    ProgressManager.getInstance().run(
-        new Task.Backgroundable(project, "Loading columns…", false) {
-          @Override
-          public void run(@NotNull ProgressIndicator indicator) {
-            try {
-              var profile = RecordRelayService.getInstance().resolver().resolve(conn);
-              var cols = new DiscoveryEngine().inspectColumns(profile, selected);
-              ref.set(cols.toArray(new io.recordrelay.core.domain.ColumnMeta[0]));
-            } catch (Exception ex) {
-              ref.set(new io.recordrelay.core.domain.ColumnMeta[0]);
-            }
-          }
+    ProgressManager.getInstance()
+        .run(
+            new Task.Backgroundable(project, "Loading columns…", false) {
+              @Override
+              public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                  var profile = RecordRelayService.getInstance().resolver().resolve(conn);
+                  var cols = new DiscoveryEngine().inspectColumns(profile, selected);
+                  ref.set(cols.toArray(new io.recordrelay.core.domain.ColumnMeta[0]));
+                } catch (Exception ex) {
+                  ref.set(new io.recordrelay.core.domain.ColumnMeta[0]);
+                }
+              }
 
-          @Override
-          public void onSuccess() {
-            if (ref.get() == null) {
-              return;
-            }
-            var entry = flowModel.addNode(selected, List.of(ref.get()));
-            flowCanvas.addTableNode(entry, posX, posY);
-          }
-        });
+              @Override
+              public void onSuccess() {
+                if (ref.get() == null) {
+                  return;
+                }
+                var entry = flowModel.addNode(selected, List.of(ref.get()));
+                flowCanvas.addTableNode(entry, posX, posY);
+              }
+            });
   }
 
   // ── Run query ──────────────────────────────────────────────────────────────────
@@ -449,8 +462,8 @@ public final class QueryPanel extends JPanel {
               public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setIndeterminate(true);
                 try {
-                  var resolver = new ConnProfileResolver(
-                      RecordRelayService.getInstance().configStore());
+                  var resolver =
+                      new ConnProfileResolver(RecordRelayService.getInstance().configStore());
                   var profile = resolver.resolve(conn);
                   result = new QueryRunner().run(profile, sql);
                 } catch (Exception ex) {

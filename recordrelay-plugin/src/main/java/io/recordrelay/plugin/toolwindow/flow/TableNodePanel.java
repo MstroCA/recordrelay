@@ -66,7 +66,10 @@ final class TableNodePanel extends JPanel {
 
   private boolean portHighlight = false;
 
-  TableNodePanel(NodeEntry node, QueryFlowModel model, BiConsumer<String, String> onPortClick,
+  TableNodePanel(
+      NodeEntry node,
+      QueryFlowModel model,
+      BiConsumer<String, String> onPortClick,
       Runnable onRemove) {
     this.node = node;
     this.model = model;
@@ -85,16 +88,17 @@ final class TableNodePanel extends JPanel {
   // ── Header ───────────────────────────────────────────────────────────────────
 
   private JPanel buildHeader(Runnable onRemove) {
-    var header = new JPanel(new BorderLayout()) {
-      @Override
-      protected void paintComponent(Graphics g) {
-        var g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setPaint(new GradientPaint(0, 0, HEADER_TOP, 0, getHeight(), HEADER_BOT));
-        g2.fillRect(0, 0, getWidth(), getHeight());
-        g2.dispose();
-      }
-    };
+    var header =
+        new JPanel(new BorderLayout()) {
+          @Override
+          protected void paintComponent(Graphics g) {
+            var g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setPaint(new GradientPaint(0, 0, HEADER_TOP, 0, getHeight(), HEADER_BOT));
+            g2.fillRect(0, 0, getWidth(), getHeight());
+            g2.dispose();
+          }
+        };
     header.setOpaque(false);
     header.setPreferredSize(new Dimension(NODE_WIDTH, HEADER_H));
     header.setBorder(JBUI.Borders.empty(4, 8, 4, 4));

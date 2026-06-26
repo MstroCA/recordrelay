@@ -251,14 +251,15 @@ public final class FlowCanvas extends javax.swing.JPanel {
   }
 
   private void finishConnection(String toAlias, String toCol) {
+    // Capture before cancelConnect() nulls the instance fields
+    String fromAlias = pendingFromAlias;
+    String fromCol = pendingFromCol;
     var items = Arrays.stream(JoinType.values()).map(Enum::name).toList();
     JBPopupFactory.getInstance()
         .createPopupChooserBuilder(items)
         .setTitle("Join Type")
         .setItemChosenCallback(
-            chosen ->
-                model.addJoin(
-                    pendingFromAlias, pendingFromCol, toAlias, toCol, JoinType.valueOf(chosen)))
+            chosen -> model.addJoin(fromAlias, fromCol, toAlias, toCol, JoinType.valueOf(chosen)))
         .createPopup()
         .showInFocusCenter();
   }

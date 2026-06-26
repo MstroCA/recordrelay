@@ -63,6 +63,11 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
       ConflictResolution resolution)
       throws CloneException {
 
+    // SKIP_EXISTING inserts with original IDs; ON CONFLICT DO NOTHING handles clashes at DB level.
+    if (resolution == ConflictResolution.SKIP_EXISTING) {
+      return IdentityMapping.empty();
+    }
+
     var builder = IdentityMapping.builder();
 
     for (var entry : records.entrySet()) {
@@ -73,8 +78,10 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
       }
 
       var pkColumn = detectPkColumn(table, tableRecords.get(0));
-      var maxId = queryMaxId(target, table, pkColumn, resolution);
-      long counter = maxId;
+      var targetMax = queryMaxId(target, table, pkColumn, resolution);
+      var sourceMax = maxSourceId(tableRecords, pkColumn);
+      // Start above both target and source ranges so new IDs never coincide with originals.
+      long counter = Math.max(targetMax, sourceMax);
 
       for (var record : tableRecords) {
         var sourceId = extractFieldAsString(record, pkColumn);
@@ -90,10 +97,12 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
       }
 
       LOG.debug(
-          "Allocated {} new IDs for table '{}' starting from {}",
+          "Allocated {} new IDs for table '{}' starting from {} (targetMax={}, sourceMax={})",
           tableRecords.size(),
           table,
-          maxId + 1);
+          Math.max(targetMax, sourceMax) + 1,
+          targetMax,
+          sourceMax);
     }
 
     var mapping = builder.build();
@@ -167,6 +176,21 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
       return singularName;
     }
     return sampleRecord.fieldNames().stream().findFirst().orElse("id");
+  }
+
+  private long maxSourceId(List<DataRecord> records, String pkColumn) {
+    long max = 0L;
+    for (var record : records) {
+      var raw = record.get(pkColumn);
+      if (raw == null) continue;
+      try {
+        long v = Long.parseLong(raw.toString());
+        if (v > max) max = v;
+      } catch (NumberFormatException ignored) {
+        // non-numeric PK (UUID etc.) — no numeric max to track
+      }
+    }
+    return max;
   }
 
   private String extractFieldAsString(DataRecord record, String column) {

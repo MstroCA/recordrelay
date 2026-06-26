@@ -109,6 +109,11 @@
                         onAction="#showScheduledSync">
                     <graphic><FontIcon iconLiteral="mdi2c-clock-outline" iconSize="15"/></graphic>
                 </Button>
+                <Button fx:id="btnNavHelp" text="%nav.help"
+                        maxWidth="Infinity" styleClass="nav-btn"
+                        onAction="#showHelp">
+                    <graphic><FontIcon iconLiteral="mdi2h-help-circle-outline" iconSize="15"/></graphic>
+                </Button>
             </VBox>
 
             <Region VBox.vgrow="ALWAYS"/>

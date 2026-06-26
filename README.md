@@ -11,12 +11,23 @@
 
 ---
 
+## Documentation
+
+| Language | Guide |
+|----------|-------|
+| English | [User Guide](docs/user-guide.md) |
+| Türkçe | [Kullanıcı Kılavuzu](docs/user-guide.tr.md) |
+
+For CLI commands see [CLI Reference](docs/cli-reference.md). For architecture details see [Architecture](docs/architecture.md).
+
+---
+
 ## Vision
 
 RecordRelay is not an ETL tool. It is a **business context reproduction** platform for developers and SREs: it reproduces a real entity — a customer, order, or user — along with all its relationships, from production to a local environment in minutes, or packages it as a `.rrpkg` file to share with others.
 
 **Three deployment targets:**
-- **Desktop** — JavaFX desktop application (AtlantaFX) — 10 screens covering cloning, discovery, query analysis, ERD graph view, schema drift, and more
+- **Desktop** — JavaFX desktop application (AtlantaFX) — 14 screens covering cloning, discovery, query analysis, ERD graph view, schema drift, masking coverage, presets, scheduled sync, and in-app help
 - **CLI** — command-line tool that integrates into CI/CD pipelines
 - **IntelliJ Plugin** — Clone, Connections, Discovery, Monitor, and Query tabs directly inside the IDE
 
@@ -36,6 +47,12 @@ RecordRelay is not an ETL tool. It is a **business context reproduction** platfo
 | **Row Count Diff** | Compare row counts per table across two environments to spot data divergence |
 | **Query Analyzer** | Visual flow query builder (drag tables → connect ports → get SQL) or raw SQL editor with live results |
 | **Connection Health** | Ping all configured connections and report latency and reachability |
+| **Masking Coverage** | Visual report of which columns have masking rules applied across all tables |
+| **Clone Presets** | Save and reuse clone configurations (entity, depth, conflict resolution, masking profile) |
+| **Scheduled Sync** | Define recurring clone jobs with cron-style schedules and target environment |
+| **Help** | In-app searchable guide covering all 16 topics in the active UI language (EN/TR/DE/FR/ES/IT/PT/RU/ZH/JA/KO/AR) |
+
+> **Conflict Resolution** — when cloning into a target that already has data, the *On conflict* combobox controls behavior: **Regenerate Identities** (allocates new IDs above both source and target max — safe for non-empty targets), **Isolate Namespace**, **Fail Safe**, or **Skip Existing**. Tables are always written in FK-safe topological order. See the [User Guide](docs/user-guide.md#conflict-resolution) for details.
 
 ---
 
@@ -141,7 +158,7 @@ Hexagonal Architecture (Ports & Adapters): the domain and core modules contain o
 | `recordrelay-masking-engine` | Deterministic PII masking (EMAIL, PHONE, ADDRESS, IBAN, NATIONAL_ID) |
 | `recordrelay-package-engine` | `.rrpkg` v2.1 ZIP export and import |
 | `recordrelay-cli` | Picocli CLI commands + shared `QueryFlowModel` (SQL generation for the flow query builder) |
-| `recordrelay-desktop` | JavaFX app — 10 screens: Clone Context, Environments, Connections, Discovery, Monitor, Graph View, Migration Drift, Row Count Diff, Query Analyzer, Connection Health |
+| `recordrelay-desktop` | JavaFX app — 14 screens: Clone Context, Environments, Connections, Discovery, Monitor, Graph View, Migration Drift, Row Count Diff, Query Analyzer, Connection Health, Masking Coverage, Clone Presets, Scheduled Sync, Help |
 | `recordrelay-plugin` | IntelliJ IDEA plugin — Clone, Connections, Discovery, Monitor, Query tabs |
 | `recordrelay-adapter-jdbc-base` | Abstract base for JDBC connectors |
 | `recordrelay-adapter-postgres` | PostgreSQL 14+ |
@@ -257,6 +274,14 @@ public class MyConnector implements ContextProviderPort {
 ```
 
 Add the class name to `META-INF/services/io.recordrelay.core.port.out.ContextProviderPort` for SPI registration. Once the JAR is on the classpath, `ServiceLoader` discovers it automatically.
+
+---
+
+## Localization
+
+RecordRelay ships with UI translations for 12 languages (EN, TR, DE, FR, ES, IT, PT, RU, ZH, JA, KO, AR).  
+User-facing documentation is available in [English](docs/user-guide.md) and [Turkish](docs/user-guide.tr.md).  
+To contribute a translation, add a `messages_<lang>.properties` file under `recordrelay-core/src/main/resources/io/recordrelay/core/i18n/` following the existing format.
 
 ---
 

@@ -51,11 +51,13 @@ import io.recordrelay.core.spi.ConnectorRegistry;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -208,7 +210,7 @@ public final class DefaultCloneEngine
     LOG.info("  [4/5] fk-remap + masking done  elapsed={}ms", elapsed(t3));
 
     long t4 = System.currentTimeMillis();
-    writeToTarget(request, finalRecords, listener, warnings);
+    writeToTarget(request, finalRecords, graph, listener, warnings);
     int written = finalRecords.values().stream().mapToInt(List::size).sum();
     LOG.info(
         "  [5/5] write done  tables={} records={} warnings={} elapsed={}ms",
@@ -467,24 +469,75 @@ public final class DefaultCloneEngine
   private void writeToTarget(
       CloneRequest request,
       Map<String, List<DataRecord>> allRecords,
+      RelationshipGraph graph,
       CloneProgressListener listener,
       List<String> warnings)
       throws CloneException {
     var targetConnector = ConnectorRegistry.findConnector(request.target());
     boolean skip = request.conflictResolution() == ConflictResolution.SKIP_EXISTING;
-    for (var entry : allRecords.entrySet()) {
-      if (!entry.getValue().isEmpty()) {
+    var writeOrder = topoSortForWrite(allRecords.keySet(), graph);
+    for (var tableName : writeOrder) {
+      var records = allRecords.get(tableName);
+      if (records != null && !records.isEmpty()) {
         writeTable(
             targetConnector,
             request.target(),
-            entry.getKey(),
-            entry.getValue(),
+            tableName,
+            records,
             request.fieldOverrides(),
             skip,
             listener,
             warnings);
       }
     }
+  }
+
+  /**
+   * Returns tables in an order safe for FK-constrained inserts: referenced tables come before
+   * tables that reference them. Uses Kahn's algorithm; tables in a cycle or with no FK to others in
+   * the set are appended at the end in their original order.
+   */
+  static List<String> topoSortForWrite(Set<String> tables, RelationshipGraph graph) {
+    var inDegree = new HashMap<String, Integer>();
+    for (var t : tables) {
+      inDegree.put(t, 0);
+    }
+    for (var edge : graph.edges()) {
+      var from = edge.fromNode().tableName(); // table with FK column
+      var to = edge.toNode().tableName();     // referenced table (must be written first)
+      if (inDegree.containsKey(from) && inDegree.containsKey(to) && !from.equals(to)) {
+        inDegree.merge(from, 1, Integer::sum);
+      }
+    }
+    var queue = new ArrayDeque<String>();
+    // Add tables with no unresolved dependencies first, preserving original encounter order
+    for (var t : tables) {
+      if (inDegree.get(t) == 0) {
+        queue.add(t);
+      }
+    }
+    var result = new ArrayList<String>(tables.size());
+    while (!queue.isEmpty()) {
+      var t = queue.poll();
+      result.add(t);
+      for (var edge : graph.edgesTo(t)) {
+        var dependent = edge.fromNode().tableName();
+        if (inDegree.containsKey(dependent)) {
+          int remaining = inDegree.merge(dependent, -1, Integer::sum);
+          if (remaining == 0) {
+            queue.add(dependent);
+          }
+        }
+      }
+    }
+    // Append any remaining tables (cycle or disconnected) in original order
+    for (var t : tables) {
+      if (!result.contains(t)) {
+        result.add(t);
+        LOG.warn("topoSort: table '{}' could not be ordered (cycle or missing FK edge); appending", t);
+      }
+    }
+    return result;
   }
 
   private void writePackageToTarget(

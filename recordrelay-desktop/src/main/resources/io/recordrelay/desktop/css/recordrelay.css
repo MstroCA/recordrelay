@@ -394,3 +394,67 @@
 .health-row-degraded:selected { -fx-background-color: derive(-color-warning-subtle, -15%); }
 .health-row-down           { -fx-background-color: derive(-color-danger-subtle, 10%); }
 .health-row-down:selected  { -fx-background-color: derive(-color-danger-subtle, -15%); }
+
+/* ── Help screen ──────────────────────────────────────────────────────── */
+.help-search-field {
+    -fx-font-size: 13px;
+    -fx-padding: 6 10 6 10;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+
+.help-topic-list {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: transparent;
+    -fx-font-size: 13px;
+}
+
+.help-topic-list .list-cell {
+    -fx-padding: 8 12 8 12;
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-fg-default;
+}
+
+.help-topic-list .list-cell:hover {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.help-topic-list .list-cell:selected {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.help-content-scroll {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: transparent;
+}
+
+.help-content-box {
+    -fx-background-color: -color-bg-default;
+}
+
+.help-heading {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.help-subheading {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.help-body {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-default;
+    -fx-line-spacing: 2;
+}
+
+.help-bullet {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-default;
+    -fx-line-spacing: 2;
+}

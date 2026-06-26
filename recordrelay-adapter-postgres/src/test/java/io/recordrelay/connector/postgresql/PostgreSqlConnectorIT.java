@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.Credentials;
+import io.recordrelay.core.domain.DataRecord;
 import io.recordrelay.core.domain.DatabaseRef;
 import io.recordrelay.core.domain.DatabaseType;
 import io.recordrelay.core.domain.TableRef;
@@ -59,6 +60,12 @@ class PostgreSqlConnectorIT {
               + "  username  VARCHAR(100) NOT NULL, "
               + "  email     VARCHAR(255), "
               + "  active    BOOLEAN DEFAULT true"
+              + ")");
+      stmt.execute("CREATE TYPE IF NOT EXISTS status_type AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING')");
+      stmt.execute(
+          "CREATE TABLE IF NOT EXISTS orders ("
+              + "  id      BIGINT OVERRIDING SYSTEM VALUE PRIMARY KEY, "
+              + "  status  status_type NOT NULL"
               + ")");
     }
   }
@@ -115,5 +122,29 @@ class PostgreSqlConnectorIT {
     var report = inspector.analyzeCompatibility(columns, columns);
     assertThat(report.matchPercentage()).isEqualTo(100.0);
     assertThat(report.isFullyCompatible()).isTrue();
+  }
+
+  @Test
+  void shouldWriteStringValueIntoEnumColumn() throws Exception {
+    var db = new DatabaseRef("testdb", DatabaseType.POSTGRESQL);
+    var table = new TableRef(db, "public", "orders");
+    var record = DataRecord.of(Map.of("id", 1L, "status", "ACTIVE"));
+    var writer = new PostgreSqlRecordWriter();
+    assertThatCode(
+            () -> {
+              writer.open(profile(), table);
+              writer.write(record);
+              writer.flush();
+              writer.close();
+            })
+        .doesNotThrowAnyException();
+    try (var conn =
+            DriverManager.getConnection(
+                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+        var stmt = conn.createStatement();
+        var rs = stmt.executeQuery("SELECT status FROM orders WHERE id = 1")) {
+      assertThat(rs.next()).isTrue();
+      assertThat(rs.getString("status")).isEqualTo("ACTIVE");
+    }
   }
 }

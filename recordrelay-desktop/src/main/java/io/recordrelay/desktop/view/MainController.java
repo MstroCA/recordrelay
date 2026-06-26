@@ -57,6 +57,7 @@ public final class MainController {
   @FXML private Button btnNavMaskCoverage;
   @FXML private Button btnNavPresets;
   @FXML private Button btnNavSync;
+  @FXML private Button btnNavHelp;
 
   private List<Button> navButtons;
 
@@ -98,7 +99,8 @@ public final class MainController {
             btnNavHealth,
             btnNavMaskCoverage,
             btnNavPresets,
-            btnNavSync);
+            btnNavSync,
+            btnNavHelp);
     cboLanguage.getItems().addAll(LANG_CODES.keySet());
     cboLanguage.setValue("English");
     lblVersion.setText(readVersion());
@@ -188,6 +190,11 @@ public final class MainController {
   }
 
   @FXML
+  void showHelp() {
+    navigate("help");
+  }
+
+  @FXML
   void toggleTheme() {
     darkMode = !darkMode;
     ThemeManager.apply(darkMode);
@@ -229,6 +236,7 @@ public final class MainController {
     btnNavMaskCoverage.setText(Messages.get("nav.masking.coverage"));
     btnNavPresets.setText(Messages.get("nav.presets"));
     btnNavSync.setText(Messages.get("nav.scheduled.sync"));
+    btnNavHelp.setText(Messages.get("nav.help"));
     btnTheme.setText(darkMode ? Messages.get("theme.light") : Messages.get("theme.dark"));
     lblStatus.setText(Messages.get("status.ready"));
   }
@@ -261,6 +269,7 @@ public final class MainController {
       SCREEN_BUTTON_MAP.put("masking-coverage", btnNavMaskCoverage);
       SCREEN_BUTTON_MAP.put("clone-presets", btnNavPresets);
       SCREEN_BUTTON_MAP.put("scheduled-sync", btnNavSync);
+      SCREEN_BUTTON_MAP.put("help", btnNavHelp);
     }
     return SCREEN_BUTTON_MAP;
   }

@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -149,7 +150,12 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
     try {
       for (DataRecord record : buffer) {
         for (int i = 0; i < columnOrder.size(); i++) {
-          insertStmt.setObject(i + 1, record.get(columnOrder.get(i)));
+          Object val = record.get(columnOrder.get(i));
+          if (val instanceof String) {
+            insertStmt.setObject(i + 1, val, Types.OTHER);
+          } else {
+            insertStmt.setObject(i + 1, val);
+          }
         }
         insertStmt.addBatch();
       }

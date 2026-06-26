@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.recordrelay.desktop.view.HelpController">
+
+    <top>
+        <VBox spacing="6">
+            <padding><Insets top="20" right="28" bottom="10" left="28"/></padding>
+            <Label text="%help.title" styleClass="screen-title"/>
+            <Label text="%help.subtitle" styleClass="screen-subtitle"/>
+            <TextField fx:id="tfSearch" promptText="%help.search"
+                       styleClass="help-search-field"/>
+        </VBox>
+    </top>
+
+    <center>
+        <SplitPane fx:id="splitPane" dividerPositions="0.28">
+
+            <!-- ── Left: topic list ──────────────────────────────────────── -->
+            <VBox styleClass="discovery-panel" minWidth="180">
+                <ListView fx:id="topicList" VBox.vgrow="ALWAYS"
+                          styleClass="help-topic-list"/>
+            </VBox>
+
+            <!-- ── Right: content area ───────────────────────────────────── -->
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER"
+                        styleClass="help-content-scroll" VBox.vgrow="ALWAYS">
+                <VBox fx:id="contentBox" spacing="0" styleClass="help-content-box">
+                    <padding><Insets top="20" right="32" bottom="24" left="32"/></padding>
+                    <Label fx:id="lblEmpty" text="%help.empty"
+                           styleClass="placeholder-hint"/>
+                </VBox>
+            </ScrollPane>
+
+        </SplitPane>
+    </center>
+
+</BorderPane>

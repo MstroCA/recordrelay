@@ -497,18 +497,24 @@ public final class DefaultCloneEngine
    * tables that reference them. Uses Kahn's algorithm; tables in a cycle or with no FK to others in
    * the set are appended at the end in their original order.
    */
-  static List<String> topoSortForWrite(Set<String> tables, RelationshipGraph graph) {
+  private static HashMap<String, Integer> buildInDegreeMap(
+      Set<String> tables, RelationshipGraph graph) {
     var inDegree = new HashMap<String, Integer>();
     for (var t : tables) {
       inDegree.put(t, 0);
     }
     for (var edge : graph.edges()) {
-      var from = edge.fromNode().tableName(); // table with FK column
-      var to = edge.toNode().tableName(); // referenced table (must be written first)
+      var from = edge.fromNode().tableName();
+      var to = edge.toNode().tableName();
       if (inDegree.containsKey(from) && inDegree.containsKey(to) && !from.equals(to)) {
         inDegree.merge(from, 1, Integer::sum);
       }
     }
+    return inDegree;
+  }
+
+  static List<String> topoSortForWrite(Set<String> tables, RelationshipGraph graph) {
+    var inDegree = buildInDegreeMap(tables, graph);
     var queue = new ArrayDeque<String>();
     // Add tables with no unresolved dependencies first, preserving original encounter order
     for (var t : tables) {

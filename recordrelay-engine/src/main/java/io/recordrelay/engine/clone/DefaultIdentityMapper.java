@@ -182,10 +182,14 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
     long max = 0L;
     for (var record : records) {
       var raw = record.get(pkColumn);
-      if (raw == null) continue;
+      if (raw == null) {
+        continue;
+      }
       try {
         long v = Long.parseLong(raw.toString());
-        if (v > max) max = v;
+        if (v > max) {
+          max = v;
+        }
       } catch (NumberFormatException ignored) {
         // non-numeric PK (UUID etc.) — no numeric max to track
       }

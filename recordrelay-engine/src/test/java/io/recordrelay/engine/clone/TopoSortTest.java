@@ -54,9 +54,10 @@ class TopoSortTest {
   @Test
   void referencedTableWrittenBeforeReferencingTable() {
     // customers.account_manager_id → users.id  (BFS discovered customers first)
-    var graph = RelationshipGraph.builder()
-        .addEdge(fk("customers", "account_manager_id", "users", "id"))
-        .build();
+    var graph =
+        RelationshipGraph.builder()
+            .addEdge(fk("customers", "account_manager_id", "users", "id"))
+            .build();
 
     var result = DefaultCloneEngine.topoSortForWrite(ordered("customers", "users"), graph);
 
@@ -66,21 +67,19 @@ class TopoSortTest {
   @Test
   void deepChainOrderedCorrectly() {
     // invoices → orders → customers → users
-    var graph = RelationshipGraph.builder()
-        .addEdge(fk("invoices",  "order_id",    "orders",    "id"))
-        .addEdge(fk("orders",    "customer_id", "customers", "id"))
-        .addEdge(fk("customers", "manager_id",  "users",     "id"))
-        .build();
+    var graph =
+        RelationshipGraph.builder()
+            .addEdge(fk("invoices", "order_id", "orders", "id"))
+            .addEdge(fk("orders", "customer_id", "customers", "id"))
+            .addEdge(fk("customers", "manager_id", "users", "id"))
+            .build();
 
     var tables = ordered("invoices", "orders", "customers", "users");
     var result = DefaultCloneEngine.topoSortForWrite(tables, graph);
 
-    assertThat(result.indexOf("users"))
-        .isLessThan(result.indexOf("customers"));
-    assertThat(result.indexOf("customers"))
-        .isLessThan(result.indexOf("orders"));
-    assertThat(result.indexOf("orders"))
-        .isLessThan(result.indexOf("invoices"));
+    assertThat(result.indexOf("users")).isLessThan(result.indexOf("customers"));
+    assertThat(result.indexOf("customers")).isLessThan(result.indexOf("orders"));
+    assertThat(result.indexOf("orders")).isLessThan(result.indexOf("invoices"));
   }
 
   @Test
@@ -93,9 +92,8 @@ class TopoSortTest {
   @Test
   void unreferencedTableFromWriteSetIsIgnoredAsDependency() {
     // orders → coupons, but coupons is NOT in the write set
-    var graph = RelationshipGraph.builder()
-        .addEdge(fk("orders", "coupon_id", "coupons", "id"))
-        .build();
+    var graph =
+        RelationshipGraph.builder().addEdge(fk("orders", "coupon_id", "coupons", "id")).build();
 
     // coupons not included → orders should still appear in result
     var result = DefaultCloneEngine.topoSortForWrite(ordered("orders"), graph);
@@ -104,11 +102,13 @@ class TopoSortTest {
 
   @Test
   void multipleTablesReferencingSameParent() {
-    // addresses → customers, payment_methods → customers (BFS order: customers, addresses, payment_methods)
-    var graph = RelationshipGraph.builder()
-        .addEdge(fk("addresses",       "customer_id", "customers", "id"))
-        .addEdge(fk("payment_methods", "customer_id", "customers", "id"))
-        .build();
+    // addresses → customers, payment_methods → customers (BFS order: customers, addresses,
+    // payment_methods)
+    var graph =
+        RelationshipGraph.builder()
+            .addEdge(fk("addresses", "customer_id", "customers", "id"))
+            .addEdge(fk("payment_methods", "customer_id", "customers", "id"))
+            .build();
 
     var tables = ordered("customers", "addresses", "payment_methods");
     var result = DefaultCloneEngine.topoSortForWrite(tables, graph);
@@ -119,9 +119,8 @@ class TopoSortTest {
 
   @Test
   void allTablesPresent() {
-    var graph = RelationshipGraph.builder()
-        .addEdge(fk("orders", "customer_id", "customers", "id"))
-        .build();
+    var graph =
+        RelationshipGraph.builder().addEdge(fk("orders", "customer_id", "customers", "id")).build();
 
     var tables = ordered("customers", "orders");
     var result = DefaultCloneEngine.topoSortForWrite(tables, graph);

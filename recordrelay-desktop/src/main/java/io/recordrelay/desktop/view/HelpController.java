@@ -83,7 +83,9 @@ public final class HelpController implements Refreshable {
               String lower = text == null ? "" : text.toLowerCase();
               filteredTopics.setPredicate(
                   id -> {
-                    if (lower.isBlank()) return true;
+                    if (lower.isBlank()) {
+                      return true;
+                    }
                     String title = Messages.get("help.topic." + id + ".title").toLowerCase();
                     return title.contains(lower) || id.contains(lower);
                   });

@@ -476,20 +476,47 @@ public final class DefaultCloneEngine
     var targetConnector = ConnectorRegistry.findConnector(request.target());
     boolean skip = request.conflictResolution() == ConflictResolution.SKIP_EXISTING;
     var writeOrder = topoSortForWrite(allRecords.keySet(), graph);
+    var failedTables = new java.util.HashSet<String>();
     for (var tableName : writeOrder) {
+      var blockedBy = findFailedDependency(tableName, graph, failedTables);
+      if (blockedBy != null) {
+        var msg = "Skipped '" + tableName + "': FK dependency '" + blockedBy + "' failed to write";
+        warnings.add(msg);
+        listener.onWarning(msg);
+        listener.onImportCompleted(tableName, 0);
+        continue;
+      }
       var records = allRecords.get(tableName);
       if (records != null && !records.isEmpty()) {
-        writeTable(
-            targetConnector,
-            request.target(),
-            tableName,
-            records,
-            request.fieldOverrides(),
-            skip,
-            listener,
-            warnings);
+        boolean ok =
+            writeTable(
+                targetConnector,
+                request.target(),
+                tableName,
+                records,
+                request.fieldOverrides(),
+                skip,
+                listener,
+                warnings);
+        if (!ok) {
+          failedTables.add(tableName);
+        }
       }
     }
+  }
+
+  private static String findFailedDependency(
+      String table, RelationshipGraph graph, java.util.Set<String> failedTables) {
+    if (failedTables.isEmpty()) {
+      return null;
+    }
+    for (var edge : graph.edgesFrom(table)) {
+      var dep = edge.toNode().tableName();
+      if (failedTables.contains(dep)) {
+        return dep;
+      }
+    }
+    return null;
   }
 
   /**
@@ -569,7 +596,7 @@ public final class DefaultCloneEngine
     }
   }
 
-  private void writeTable(
+  private boolean writeTable(
       io.recordrelay.core.port.out.ContextProviderPort connector,
       ConnectionProfile target,
       String tableName,
@@ -589,6 +616,7 @@ public final class DefaultCloneEngine
       writer.flush();
       LOG.debug("  wrote table={}  rows={}", tableName, records.size());
       listener.onImportCompleted(tableName, records.size());
+      return true;
     } catch (ConnectorException e) {
       var cause = rootCauseMessage(e);
       var msg = "Failed to write table " + tableName + ": " + e.getMessage() + cause;
@@ -596,6 +624,7 @@ public final class DefaultCloneEngine
       listener.onWarning(msg);
       LOG.warn("Write failed  table={}  reason={}  cause={}", tableName, e.getMessage(), cause, e);
       listener.onImportCompleted(tableName, 0);
+      return false;
     } catch (Exception e) {
       throw new CloneException("Unexpected error writing " + tableName, e);
     }

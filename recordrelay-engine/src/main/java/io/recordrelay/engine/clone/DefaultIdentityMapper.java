@@ -80,8 +80,9 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
       var pkColumn = detectPkColumn(table, tableRecords.get(0));
       var targetMax = queryMaxId(target, table, pkColumn, resolution);
       var sourceMax = maxSourceId(tableRecords, pkColumn);
-      // Start above both target and source ranges so new IDs never coincide with originals.
-      long counter = Math.max(targetMax, sourceMax);
+      // ISOLATE_NAMESPACE adds a large gap so cloned IDs never overlap with any pre-existing range.
+      long isolationGap = (resolution == ConflictResolution.ISOLATE_NAMESPACE) ? 1_000_000L : 0L;
+      long counter = Math.max(targetMax, sourceMax) + isolationGap;
 
       for (var record : tableRecords) {
         var sourceId = extractFieldAsString(record, pkColumn);

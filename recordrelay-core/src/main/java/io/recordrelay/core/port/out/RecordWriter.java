@@ -19,6 +19,7 @@ import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
 import io.recordrelay.core.domain.TableRef;
 import io.recordrelay.core.exception.ConnectorException;
+import java.util.Map;
 
 /** Writes records to a storage engine table. */
 public interface RecordWriter extends AutoCloseable {
@@ -47,4 +48,16 @@ public interface RecordWriter extends AutoCloseable {
   /** Flushes, commits, and releases any underlying resources. */
   @Override
   void close() throws ConnectorException;
+
+  /**
+   * Returns PK remaps accumulated during the last write operation and clears the internal buffer.
+   *
+   * <p>A remap entry {@code attempted → existing} is recorded when a row fails with a unique
+   * constraint violation: the attempted target PK could not be inserted because another row already
+   * occupies a unique slot, and {@code existing} is the PK of that pre-existing row. Callers use
+   * these remaps to fix FK references in subsequent tables before writing them.
+   */
+  default Map<String, String> drainConflictRemaps() {
+    return Map.of();
+  }
 }

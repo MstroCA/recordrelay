@@ -476,7 +476,8 @@ public final class DefaultCloneEngine
     var targetConnector = ConnectorRegistry.findConnector(request.target());
     boolean skip = request.conflictResolution() == ConflictResolution.SKIP_EXISTING;
     var writeOrder = topoSortForWrite(allRecords.keySet(), graph);
-    var failedTables = new java.util.HashSet<String>();
+    var failedTables = new HashSet<String>();
+    var conflictRemapsPerTable = new LinkedHashMap<String, Map<String, String>>();
     for (var tableName : writeOrder) {
       var blockedBy = findFailedDependency(tableName, graph, failedTables);
       if (blockedBy != null) {
@@ -488,21 +489,85 @@ public final class DefaultCloneEngine
       }
       var records = allRecords.get(tableName);
       if (records != null && !records.isEmpty()) {
-        boolean ok =
+        var patchedRecords =
+            applyConflictRemapsToFks(records, tableName, graph, conflictRemapsPerTable);
+        var result =
             writeTable(
                 targetConnector,
                 request.target(),
                 tableName,
-                records,
+                patchedRecords,
                 request.fieldOverrides(),
                 skip,
                 listener,
                 warnings);
-        if (!ok) {
+        if (!result.ok()) {
           failedTables.add(tableName);
+        } else if (!result.conflictRemaps().isEmpty()) {
+          conflictRemapsPerTable.put(tableName, result.conflictRemaps());
         }
       }
     }
+  }
+
+  private static List<DataRecord> applyConflictRemapsToFks(
+      List<DataRecord> records,
+      String tableName,
+      RelationshipGraph graph,
+      Map<String, Map<String, String>> conflictRemapsPerTable) {
+    if (conflictRemapsPerTable.isEmpty()) {
+      return records;
+    }
+    var fkEdges = new ArrayList<String[]>();
+    for (var edge : graph.edgesFrom(tableName)) {
+      var ref = edge.toNode().tableName();
+      if (conflictRemapsPerTable.containsKey(ref)) {
+        fkEdges.add(new String[] {edge.fromColumn(), ref});
+      }
+    }
+    if (fkEdges.isEmpty()) {
+      return records;
+    }
+    var patched = new ArrayList<DataRecord>(records.size());
+    for (var record : records) {
+      patched.add(patchFkRecord(record, fkEdges, conflictRemapsPerTable));
+    }
+    return patched;
+  }
+
+  private static DataRecord patchFkRecord(
+      DataRecord record,
+      List<String[]> fkEdges,
+      Map<String, Map<String, String>> conflictRemapsPerTable) {
+    var fields = new LinkedHashMap<>(record.fields());
+    boolean modified = false;
+    for (var fk : fkEdges) {
+      var fkValue = fields.get(fk[0]);
+      if (fkValue == null) {
+        continue;
+      }
+      var remappedPk = conflictRemapsPerTable.get(fk[1]).get(fkValue.toString());
+      if (remappedPk != null) {
+        fields.put(fk[0], castFkValue(fkValue, remappedPk));
+        modified = true;
+      }
+    }
+    return modified ? DataRecord.of(fields) : record;
+  }
+
+  private static Object castFkValue(Object original, String newValue) {
+    if (original instanceof Long) {
+      try {
+        return Long.parseLong(newValue);
+      } catch (NumberFormatException ignored) {
+      }
+    } else if (original instanceof Integer) {
+      try {
+        return Integer.parseInt(newValue);
+      } catch (NumberFormatException ignored) {
+      }
+    }
+    return newValue;
   }
 
   private static String findFailedDependency(
@@ -596,7 +661,9 @@ public final class DefaultCloneEngine
     }
   }
 
-  private boolean writeTable(
+  private record WriteResult(boolean ok, Map<String, String> conflictRemaps) {}
+
+  private WriteResult writeTable(
       io.recordrelay.core.port.out.ContextProviderPort connector,
       ConnectionProfile target,
       String tableName,
@@ -614,9 +681,10 @@ public final class DefaultCloneEngine
         writer.write(applyFieldOverrides(record, tableName, overrides));
       }
       writer.flush();
-      LOG.debug("  wrote table={}  rows={}", tableName, records.size());
+      var remaps = writer.drainConflictRemaps();
+      LOG.debug("  wrote table={}  rows={}  remaps={}", tableName, records.size(), remaps.size());
       listener.onImportCompleted(tableName, records.size());
-      return true;
+      return new WriteResult(true, remaps);
     } catch (ConnectorException e) {
       var cause = rootCauseMessage(e);
       var msg = "Failed to write table " + tableName + ": " + e.getMessage() + cause;
@@ -624,7 +692,7 @@ public final class DefaultCloneEngine
       listener.onWarning(msg);
       LOG.warn("Write failed  table={}  reason={}  cause={}", tableName, e.getMessage(), cause, e);
       listener.onImportCompleted(tableName, 0);
-      return false;
+      return new WriteResult(false, Map.of());
     } catch (Exception e) {
       throw new CloneException("Unexpected error writing " + tableName, e);
     }

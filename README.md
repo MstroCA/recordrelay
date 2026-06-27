@@ -18,7 +18,13 @@
 | English | [User Guide](docs/user-guide.md) |
 | Türkçe | [Kullanıcı Kılavuzu](docs/user-guide.tr.md) |
 
-For CLI commands see [CLI Reference](docs/cli-reference.md). For architecture details see [Architecture](docs/architecture.md).
+| Reference | Link |
+|-----------|------|
+| CLI Commands | [CLI Reference](docs/cli-reference.md) |
+| Architecture | [Architecture](docs/architecture.md) |
+| Batch Tuning | [Batch Tuning](docs/batch-tuning.md) |
+| Masking DSL | [Mapping DSL](docs/mapping-dsl.md) |
+| Plugin Development | [Plugin Development](docs/plugin-development.md) |
 
 ---
 
@@ -107,6 +113,11 @@ rr diff --entity customer --id 12345 --from prod --to staging
 
 # Schema discovery
 rr discover --source prod
+
+# Start headless REST API server (for CI/CD pipelines)
+rr serve --port 8080
+# GET  /health  GET /presets  GET /syncs
+# POST /clone   POST /preset/run/{name}   POST /sync/run/{name}
 ```
 
 ---
@@ -136,7 +147,7 @@ rr discover --source prod
 └────────────────────────┬─────────────────────────────────────┘
                          │ implements ContextProviderPort (ServiceLoader)
 ┌────────────────────────▼─────────────────────────────────────┐
-│                  ADAPTERS (11 connectors)                    │
+│                  ADAPTERS (10 connectors)                    │
 │  SQL: postgres │ mysql │ sqlserver │ oracle │ sqlite         │
 │  NoSQL: mongodb │ cassandra │ redis │ elasticsearch          │
 │  File: CSV │ Excel │ JSON │ YAML │ Parquet                   │
@@ -157,7 +168,7 @@ Hexagonal Architecture (Ports & Adapters): the domain and core modules contain o
 | `recordrelay-graph-engine` | FK-based and heuristic relationship discovery |
 | `recordrelay-masking-engine` | Deterministic PII masking (EMAIL, PHONE, ADDRESS, IBAN, NATIONAL_ID) |
 | `recordrelay-package-engine` | `.rrpkg` v2.1 ZIP export and import |
-| `recordrelay-cli` | Picocli CLI commands + shared `QueryFlowModel` (SQL generation for the flow query builder) |
+| `recordrelay-cli` | Picocli CLI commands + shared `QueryFlowModel` (SQL generation for the flow query builder) + `rr serve` REST API server + `WebhookNotifier` |
 | `recordrelay-desktop` | JavaFX app — 14 screens: Clone Context, Environments, Connections, Discovery, Monitor, Graph View, Migration Drift, Row Count Diff, Query Analyzer, Connection Health, Masking Coverage, Clone Presets, Scheduled Sync, Help |
 | `recordrelay-plugin` | IntelliJ IDEA plugin — Clone, Connections, Discovery, Monitor, Query tabs |
 | `recordrelay-adapter-jdbc-base` | Abstract base for JDBC connectors |

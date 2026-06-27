@@ -38,6 +38,7 @@ jobs:
         run: ./gradlew :recordrelay-plugin:buildPlugin "-PreleaseVersion=${{ steps.ver.outputs.VERSION }}"
 
       - name: Sign plugin
+        if: ${{ secrets.CERTIFICATE_CHAIN != '' }}
         shell: bash
         env:
           CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}

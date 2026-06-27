@@ -61,8 +61,7 @@ class PostgreSqlConnectorIT {
               + "  email     VARCHAR(255), "
               + "  active    BOOLEAN DEFAULT true"
               + ")");
-      stmt.execute(
-          "CREATE TYPE status_type AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING')");
+      stmt.execute("CREATE TYPE status_type AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING')");
       stmt.execute(
           "CREATE TABLE IF NOT EXISTS orders ("
               + "  id      BIGINT OVERRIDING SYSTEM VALUE PRIMARY KEY, "

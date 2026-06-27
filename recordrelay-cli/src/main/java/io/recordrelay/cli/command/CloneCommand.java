@@ -25,6 +25,7 @@ import io.recordrelay.core.clone.domain.BugReport;
 import io.recordrelay.core.clone.domain.CloneJob;
 import io.recordrelay.core.clone.domain.CloneReport;
 import io.recordrelay.core.clone.domain.CloneRequest;
+import io.recordrelay.core.clone.domain.ConflictResolution;
 import io.recordrelay.core.clone.domain.ContextClonePlan;
 import io.recordrelay.core.clone.domain.FieldOverride;
 import io.recordrelay.core.clone.domain.FieldOverrideConfig;
@@ -171,6 +172,16 @@ public final class CloneCommand implements Callable<Integer> {
       description = "Primary key value for the corresponding --also-entity. Repeatable.",
       arity = "0..*")
   List<String> alsoIds;
+
+  // ── Conflict resolution ───────────────────────────────────────────────────
+
+  @Option(
+      names = {"--conflict"},
+      description =
+          "Conflict resolution strategy when target already has data."
+              + " One of: REGENERATE_IDENTITIES (default), SKIP_EXISTING,"
+              + " ISOLATE_NAMESPACE, FAIL_SAFE")
+  ConflictResolution conflict = ConflictResolution.REGENERATE_IDENTITIES;
 
   // ── Dry run ───────────────────────────────────────────────────────────────
 
@@ -432,7 +443,8 @@ public final class CloneCommand implements Callable<Integer> {
               tgtProfile,
               depth,
               p.masking(),
-              p.overrides());
+              p.overrides(),
+              conflict);
       report =
           DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener(p.printer()));
     } else {
@@ -441,6 +453,7 @@ public final class CloneCommand implements Callable<Integer> {
               .depth(depth)
               .masking(p.masking())
               .fieldOverrides(p.overrides())
+              .conflictResolution(conflict)
               .build();
       report =
           DefaultCloneEngine.createDefault()

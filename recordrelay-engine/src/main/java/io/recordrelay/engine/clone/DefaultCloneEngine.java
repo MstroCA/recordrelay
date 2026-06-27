@@ -181,12 +181,18 @@ public final class DefaultCloneEngine
       throws CloneException {
 
     long t0 = System.currentTimeMillis();
-    var graph = relationshipResolver.resolve(request.source(), request.rootTable());
-    listener.onRelationshipsDiscovered(graph.edgeCount());
-    LOG.info("  [1/5] graph resolved  edges={} elapsed={}ms", graph.edgeCount(), elapsed(t0));
+    var traversalGraph = relationshipResolver.resolve(request.source(), request.rootTable());
+    listener.onRelationshipsDiscovered(traversalGraph.edgeCount());
+    LOG.info(
+        "  [1/5] graph resolved  edges={} elapsed={}ms", traversalGraph.edgeCount(), elapsed(t0));
+
+    var fullSchemaGraph =
+        (relationshipResolver instanceof JdbcRelationshipResolver jdbcResolver)
+            ? jdbcResolver.resolveFullSchema(request.source())
+            : traversalGraph;
 
     long t1 = System.currentTimeMillis();
-    var rawRecords = bfsExtractRaw(request, graph, warnings, listener);
+    var rawRecords = bfsExtractRaw(request, traversalGraph, fullSchemaGraph, warnings, listener);
     int totalRaw = rawRecords.values().stream().mapToInt(List::size).sum();
     LOG.info(
         "  [2/5] extraction done  tables={} records={} elapsed={}ms",
@@ -205,12 +211,14 @@ public final class DefaultCloneEngine
         elapsed(t2));
 
     long t3 = System.currentTimeMillis();
-    var remappedRecords = FkRemapper.remap(rawRecords, identityMapping, graph, request.rootTable());
+    var contextFkGraph = buildContextFkGraph(request, rawRecords.keySet());
+    var remappedRecords =
+        FkRemapper.remap(rawRecords, identityMapping, contextFkGraph, request.rootTable());
     var finalRecords = applyMaskingAll(remappedRecords, request);
     LOG.info("  [4/5] fk-remap + masking done  elapsed={}ms", elapsed(t3));
 
     long t4 = System.currentTimeMillis();
-    writeToTarget(request, finalRecords, graph, listener, warnings);
+    writeToTarget(request, finalRecords, contextFkGraph, listener, warnings);
     int written = finalRecords.values().stream().mapToInt(List::size).sum();
     LOG.info(
         "  [5/5] write done  tables={} records={} warnings={} elapsed={}ms",
@@ -264,7 +272,8 @@ public final class DefaultCloneEngine
       allRecords.computeIfAbsent(node.tableName(), k -> new ArrayList<>()).addAll(records);
       enqueueOutgoing(
           graph, node, records, queue, new ArrayList<>(), new CloneProgressListener() {});
-      enqueueIncoming(graph, node, records, queue);
+      enqueueIncoming(
+          graph, node, records, queue); // dryRun uses same graph for both (accuracy secondary)
     }
 
     var entries =
@@ -298,7 +307,7 @@ public final class DefaultCloneEngine
     var request = job.request();
     var graph = relationshipResolver.resolve(request.source(), request.rootTable());
     var rawRecords =
-        bfsExtractRaw(request, graph, new ArrayList<>(), new CloneProgressListener() {});
+        bfsExtractRaw(request, graph, graph, new ArrayList<>(), new CloneProgressListener() {});
 
     // Allocate identities and remap FKs for the export package.
     // For export we allocate from 0 (no live target), so IDs are relative offsets.
@@ -343,14 +352,15 @@ public final class DefaultCloneEngine
 
   private Map<String, List<DataRecord>> bfsExtractRaw(
       CloneRequest request,
-      RelationshipGraph graph,
+      RelationshipGraph traversalGraph,
+      RelationshipGraph fullSchemaGraph,
       List<String> warnings,
       CloneProgressListener listener)
       throws CloneException {
     var allRecords = new LinkedHashMap<String, List<DataRecord>>();
     var visited = new HashSet<String>();
     var queue = new ArrayDeque<TraversalNode>();
-    String rootPkCol = rootPkColumn(graph, request.rootTable());
+    String rootPkCol = rootPkColumn(traversalGraph, request.rootTable());
     queue.add(new TraversalNode(request.rootTable(), rootPkCol, request.rootId(), 0));
 
     while (!queue.isEmpty()) {
@@ -359,14 +369,16 @@ public final class DefaultCloneEngine
         continue;
       }
       visited.add(node.visitKey());
-      processNode(request, graph, node, allRecords, queue, warnings, listener);
+      processNode(
+          request, traversalGraph, fullSchemaGraph, node, allRecords, queue, warnings, listener);
     }
     return allRecords;
   }
 
   private void processNode(
       CloneRequest request,
-      RelationshipGraph graph,
+      RelationshipGraph traversalGraph,
+      RelationshipGraph fullSchemaGraph,
       TraversalNode node,
       Map<String, List<DataRecord>> allRecords,
       ArrayDeque<TraversalNode> queue,
@@ -380,8 +392,11 @@ public final class DefaultCloneEngine
     if (node.depth() == 0) {
       listener.onRootRecordLoaded(node.tableName(), node.idValue());
     }
-    enqueueOutgoing(graph, node, records, queue, warnings, listener);
-    enqueueIncoming(graph, node, records, queue);
+    // Outgoing edges (this table's FK deps) use the full-schema graph so referenced rows
+    // outside the root-centric traversal graph are also fetched (e.g. users.account_id → accounts).
+    enqueueOutgoing(fullSchemaGraph, node, records, queue, warnings, listener);
+    // Incoming edges (child records) use the conservative traversal graph to avoid scope creep.
+    enqueueIncoming(traversalGraph, node, records, queue);
   }
 
   private void enqueueOutgoing(
@@ -433,6 +448,34 @@ public final class DefaultCloneEngine
   }
 
   // ── private helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * Builds a FK graph limited to edges where both the source and target tables are in {@code
+   * contextTables}. Used only for FK remapping — not for BFS traversal — so that cross-table
+   * columns like {@code orders.created_by → users} are correctly remapped without widening the
+   * traversal scope.
+   */
+  private RelationshipGraph buildContextFkGraph(CloneRequest request, Set<String> contextTables)
+      throws CloneException {
+    if (relationshipResolver instanceof JdbcRelationshipResolver jdbcResolver) {
+      return jdbcResolver.resolveContextFks(request.source(), contextTables);
+    }
+    // Fallback for non-JDBC resolvers: re-resolve for each table and merge edges
+    var builder = RelationshipGraph.builder();
+    for (var table : contextTables) {
+      builder.addNode(table);
+    }
+    for (var table : contextTables) {
+      var g = relationshipResolver.resolve(request.source(), table);
+      for (var edge : g.edges()) {
+        if (contextTables.contains(edge.fromNode().tableName())
+            && contextTables.contains(edge.toNode().tableName())) {
+          builder.addEdge(edge);
+        }
+      }
+    }
+    return builder.build();
+  }
 
   private List<DataRecord> fetchNode(
       CloneRequest request, TraversalNode node, List<String> warnings) throws CloneException {

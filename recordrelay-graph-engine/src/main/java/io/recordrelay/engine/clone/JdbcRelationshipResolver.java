@@ -120,6 +120,9 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
         var fromColumn = rs.getString("from_column");
         var toTable = rs.getString("to_table");
         var toColumn = rs.getString("to_column");
+        if (!fromTable.equalsIgnoreCase(rootTable) && !toTable.equalsIgnoreCase(rootTable)) {
+          continue;
+        }
         var edge =
             new RelationshipEdge(
                 new RelationshipNode(fromTable.toLowerCase(Locale.ROOT)),
@@ -135,6 +138,86 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
       }
     }
     return knownKeys;
+  }
+
+  /**
+   * Returns a {@link RelationshipGraph} containing only the declared FK edges where BOTH the source
+   * table and the target table are members of {@code tableNames}. Used to build the remapping graph
+   * after BFS extraction so that cross-table FK columns (e.g. {@code orders.created_by → users})
+   * are correctly remapped even though those edges are not part of the conservative traversal
+   * graph.
+   */
+  public RelationshipGraph resolveContextFks(
+      ConnectionProfile profile, java.util.Set<String> tableNames) throws CloneException {
+    ensurePool(profile);
+    var builder = RelationshipGraph.builder();
+    for (var t : tableNames) {
+      builder.addNode(t);
+    }
+    try (Connection conn = dataSource.getConnection();
+        var stmt = conn.prepareStatement(FK_QUERY);
+        var rs = stmt.executeQuery()) {
+      while (rs.next()) {
+        var fromTable = rs.getString("from_table").toLowerCase(Locale.ROOT);
+        var fromColumn = rs.getString("from_column").toLowerCase(Locale.ROOT);
+        var toTable = rs.getString("to_table").toLowerCase(Locale.ROOT);
+        var toColumn = rs.getString("to_column").toLowerCase(Locale.ROOT);
+        if (!tableNames.contains(fromTable) || !tableNames.contains(toTable)) {
+          continue;
+        }
+        builder.addEdge(
+            new RelationshipEdge(
+                new RelationshipNode(fromTable),
+                fromColumn,
+                new RelationshipNode(toTable),
+                toColumn,
+                RelationshipSource.FOREIGN_KEY,
+                1.0));
+      }
+    } catch (SQLException e) {
+      LOG.warn(
+          "Could not build context FK graph; falling back to traversal graph. Cause: {}",
+          e.getMessage());
+      return resolve(profile, tableNames.iterator().next());
+    }
+    return builder.build();
+  }
+
+  /**
+   * Returns a {@link RelationshipGraph} containing ALL declared FK edges in the database schema,
+   * without any table filter. Used for outgoing-FK traversal during BFS so that FK dependencies
+   * outside the root-centric traversal graph (e.g. {@code users.account_id → accounts}) are also
+   * fetched, keeping referential integrity at write time.
+   */
+  public RelationshipGraph resolveFullSchema(ConnectionProfile profile) throws CloneException {
+    ensurePool(profile);
+    var builder = RelationshipGraph.builder();
+    try (Connection conn = dataSource.getConnection();
+        var stmt = conn.prepareStatement(FK_QUERY);
+        var rs = stmt.executeQuery()) {
+      while (rs.next()) {
+        var fromTable = rs.getString("from_table").toLowerCase(Locale.ROOT);
+        var fromColumn = rs.getString("from_column").toLowerCase(Locale.ROOT);
+        var toTable = rs.getString("to_table").toLowerCase(Locale.ROOT);
+        var toColumn = rs.getString("to_column").toLowerCase(Locale.ROOT);
+        builder.addNode(fromTable);
+        builder.addNode(toTable);
+        builder.addEdge(
+            new RelationshipEdge(
+                new RelationshipNode(fromTable),
+                fromColumn,
+                new RelationshipNode(toTable),
+                toColumn,
+                RelationshipSource.FOREIGN_KEY,
+                1.0));
+      }
+    } catch (SQLException e) {
+      LOG.warn(
+          "Could not resolve full schema FKs; falling back to root-table graph. Cause: {}",
+          e.getMessage());
+      return resolve(profile, "");
+    }
+    return builder.build();
   }
 
   // ── Logical FK discovery (schema-driven, no hardcoded patterns) ───────────

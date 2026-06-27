@@ -219,6 +219,7 @@ public final class CloneContextPanel extends JPanel {
                           case SKIP_EXISTING -> "Skip existing rows";
                           case ISOLATE_NAMESPACE -> "Isolate namespace";
                           case FAIL_SAFE -> "Fail if target has data";
+                          default -> v.name();
                         })));
     conflictRow.add(cmbConflict);
     panel.add(conflictRow);

@@ -120,9 +120,6 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
         var fromColumn = rs.getString("from_column");
         var toTable = rs.getString("to_table");
         var toColumn = rs.getString("to_column");
-        if (!fromTable.equalsIgnoreCase(rootTable) && !toTable.equalsIgnoreCase(rootTable)) {
-          continue;
-        }
         var edge =
             new RelationshipEdge(
                 new RelationshipNode(fromTable.toLowerCase(Locale.ROOT)),

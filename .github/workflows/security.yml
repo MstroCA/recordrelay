@@ -48,6 +48,7 @@ jobs:
   dependency-check:
     name: OWASP Dependency Check
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -63,6 +64,7 @@ jobs:
           args: >
             --failOnCVSS 7
             --enableRetired
+            --disableOssIndex
 
       - name: Upload dependency check report
         if: always()

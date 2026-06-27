@@ -30,11 +30,13 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link DefaultCloneEngine#topoSortForWrite}.
  *
  * <p>Verifies that referenced tables (FK targets) are placed before tables that reference them,
- * matching the constraint that the referenced row must exist before the referencing row is inserted.
+ * matching the constraint that the referenced row must exist before the referencing row is
+ * inserted.
  */
 class TopoSortTest {
 
-  private static RelationshipEdge fk(String fromTable, String fromCol, String toTable, String toCol) {
+  private static RelationshipEdge fk(
+      String fromTable, String fromCol, String toTable, String toCol) {
     return new RelationshipEdge(
         new RelationshipNode(fromTable),
         fromCol,

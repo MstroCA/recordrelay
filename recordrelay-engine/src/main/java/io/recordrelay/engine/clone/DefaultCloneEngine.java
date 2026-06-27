@@ -504,7 +504,7 @@ public final class DefaultCloneEngine
     }
     for (var edge : graph.edges()) {
       var from = edge.fromNode().tableName(); // table with FK column
-      var to = edge.toNode().tableName();     // referenced table (must be written first)
+      var to = edge.toNode().tableName(); // referenced table (must be written first)
       if (inDegree.containsKey(from) && inDegree.containsKey(to) && !from.equals(to)) {
         inDegree.merge(from, 1, Integer::sum);
       }
@@ -534,7 +534,8 @@ public final class DefaultCloneEngine
     for (var t : tables) {
       if (!result.contains(t)) {
         result.add(t);
-        LOG.warn("topoSort: table '{}' could not be ordered (cycle or missing FK edge); appending", t);
+        LOG.warn(
+            "topoSort: table '{}' could not be ordered (cycle or missing FK edge); appending", t);
       }
     }
     return result;

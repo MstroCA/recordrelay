@@ -480,9 +480,17 @@ public final class DefaultCloneEngine
   private List<DataRecord> fetchNode(
       CloneRequest request, TraversalNode node, List<String> warnings) throws CloneException {
     if (node.depth() == 0) {
-      return recordFetcher
-          .fetchById(request.source(), node.tableName(), node.idColumn(), node.idValue())
-          .map(List::of)
+      var opt =
+          request.asOf() != null
+              ? recordFetcher.fetchByIdAsOf(
+                  request.source(),
+                  node.tableName(),
+                  node.idColumn(),
+                  node.idValue(),
+                  request.asOf())
+              : recordFetcher.fetchById(
+                  request.source(), node.tableName(), node.idColumn(), node.idValue());
+      return opt.map(List::of)
           .orElseGet(
               () -> {
                 warnings.add("Root record not found: " + node.tableName() + ":" + node.idValue());

@@ -18,7 +18,7 @@ package io.recordrelay.core.clone.domain;
 /**
  * How a {@link RelationshipEdge} was discovered.
  *
- * <p>Priority order for resolution: FOREIGN_KEY → UNIQUE_KEY → HEURISTIC.
+ * <p>Priority order for resolution: FOREIGN_KEY → UNIQUE_KEY → HEURISTIC → MANUAL.
  */
 public enum RelationshipSource {
   /** Discovered from a database-level foreign key constraint (highest confidence). */
@@ -26,5 +26,7 @@ public enum RelationshipSource {
   /** Inferred from unique key or index analysis (medium confidence). */
   UNIQUE_KEY,
   /** Inferred from column naming conventions (e.g., {@code customer_id}) (lowest confidence). */
-  HEURISTIC
+  HEURISTIC,
+  /** Defined manually by the user via the Graph Editor. */
+  MANUAL
 }

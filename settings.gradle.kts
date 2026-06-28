@@ -20,6 +20,7 @@ include(
     "recordrelay-graph-engine",
     "recordrelay-masking-engine",
     "recordrelay-package-engine",
+    "recordrelay-synthetic-engine",
     "recordrelay-engine",
 )
 
@@ -37,6 +38,9 @@ include(
     "recordrelay-adapter-elasticsearch",
     "recordrelay-adapter-file",
     "recordrelay-adapter-template",
+    "recordrelay-adapter-snowflake",
+    "recordrelay-adapter-dynamodb",
+    "recordrelay-adapter-bigquery",
 )
 
 // ── Applications ──────────────────────────────────────────────────────────────

@@ -42,10 +42,12 @@
             </VBox>
 
             <!-- Discover -->
-            <VBox>
+            <VBox spacing="6">
                 <padding><Insets top="0" right="16" bottom="16" left="16"/></padding>
                 <Button fx:id="btnDiscover" text="%graph.btn.discover" onAction="#onDiscover"
                         maxWidth="Infinity" styleClass="accent-btn"/>
+                <Button fx:id="btnEdit" text="%graph.btn.edit" onAction="#onEditMode"
+                        maxWidth="Infinity" styleClass="graph-secondary-btn"/>
             </VBox>
 
             <Separator/>
@@ -77,6 +79,10 @@
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <Label text="- - -" style="-fx-text-fill: #A0AEC0; -fx-font-size: 12px;"/>
                     <Label text="%graph.legend.heuristic" styleClass="hint-label"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="——" style="-fx-text-fill: #38A169; -fx-font-size: 15px; -fx-font-weight: bold;"/>
+                    <Label text="%graph.legend.manual" styleClass="hint-label"/>
                 </HBox>
             </VBox>
 

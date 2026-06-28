@@ -18,6 +18,7 @@ package io.recordrelay.core.clone.port.out;
 import io.recordrelay.core.clone.exception.CloneException;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,4 +36,16 @@ public interface RecordFetcherPort {
   List<DataRecord> fetchByForeignKey(
       ConnectionProfile source, String tableName, String fkColumn, String fkValue)
       throws CloneException;
+
+  /**
+   * Fetches the root record as it existed at {@code asOf}.
+   *
+   * <p>The default implementation ignores the timestamp and delegates to {@link #fetchById}.
+   * JDBC-backed implementations override this to query an audit table.
+   */
+  default Optional<DataRecord> fetchByIdAsOf(
+      ConnectionProfile source, String tableName, String idColumn, String idValue, Instant asOf)
+      throws CloneException {
+    return fetchById(source, tableName, idColumn, idValue);
+  }
 }

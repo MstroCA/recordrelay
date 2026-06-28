@@ -38,6 +38,9 @@ import io.recordrelay.engine.clone.BuiltinEntityRegistry;
 import io.recordrelay.engine.clone.DefaultCloneEngine;
 import io.recordrelay.engine.clone.DefaultContextCloneEngine;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -199,6 +202,17 @@ public final class CloneCommand implements Callable<Integer> {
           "After cloning, start a fresh Docker container for the target DB type,"
               + " clone into it, and print the connection string.")
   boolean testcontainer;
+
+  // ── Point-in-time ─────────────────────────────────────────────────────────
+
+  @Option(
+      names = {"--at"},
+      description =
+          "Point-in-time snapshot timestamp (ISO-8601, e.g. 2026-06-01T10:00:00Z or"
+              + " 2026-06-01T10:00). Fetches the root record as it existed at this instant"
+              + " via an audit table (<table>_audit). Falls back to current state if no"
+              + " audit trail is found.")
+  String asOf;
 
   // ── Webhook notification ──────────────────────────────────────────────────
 
@@ -454,6 +468,7 @@ public final class CloneCommand implements Callable<Integer> {
               .masking(p.masking())
               .fieldOverrides(p.overrides())
               .conflictResolution(conflict)
+              .asOf(parseAsOf())
               .build();
       report =
           DefaultCloneEngine.createDefault()
@@ -570,6 +585,20 @@ public final class CloneCommand implements Callable<Integer> {
         printer.printLine("  WARN: " + message);
       }
     };
+  }
+
+  private Instant parseAsOf() {
+    if (asOf == null) return null;
+    try {
+      return Instant.parse(asOf);
+    } catch (Exception e) {
+      try {
+        return LocalDateTime.parse(asOf).toInstant(ZoneOffset.UTC);
+      } catch (Exception ex) {
+        throw new picocli.CommandLine.ParameterException(
+            new picocli.CommandLine(this), "--at: invalid timestamp '" + asOf + "'");
+      }
+    }
   }
 
   private void printReport(CloneReport report) throws Exception {

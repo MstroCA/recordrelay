@@ -127,6 +127,9 @@ dependencies {
     runtimeOnly(project(":recordrelay-adapter-redis"))
     runtimeOnly(project(":recordrelay-adapter-elasticsearch"))
     runtimeOnly(project(":recordrelay-adapter-file"))
+    runtimeOnly(project(":recordrelay-adapter-snowflake"))
+    runtimeOnly(project(":recordrelay-adapter-dynamodb"))
+    runtimeOnly(project(":recordrelay-adapter-bigquery"))
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)

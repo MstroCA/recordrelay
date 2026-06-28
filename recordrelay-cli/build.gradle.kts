@@ -20,6 +20,7 @@ dependencies {
     runtimeOnly(libs.logback.classic)
 
     implementation(project(":recordrelay-engine"))
+    implementation(project(":recordrelay-synthetic-engine"))
 
     // Connectors discovered at runtime via ServiceLoader
     runtimeOnly(project(":recordrelay-adapter-postgres"))
@@ -32,6 +33,9 @@ dependencies {
     runtimeOnly(project(":recordrelay-adapter-redis"))
     runtimeOnly(project(":recordrelay-adapter-elasticsearch"))
     runtimeOnly(project(":recordrelay-adapter-file"))
+    runtimeOnly(project(":recordrelay-adapter-snowflake"))
+    runtimeOnly(project(":recordrelay-adapter-dynamodb"))
+    runtimeOnly(project(":recordrelay-adapter-bigquery"))
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)

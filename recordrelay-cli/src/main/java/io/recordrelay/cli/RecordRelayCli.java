@@ -24,12 +24,14 @@ import io.recordrelay.cli.command.EnvCommand;
 import io.recordrelay.cli.command.ExportContextCommand;
 import io.recordrelay.cli.command.ImportContextCommand;
 import io.recordrelay.cli.command.MaskCommand;
+import io.recordrelay.cli.command.PkgCommand;
 import io.recordrelay.cli.command.PresetCommand;
 import io.recordrelay.cli.command.QueryCommand;
 import io.recordrelay.cli.command.ReplayCommand;
 import io.recordrelay.cli.command.ServeCommand;
 import io.recordrelay.cli.command.StatusCommand;
 import io.recordrelay.cli.command.SyncCommand;
+import io.recordrelay.cli.command.SyntheticCommand;
 import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.output.OutputMode;
 import io.recordrelay.cli.output.Printer;
@@ -71,7 +73,9 @@ import picocli.CommandLine.Option;
       SyncCommand.class,
       PresetCommand.class,
       MaskCommand.class,
+      PkgCommand.class,
       ServeCommand.class,
+      SyntheticCommand.class,
       // ── Discovery & analysis (secondary) ──
       DiscoverCommand.class,
       AnalyzeCommand.class,

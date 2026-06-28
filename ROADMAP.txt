@@ -10,38 +10,25 @@ YAPILDI:
   ✅ 12. Docker / Testcontainers         — CLI (rr clone --testcontainer), DockerLauncher engine
   ✅ 13. Webhook Bildirimleri            — CLI (--webhook <url>), sync --webhook, WebhookNotifier engine
   ✅ 14. REST API / Server Modu          — CLI (rr serve --port 8080), 6 endpoint, JDK HttpServer
+  ✅  8. Package Registry                 — CLI (rr pkg push/pull/list/serve), Local + HTTP backend
+  ✅ 11. Sentetik Veri Üretimi            — CLI (rr synth --rows N --output csv / --target conn), recordrelay-synthetic-engine
+  ✅ 15. Point-in-Time Clone              — CLI (rr clone --at "2026-06-01T10:00"), audit tablo stratejisi
+  ✅ 16. İlişki Graf Editörü             — Drag & drop, collapse/expand, manuel FK çizme, ~/.recordrelay/graph-<conn>.json
 
 YAPILACAKLAR:
 
-  5. AWS DynamoDB Adaptörü
+  ✅  5. AWS DynamoDB Adaptörü
      recordrelay-adapter-dynamodb modülü.
      Serverless uygulamalar için kritik eksikti.
 
-  6. Snowflake Adaptörü
+  ✅  6. Snowflake Adaptörü
      recordrelay-adapter-snowflake.
      Data warehouse sorgulama ve export için.
 
-  7. BigQuery Adaptörü
+  ✅  7. BigQuery Adaptörü
      recordrelay-adapter-bigquery.
      GCP ekosistemi kullanan takımlar için.
-
-  8. Package Registry (.rrpkg sunucusu)
-     Takım içi veri paketi paylaşımı: rr push / rr pull.
-     S3, GCS veya basit HTTP server backend'i.
 
   9. VS Code Eklentisi
      Mevcut IntelliJ plugin'inin VS Code karşılığı.
      TypeScript + vscode API ile Clone, Discovery, Monitor panelleri.
-
- 11. Sentetik Veri Üretimi
-     Prod erişimi olmadan gerçekçi sahte veri üret (şema + istatistikten).
-     recordrelay-synthetic-engine modülü.
-
- 15. Point-in-Time Clone
-     Belirli bir timestamp'teki verinin klonlanması.
-     rr clone --entity customer --id 123 --from prod --target local --at "2026-06-01T10:00"
-     CDC veya audit tablosu gerektiriyor.
-
- 16. İlişki Graf Editörü
-     Graph View şu an read-only. FK veya heuristic yakalamadığı ilişkileri
-     kullanıcının elle çizip kaydedebileceği edit modu.

@@ -25,8 +25,12 @@ public enum DatabaseType {
   SQLSERVER,
   SQLITE,
   H2,
+  // Data Warehouses
+  SNOWFLAKE,
+  BIGQUERY,
   // NoSQL
   MONGODB,
+  DYNAMODB,
   CASSANDRA,
   REDIS,
   ELASTICSEARCH,

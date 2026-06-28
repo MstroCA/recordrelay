@@ -55,21 +55,25 @@ class CloneRequestTest {
   @Test
   void nullMaskingDefaultsToNoneConfig() {
     var request =
-        new CloneRequest(profile("src"), profile("tgt"), "customers", "42", 3, null, null, null);
+        new CloneRequest(
+            profile("src"), profile("tgt"), "customers", "42", 3, null, null, null, null);
     assertThat(request.masking().isEmpty()).isTrue();
   }
 
   @Test
   void nullConflictResolutionDefaultsToRegenerateIdentities() {
     var request =
-        new CloneRequest(profile("src"), profile("tgt"), "customers", "42", 3, null, null, null);
+        new CloneRequest(
+            profile("src"), profile("tgt"), "customers", "42", 3, null, null, null, null);
     assertThat(request.conflictResolution()).isEqualTo(ConflictResolution.REGENERATE_IDENTITIES);
   }
 
   @Test
   void blankRootTableThrowsException() {
     assertThatThrownBy(
-            () -> new CloneRequest(profile("src"), profile("tgt"), "  ", "42", 3, null, null, null))
+            () ->
+                new CloneRequest(
+                    profile("src"), profile("tgt"), "  ", "42", 3, null, null, null, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("rootTable");
   }
@@ -79,7 +83,7 @@ class CloneRequestTest {
     assertThatThrownBy(
             () ->
                 new CloneRequest(
-                    profile("src"), profile("tgt"), "customers", "  ", 3, null, null, null))
+                    profile("src"), profile("tgt"), "customers", "  ", 3, null, null, null, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("rootId");
   }
@@ -89,7 +93,7 @@ class CloneRequestTest {
     assertThatThrownBy(
             () ->
                 new CloneRequest(
-                    profile("src"), profile("tgt"), "customers", "42", 0, null, null, null))
+                    profile("src"), profile("tgt"), "customers", "42", 0, null, null, null, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("depth");
   }
@@ -104,6 +108,7 @@ class CloneRequestTest {
                     "customers",
                     "42",
                     CloneRequest.MAX_DEPTH + 1,
+                    null,
                     null,
                     null,
                     null))

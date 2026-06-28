@@ -16,6 +16,7 @@
 package io.recordrelay.core.clone.domain;
 
 import io.recordrelay.core.domain.ConnectionProfile;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -32,7 +33,8 @@ public record CloneRequest(
     int depth,
     MaskingConfig masking,
     ConflictResolution conflictResolution,
-    FieldOverrideConfig fieldOverrides) {
+    FieldOverrideConfig fieldOverrides,
+    Instant asOf) {
 
   /** Default traversal depth when none is specified. */
   public static final int DEFAULT_DEPTH = 3;
@@ -78,6 +80,7 @@ public record CloneRequest(
     private MaskingConfig masking = MaskingConfig.none();
     private ConflictResolution conflictResolution = ConflictResolution.REGENERATE_IDENTITIES;
     private FieldOverrideConfig fieldOverrides = FieldOverrideConfig.none();
+    private Instant asOf = null;
 
     private Builder(
         ConnectionProfile source, ConnectionProfile target, String rootTable, String rootId) {
@@ -134,13 +137,34 @@ public record CloneRequest(
     }
 
     /**
+     * Sets a point-in-time snapshot timestamp. When set, the engine attempts to retrieve the root
+     * record as it existed at this instant (via an audit table), falling back to the current record
+     * if no audit trail is available.
+     *
+     * @param asOf the target timestamp; {@code null} means current state
+     * @return this builder
+     */
+    public Builder asOf(Instant asOf) {
+      this.asOf = asOf;
+      return this;
+    }
+
+    /**
      * Builds and returns an immutable {@link CloneRequest}.
      *
      * @return the constructed request
      */
     public CloneRequest build() {
       return new CloneRequest(
-          source, target, rootTable, rootId, depth, masking, conflictResolution, fieldOverrides);
+          source,
+          target,
+          rootTable,
+          rootId,
+          depth,
+          masking,
+          conflictResolution,
+          fieldOverrides,
+          asOf);
     }
   }
 }

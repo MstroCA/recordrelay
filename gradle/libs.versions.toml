@@ -16,6 +16,11 @@ postgresql = "42.7.3"
 mongodb-driver = "5.1.1"
 hikaricp = "5.1.0"
 
+# Data Warehouse connectors
+snowflake-jdbc = "3.18.0"
+aws-sdk = "2.26.12"
+google-cloud-bigquery = "2.41.0"
+
 # New SQL connectors
 mysql-connector = "9.1.0"
 mssql-jdbc = "12.8.1.jre11"
@@ -79,6 +84,13 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 mongodb-driver-sync = { module = "org.mongodb:mongodb-driver-sync", version.ref = "mongodb-driver" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
+
+# Data Warehouse connector drivers
+snowflake-jdbc = { module = "net.snowflake:snowflake-jdbc", version.ref = "snowflake-jdbc" }
+aws-sdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "aws-sdk" }
+aws-dynamodb = { module = "software.amazon.awssdk:dynamodb", version.ref = "aws-sdk" }
+aws-auth = { module = "software.amazon.awssdk:auth", version.ref = "aws-sdk" }
+google-cloud-bigquery = { module = "com.google.cloud:google-cloud-bigquery", version.ref = "google-cloud-bigquery" }
 
 # New SQL connector drivers
 mysql-connector-j = { module = "com.mysql:mysql-connector-j", version.ref = "mysql-connector" }

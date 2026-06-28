@@ -24,6 +24,7 @@ import io.recordrelay.core.domain.DataRecord;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,6 +63,50 @@ public final class JdbcRecordFetcher implements RecordFetcherPort, AutoCloseable
       throw new CloneException(
           "fetchById failed for " + tableName + "." + idColumn + "=" + idValue, e);
     }
+  }
+
+  /**
+   * Fetches the root record as it existed at {@code asOf} by querying {@code <table>_audit}.
+   *
+   * <p>The audit table is expected to have a {@code changed_at} TIMESTAMP column and an {@code
+   * operation} column (INSERT/UPDATE/DELETE). If the audit table does not exist or contains no
+   * matching row, falls back to {@link #fetchById}.
+   */
+  public Optional<DataRecord> fetchByIdAsOf(
+      ConnectionProfile profile, String tableName, String idColumn, String idValue, Instant asOf)
+      throws CloneException {
+    var auditTable = tableName + "_audit";
+    var auditSql =
+        "SELECT * FROM "
+            + quoteName(auditTable)
+            + " WHERE "
+            + quoteName(idColumn)
+            + " = ?"
+            + " AND changed_at <= ?"
+            + " AND (operation = 'INSERT' OR operation = 'UPDATE')"
+            + " ORDER BY changed_at DESC LIMIT 1";
+    try (var conn = pool(profile).getConnection()) {
+      try (var stmt = conn.prepareStatement(auditSql)) {
+        setParam(stmt, 1, idValue);
+        stmt.setTimestamp(2, java.sql.Timestamp.from(asOf));
+        try (var rs = stmt.executeQuery()) {
+          if (rs.next()) {
+            return Optional.of(mapRow(rs));
+          }
+        }
+      } catch (SQLException ignored) {
+        // Audit table absent or schema mismatch — fall through to current record
+      }
+    } catch (SQLException e) {
+      throw new CloneException("Connection failed for point-in-time fetch on " + tableName, e);
+    }
+    LOG.warn(
+        "No audit trail found for {}.{}={} at {}; falling back to current record",
+        tableName,
+        idColumn,
+        idValue,
+        asOf);
+    return fetchById(profile, tableName, idColumn, idValue);
   }
 
   @Override

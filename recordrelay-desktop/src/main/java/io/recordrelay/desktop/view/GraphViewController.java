@@ -17,23 +17,34 @@ package io.recordrelay.desktop.view;
 
 import io.recordrelay.cli.config.ConfigStore;
 import io.recordrelay.cli.engine.ConnProfileResolver;
+import io.recordrelay.core.clone.domain.RelationshipEdge;
 import io.recordrelay.core.clone.domain.RelationshipGraph;
+import io.recordrelay.core.clone.domain.RelationshipNode;
+import io.recordrelay.core.clone.domain.RelationshipSource;
 import io.recordrelay.core.spi.ConnectorRegistry;
+import io.recordrelay.desktop.graph.CustomRelationshipStore;
 import io.recordrelay.engine.clone.JdbcRelationshipResolver;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
+import javafx.scene.control.TextField;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Controller for the Graph View screen. Discovers and renders ERD-style table relationship graphs.
+ * Controller for the Graph View screen. Discovers and renders ERD-style table relationship graphs,
+ * and manages manually drawn relationships via the edit mode.
  */
 public final class GraphViewController implements Refreshable {
 
@@ -42,6 +53,7 @@ public final class GraphViewController implements Refreshable {
   @FXML private ComboBox<String> cboSource;
   @FXML private ComboBox<String> cboRootTable;
   @FXML private Button btnDiscover;
+  @FXML private Button btnEdit;
   @FXML private Label lblStatus;
   @FXML private ScrollPane graphScroll;
   @FXML private RelationshipGraphCanvas graphCanvas;
@@ -49,6 +61,13 @@ public final class GraphViewController implements Refreshable {
 
   private ConfigStore configStore;
   private ConnProfileResolver resolver;
+  private final CustomRelationshipStore customStore = new CustomRelationshipStore();
+
+  // Last discovered graph — kept so edit mode can re-render after adding/removing edges
+  private RelationshipGraph discoveredGraph;
+  private String currentConnName;
+  private String currentRootTable;
+  private boolean editMode = false;
 
   @FXML
   void initialize() {
@@ -63,7 +82,6 @@ public final class GraphViewController implements Refreshable {
 
     sldZoom.valueProperty().addListener((obs, old, val) -> graphCanvas.setZoom(val.doubleValue()));
 
-    // Ctrl+scroll to zoom
     graphScroll.addEventFilter(
         ScrollEvent.SCROLL,
         e -> {
@@ -75,6 +93,9 @@ public final class GraphViewController implements Refreshable {
             e.consume();
           }
         });
+
+    graphCanvas.setOnEdgeRequested(this::handleEdgeRequested);
+    graphCanvas.setOnEdgeDeleteRequested(this::handleEdgeDeleteRequested);
 
     loadConnections();
     cboSource.setOnAction(e -> loadTables());
@@ -99,6 +120,22 @@ public final class GraphViewController implements Refreshable {
   }
 
   @FXML
+  void onEditMode() {
+    editMode = !editMode;
+    graphCanvas.setEditMode(editMode);
+    btnEdit.setText(editMode ? "✓ Edit Mode" : "Edit Relationships");
+    if (editMode) {
+      lblStatus.setText(
+          "Edit mode: click a node to select source, then click another to draw a FK.");
+    } else if (discoveredGraph != null) {
+      lblStatus.setText(
+          String.format(
+              "Graph ready — %d tables, %d relationships",
+              discoveredGraph.nodeCount(), currentGraphEdgeCount()));
+    }
+  }
+
+  @FXML
   void onZoomIn() {
     sldZoom.setValue(Math.min(2.5, sldZoom.getValue() + 0.15));
   }
@@ -110,17 +147,13 @@ public final class GraphViewController implements Refreshable {
 
   @FXML
   void onFitToScreen() {
-    if (!graphCanvas.hasContent()) {
-      return;
-    }
+    if (!graphCanvas.hasContent()) return;
     Platform.runLater(
         () -> {
           var vp = graphScroll.getViewportBounds();
           double cW = graphCanvas.getPrefWidth();
           double cH = graphCanvas.getPrefHeight();
-          if (cW <= 0 || cH <= 0) {
-            return;
-          }
+          if (cW <= 0 || cH <= 0) return;
           double zoom = Math.min(vp.getWidth() / cW, vp.getHeight() / cH) * 0.9;
           zoom = Math.max(0.25, Math.min(2.5, zoom));
           graphCanvas.setZoom(zoom);
@@ -129,6 +162,8 @@ public final class GraphViewController implements Refreshable {
           graphScroll.setVvalue(0.5);
         });
   }
+
+  // ── Connections & table loading ───────────────────────────────────────────
 
   private void loadConnections() {
     try {
@@ -146,9 +181,7 @@ public final class GraphViewController implements Refreshable {
 
   private void loadTables() {
     var connName = cboSource.getValue();
-    if (connName == null) {
-      return;
-    }
+    if (connName == null) return;
     new Thread(
             () -> {
               try {
@@ -161,9 +194,7 @@ public final class GraphViewController implements Refreshable {
                 Platform.runLater(
                     () -> {
                       cboRootTable.setItems(FXCollections.observableArrayList(tableNames));
-                      if (!tableNames.isEmpty()) {
-                        cboRootTable.setValue(tableNames.get(0));
-                      }
+                      if (!tableNames.isEmpty()) cboRootTable.setValue(tableNames.get(0));
                     });
               } catch (Exception e) {
                 Platform.runLater(() -> lblStatus.setText("Table load failed: " + e.getMessage()));
@@ -173,6 +204,8 @@ public final class GraphViewController implements Refreshable {
         .start();
   }
 
+  // ── Discovery ─────────────────────────────────────────────────────────────
+
   private void discoverGraph(String connName, String rootTable) {
     try {
       var profile = resolver.resolve(connName);
@@ -180,14 +213,18 @@ public final class GraphViewController implements Refreshable {
       try (var graphResolver = new JdbcRelationshipResolver()) {
         graph = graphResolver.resolve(profile, rootTable);
       }
-      var finalGraph = graph;
+      var merged = mergeCustomEdges(graph, connName);
       Platform.runLater(
           () -> {
-            graphCanvas.render(finalGraph, rootTable);
+            discoveredGraph = graph;
+            currentConnName = connName;
+            currentRootTable = rootTable;
+            graphCanvas.render(merged, rootTable);
+            graphCanvas.setEditMode(editMode);
             lblStatus.setText(
                 String.format(
                     "Graph ready — %d tables, %d relationships",
-                    finalGraph.nodeCount(), finalGraph.edgeCount()));
+                    merged.nodeCount(), merged.edgeCount()));
             btnDiscover.setDisable(false);
             onFitToScreen();
           });
@@ -199,5 +236,109 @@ public final class GraphViewController implements Refreshable {
             btnDiscover.setDisable(false);
           });
     }
+  }
+
+  // ── Edit mode callbacks ───────────────────────────────────────────────────
+
+  private void handleEdgeRequested(String fromTable, String toTable) {
+    showEdgeDialog(fromTable, toTable)
+        .ifPresent(
+            cols -> {
+              var custom = customStore.load(currentConnName);
+              custom.add(
+                  new CustomRelationshipStore.CustomEdge(fromTable, cols[0], toTable, cols[1]));
+              try {
+                customStore.save(currentConnName, custom);
+              } catch (Exception e) {
+                LOG.warn("Could not save custom edge", e);
+              }
+              reRenderWithCustom();
+            });
+  }
+
+  private void handleEdgeDeleteRequested(RelationshipGraphCanvas.EdgeInfo ei) {
+    var custom = customStore.load(currentConnName);
+    custom.removeIf(
+        c ->
+            c.fromTable().equalsIgnoreCase(ei.from)
+                && c.fromColumn().equalsIgnoreCase(ei.fromCol)
+                && c.toTable().equalsIgnoreCase(ei.to));
+    try {
+      customStore.save(currentConnName, custom);
+    } catch (Exception e) {
+      LOG.warn("Could not save custom edges after delete", e);
+    }
+    reRenderWithCustom();
+  }
+
+  private void reRenderWithCustom() {
+    if (discoveredGraph == null || currentConnName == null) return;
+    var merged = mergeCustomEdges(discoveredGraph, currentConnName);
+    graphCanvas.render(merged, currentRootTable);
+    graphCanvas.setEditMode(editMode);
+    lblStatus.setText(
+        String.format(
+            "Graph ready — %d tables, %d relationships", merged.nodeCount(), merged.edgeCount()));
+  }
+
+  private RelationshipGraph mergeCustomEdges(RelationshipGraph base, String connName) {
+    var custom = customStore.load(connName);
+    if (custom.isEmpty()) return base;
+    var builder = RelationshipGraph.builder();
+    base.nodes().values().forEach(builder::addNode);
+    base.edges().forEach(builder::addEdge);
+    for (var c : custom) {
+      builder.addEdge(
+          new RelationshipEdge(
+              new RelationshipNode(c.fromTable()),
+              c.fromColumn(),
+              new RelationshipNode(c.toTable()),
+              c.toColumn(),
+              RelationshipSource.MANUAL,
+              1.0));
+    }
+    return builder.build();
+  }
+
+  private int currentGraphEdgeCount() {
+    if (discoveredGraph == null) return 0;
+    return discoveredGraph.edgeCount() + customStore.load(currentConnName).size();
+  }
+
+  // ── Dialog ────────────────────────────────────────────────────────────────
+
+  private Optional<String[]> showEdgeDialog(String fromTable, String toTable) {
+    var dialog = new Dialog<String[]>();
+    dialog.setTitle("Add Relationship");
+    dialog.setHeaderText(fromTable + "  →  " + toTable);
+
+    var grid = new GridPane();
+    grid.setHgap(12);
+    grid.setVgap(8);
+    grid.setPadding(new Insets(16, 16, 8, 16));
+
+    var fromColField = new TextField();
+    fromColField.setPromptText("e.g. customer_id");
+    var toColField = new TextField("id");
+
+    grid.add(new Label("From column (" + fromTable + "):"), 0, 0);
+    grid.add(fromColField, 1, 0);
+    grid.add(new Label("To column (" + toTable + "):"), 0, 1);
+    grid.add(toColField, 1, 1);
+
+    dialog.getDialogPane().setContent(grid);
+    dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+    var okBtn = dialog.getDialogPane().lookupButton(ButtonType.OK);
+    okBtn.setDisable(true);
+    fromColField.textProperty().addListener((obs, o, n) -> okBtn.setDisable(n.isBlank()));
+
+    dialog.setResultConverter(
+        bt ->
+            bt == ButtonType.OK
+                ? new String[] {fromColField.getText().strip(), toColField.getText().strip()}
+                : null);
+
+    return dialog.showAndWait();
   }
 }

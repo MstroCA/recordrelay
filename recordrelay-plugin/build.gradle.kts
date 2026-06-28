@@ -37,28 +37,34 @@ intellijPlatform {
             <ul>
               <li><b>Context Cloning</b> — Copies a record and every FK-linked row it depends on,
                   across environments, in the right order, in seconds.</li>
+              <li><b>Conflict Resolution</b> — Four strategies for cloning into non-empty targets:
+                  <em>Regenerate Identities</em> (new IDs), <em>Isolate Namespace</em> (1 M+ offset),
+                  <em>Skip Existing</em> (silently skips duplicates), and <em>Fail Safe</em>
+                  (aborts if the target already has data).</li>
               <li><b>Automatic FK Discovery</b> — Discovers both declared and logical (implicit)
-                  foreign-key relationships automatically, including tables whose PK is not
-                  named <code>id</code>.</li>
+                  foreign-key relationships automatically, including FK-free schemas that rely on
+                  naming conventions such as <code>customer_id</code>.</li>
+              <li><b>Relationship Graph View</b> — Visualises the full FK dependency graph of the
+                  cloned context so you can see exactly which tables and rows are involved.</li>
               <li><b>PII Masking</b> — Scrubs email, phone, IBAN, national ID, and address
                   columns on the fly during transfer.</li>
               <li><b>Field Overrides</b> — Override any column value in the target
                   (e.g. <code>created_by=test</code> or <code>orders:status=PENDING</code>).</li>
+              <li><b>Clone History</b> — Browse per-session clone history with table-level record
+                  counts, elapsed time, and connection health at a glance.</li>
               <li><b>Export Packages</b> — Export the context as a portable <code>.rrpkg</code>
                   file to share with a teammate or import later.</li>
               <li><b>Schema Discovery</b> — Inspect column types and analyse cross-database type
                   compatibility side by side.</li>
               <li><b>Query Runner</b> — Execute raw SQL against any configured connection from
                   inside the IDE.</li>
-              <li><b>Clone Monitor</b> — View per-session clone history and connection health
-                  at a glance.</li>
             </ul>
 
             <h3>How It Works</h3>
             <ol>
               <li>Add your database connections in the <em>Connections</em> tab.</li>
               <li>Switch to <em>Clone</em>, choose source and target environments.</li>
-              <li>Select the root table and enter the record ID you want to reproduce.</li>
+              <li>Select the root table, enter the record ID, and pick a conflict resolution strategy.</li>
               <li>Click <em>Clone Context</em> — RecordRelay fetches all related rows and inserts
                   them into the target in dependency order.</li>
             </ol>
@@ -79,6 +85,28 @@ intellijPlatform {
             </ul>
 
             <p><em>Requires IntelliJ IDEA 2024.1 or later (Community or Ultimate).</em></p>
+            """.trimIndent()
+        changeNotes =
+            """
+            <h3>1.2.0</h3>
+            <ul>
+              <li>Added four conflict resolution modes: Regenerate Identities, Isolate Namespace,
+                  Skip Existing, and Fail Safe.</li>
+              <li>Hybrid BFS traversal: outgoing FK edges use the full schema graph to fetch all
+                  dependencies; incoming edges use the conservative root-centric graph to prevent
+                  scope creep.</li>
+              <li>FK remapping now covers cross-table columns (e.g. <code>orders.created_by</code>)
+                  that are outside the root-centric traversal graph.</li>
+              <li>Heuristic FK discovery now matches both singular (<code>customer_id</code>) and
+                  plural (<code>customers_id</code>) column naming, covering FK-free schemas.</li>
+            </ul>
+            <h3>1.1.0</h3>
+            <ul>
+              <li>Clone history dashboard with per-session record counts and elapsed time.</li>
+              <li>Relationship graph view for the cloned FK context.</li>
+              <li>In-app help screen with quick-start guide and keyboard shortcuts.</li>
+              <li>Field overrides: override any column value before writing to the target.</li>
+            </ul>
             """.trimIndent()
         ideaVersion {
             sinceBuild = "241"

@@ -345,34 +345,42 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
       RelationshipGraph.Builder builder,
       Set<String> knownEdgeKeys)
       throws SQLException {
-    var fkColName = rootTable.toLowerCase(Locale.ROOT) + "_id";
-    try (var rs = conn.getMetaData().getColumns(null, null, null, fkColName)) {
-      while (rs.next()) {
-        var schema = rs.getString("TABLE_SCHEM");
-        if (isSystemSchema(schema)) {
-          continue;
+    // Try both plural form (customers_id) and the more common singular form (customer_id).
+    // Real-world schemas almost universally use singular naming; plural is the legacy heuristic.
+    var root = rootTable.toLowerCase(Locale.ROOT);
+    var candidates = new java.util.LinkedHashSet<String>();
+    candidates.add(root + "_id"); // e.g. customers_id
+    if (root.endsWith("s")) {
+      candidates.add(root.substring(0, root.length() - 1) + "_id"); // e.g. customer_id
+    }
+    for (var fkColName : candidates) {
+      try (var rs = conn.getMetaData().getColumns(null, null, null, fkColName)) {
+        while (rs.next()) {
+          var schema = rs.getString("TABLE_SCHEM");
+          if (isSystemSchema(schema)) {
+            continue;
+          }
+          var childTable = rs.getString("TABLE_NAME").toLowerCase(Locale.ROOT);
+          var colName = rs.getString("COLUMN_NAME").toLowerCase(Locale.ROOT);
+          if (!colName.equals(fkColName) || childTable.equalsIgnoreCase(rootTable)) {
+            continue;
+          }
+          var edgeKey = childTable + "." + colName;
+          if (knownEdgeKeys.contains(edgeKey)) {
+            continue;
+          }
+          var edge =
+              new RelationshipEdge(
+                  new RelationshipNode(childTable),
+                  colName,
+                  new RelationshipNode(root),
+                  "id",
+                  RelationshipSource.HEURISTIC,
+                  LOGICAL_FK_CONFIDENCE);
+          builder.addEdge(edge);
+          knownEdgeKeys.add(edgeKey);
+          LOG.debug("Logical FK (incoming): {}", edge.describe());
         }
-        var childTable = rs.getString("TABLE_NAME").toLowerCase(Locale.ROOT);
-        var colName = rs.getString("COLUMN_NAME").toLowerCase(Locale.ROOT);
-        // getColumns uses SQL LIKE for column pattern; verify exact match
-        if (!colName.equals(fkColName) || childTable.equalsIgnoreCase(rootTable)) {
-          continue;
-        }
-        var edgeKey = childTable + "." + fkColName;
-        if (knownEdgeKeys.contains(edgeKey)) {
-          continue;
-        }
-        var edge =
-            new RelationshipEdge(
-                new RelationshipNode(childTable),
-                fkColName,
-                new RelationshipNode(rootTable.toLowerCase(Locale.ROOT)),
-                "id",
-                RelationshipSource.HEURISTIC,
-                LOGICAL_FK_CONFIDENCE);
-        builder.addEdge(edge);
-        knownEdgeKeys.add(edgeKey);
-        LOG.debug("Logical FK (incoming): {}", edge.describe());
       }
     }
   }

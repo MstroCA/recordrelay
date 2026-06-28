@@ -154,26 +154,37 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
     for (var t : tableNames) {
       builder.addNode(t);
     }
-    try (Connection conn = dataSource.getConnection();
-        var stmt = conn.prepareStatement(FK_QUERY);
-        var rs = stmt.executeQuery()) {
-      while (rs.next()) {
-        var fromTable = rs.getString("from_table").toLowerCase(Locale.ROOT);
-        var fromColumn = rs.getString("from_column").toLowerCase(Locale.ROOT);
-        var toTable = rs.getString("to_table").toLowerCase(Locale.ROOT);
-        var toColumn = rs.getString("to_column").toLowerCase(Locale.ROOT);
-        if (!tableNames.contains(fromTable) || !tableNames.contains(toTable)) {
-          continue;
+    try (Connection conn = dataSource.getConnection()) {
+      var knownEdgeKeys = new HashSet<String>();
+
+      // Step 1: declared FK constraints (confident, SQLState-free)
+      try (var stmt = conn.prepareStatement(FK_QUERY);
+          var rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          var fromTable = rs.getString("from_table").toLowerCase(Locale.ROOT);
+          var fromColumn = rs.getString("from_column").toLowerCase(Locale.ROOT);
+          var toTable = rs.getString("to_table").toLowerCase(Locale.ROOT);
+          var toColumn = rs.getString("to_column").toLowerCase(Locale.ROOT);
+          if (!tableNames.contains(fromTable) || !tableNames.contains(toTable)) {
+            continue;
+          }
+          builder.addEdge(
+              new RelationshipEdge(
+                  new RelationshipNode(fromTable),
+                  fromColumn,
+                  new RelationshipNode(toTable),
+                  toColumn,
+                  RelationshipSource.FOREIGN_KEY,
+                  1.0));
+          knownEdgeKeys.add(fromTable + "." + fromColumn);
         }
-        builder.addEdge(
-            new RelationshipEdge(
-                new RelationshipNode(fromTable),
-                fromColumn,
-                new RelationshipNode(toTable),
-                toColumn,
-                RelationshipSource.FOREIGN_KEY,
-                1.0));
       }
+
+      // Step 2: logical FK discovery — catches _id columns with no declared constraint
+      for (var tableName : tableNames) {
+        discoverContextLogicalFks(conn, tableName, tableNames, builder, knownEdgeKeys);
+      }
+
     } catch (SQLException e) {
       LOG.warn(
           "Could not build context FK graph; falling back to traversal graph. Cause: {}",
@@ -192,25 +203,44 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
   public RelationshipGraph resolveFullSchema(ConnectionProfile profile) throws CloneException {
     ensurePool(profile);
     var builder = RelationshipGraph.builder();
-    try (Connection conn = dataSource.getConnection();
-        var stmt = conn.prepareStatement(FK_QUERY);
-        var rs = stmt.executeQuery()) {
-      while (rs.next()) {
-        var fromTable = rs.getString("from_table").toLowerCase(Locale.ROOT);
-        var fromColumn = rs.getString("from_column").toLowerCase(Locale.ROOT);
-        var toTable = rs.getString("to_table").toLowerCase(Locale.ROOT);
-        var toColumn = rs.getString("to_column").toLowerCase(Locale.ROOT);
-        builder.addNode(fromTable);
-        builder.addNode(toTable);
-        builder.addEdge(
-            new RelationshipEdge(
-                new RelationshipNode(fromTable),
-                fromColumn,
-                new RelationshipNode(toTable),
-                toColumn,
-                RelationshipSource.FOREIGN_KEY,
-                1.0));
+    try (Connection conn = dataSource.getConnection()) {
+      var knownEdgeKeys = new HashSet<String>();
+
+      // Step 1: declared FK constraints
+      try (var stmt = conn.prepareStatement(FK_QUERY);
+          var rs = stmt.executeQuery()) {
+        while (rs.next()) {
+          var fromTable = rs.getString("from_table").toLowerCase(Locale.ROOT);
+          var fromColumn = rs.getString("from_column").toLowerCase(Locale.ROOT);
+          var toTable = rs.getString("to_table").toLowerCase(Locale.ROOT);
+          var toColumn = rs.getString("to_column").toLowerCase(Locale.ROOT);
+          builder.addNode(fromTable);
+          builder.addNode(toTable);
+          builder.addEdge(
+              new RelationshipEdge(
+                  new RelationshipNode(fromTable),
+                  fromColumn,
+                  new RelationshipNode(toTable),
+                  toColumn,
+                  RelationshipSource.FOREIGN_KEY,
+                  1.0));
+          knownEdgeKeys.add(fromTable + "." + fromColumn);
+        }
       }
+
+      // Step 2: logical FK discovery for all user tables (handles FK-free schemas)
+      try (var tables = conn.getMetaData().getTables(null, null, null, new String[] {"TABLE"})) {
+        while (tables.next()) {
+          var schema = tables.getString("TABLE_SCHEM");
+          if (isSystemSchema(schema)) {
+            continue;
+          }
+          var tableName = tables.getString("TABLE_NAME").toLowerCase(Locale.ROOT);
+          builder.addNode(tableName);
+          discoverOutgoingLogicalFks(conn, tableName, builder, knownEdgeKeys);
+        }
+      }
+
     } catch (SQLException e) {
       LOG.warn(
           "Could not resolve full schema FKs; falling back to root-table graph. Cause: {}",
@@ -221,6 +251,47 @@ public final class JdbcRelationshipResolver implements RelationshipResolverPort,
   }
 
   // ── Logical FK discovery (schema-driven, no hardcoded patterns) ───────────
+
+  /**
+   * Variant of {@link #discoverOutgoingLogicalFks} restricted to edges where both ends are members
+   * of {@code contextTables}. Used by {@link #resolveContextFks} so that logical FK columns (e.g.
+   * {@code orders.created_by}) are remapped even when no FK constraint is declared.
+   */
+  private void discoverContextLogicalFks(
+      Connection conn,
+      String fromTable,
+      Set<String> contextTables,
+      RelationshipGraph.Builder builder,
+      Set<String> knownEdgeKeys)
+      throws SQLException {
+    try (var rs = conn.getMetaData().getColumns(null, null, fromTable, null)) {
+      while (rs.next()) {
+        var col = rs.getString("COLUMN_NAME").toLowerCase(Locale.ROOT);
+        if (!col.endsWith("_id")) {
+          continue;
+        }
+        var edgeKey = fromTable + "." + col;
+        if (knownEdgeKeys.contains(edgeKey)) {
+          continue;
+        }
+        var base = col.substring(0, col.length() - 3);
+        var refTable = pickExistingTable(conn, base);
+        if (refTable == null || !contextTables.contains(refTable)) {
+          continue;
+        }
+        builder.addEdge(
+            new RelationshipEdge(
+                new RelationshipNode(fromTable),
+                col,
+                new RelationshipNode(refTable),
+                "id",
+                RelationshipSource.HEURISTIC,
+                LOGICAL_FK_CONFIDENCE));
+        knownEdgeKeys.add(edgeKey);
+        LOG.debug("Context logical FK: {}.{} → {}.id", fromTable, col, refTable);
+      }
+    }
+  }
 
   private void discoverLogicalFks(
       Connection conn,

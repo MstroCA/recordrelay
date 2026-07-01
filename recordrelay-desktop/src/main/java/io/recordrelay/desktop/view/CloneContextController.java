@@ -106,6 +106,9 @@ public final class CloneContextController implements Refreshable {
 
   private final ObservableList<SatelliteRow> satelliteRows = FXCollections.observableArrayList();
 
+  /** Connection names shown in the satellite source/target dropdowns. */
+  private final ObservableList<String> connNames = FXCollections.observableArrayList();
+
   // ── Actions & Progress ─────────────────────────────────────────────────────
   @FXML private Button btnClone;
   @FXML private Button btnExport;
@@ -236,6 +239,7 @@ public final class CloneContextController implements Refreshable {
       var names = FXCollections.observableArrayList(store.load().getConnections().keySet());
       cmbSource.setItems(names);
       cmbTarget.setItems(FXCollections.observableArrayList(names));
+      connNames.setAll(names);
     } catch (Exception e) {
       showError("Bağlantılar yüklenemedi: " + e.getMessage());
     }
@@ -257,8 +261,9 @@ public final class CloneContextController implements Refreshable {
 
   private void setupSatelliteTable() {
     tblSatellites.setEditable(true);
-    bindSatelliteColumn(colSatSource, SatelliteRow::sourceConnProperty);
-    bindSatelliteColumn(colSatTarget, SatelliteRow::targetConnProperty);
+    // Source/target are chosen from the configured connections (dropdown, not free text).
+    bindSatelliteCombo(colSatSource, SatelliteRow::sourceConnProperty);
+    bindSatelliteCombo(colSatTarget, SatelliteRow::targetConnProperty);
     bindSatelliteColumn(colSatTable, SatelliteRow::tableProperty);
     bindSatelliteColumn(colSatLink, SatelliteRow::linkColumnProperty);
     bindSatelliteColumn(colSatPk, SatelliteRow::pkColumnProperty);
@@ -272,6 +277,14 @@ public final class CloneContextController implements Refreshable {
       java.util.function.Function<SatelliteRow, StringProperty> prop) {
     column.setCellValueFactory(r -> prop.apply(r.getValue()));
     column.setCellFactory(TextFieldTableCell.forTableColumn());
+    column.setOnEditCommit(e -> prop.apply(e.getRowValue()).set(e.getNewValue()));
+  }
+
+  private void bindSatelliteCombo(
+      TableColumn<SatelliteRow, String> column,
+      java.util.function.Function<SatelliteRow, StringProperty> prop) {
+    column.setCellValueFactory(r -> prop.apply(r.getValue()));
+    column.setCellFactory(javafx.scene.control.cell.ComboBoxTableCell.forTableColumn(connNames));
     column.setOnEditCommit(e -> prop.apply(e.getRowValue()).set(e.getNewValue()));
   }
 

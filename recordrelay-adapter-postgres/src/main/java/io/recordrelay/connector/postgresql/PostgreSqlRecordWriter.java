@@ -75,8 +75,7 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
   public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
     this.qualifiedTable = buildQuotedTableName(table);
     this.plainTableName = table.tableName();
-    var url =
-        "jdbc:postgresql://" + profile.host() + ":" + profile.port() + "/" + profile.database();
+    var url = profile.jdbcUrl("postgresql");
     try {
       conn =
           DriverManager.getConnection(

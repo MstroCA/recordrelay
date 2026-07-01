@@ -173,6 +173,7 @@ public final class ConnectionsController implements Refreshable {
     entry.setPort(parsePort(r.portText()));
     entry.setDatabase(r.database());
     entry.setUser(r.user());
+    entry.setSchema(r.schema());
     if (!r.rawPassword().isEmpty()) {
       // encrypt — never store or log the plaintext value
       entry.setEncryptedPassword(store.encryptor().encrypt(r.rawPassword()));
@@ -236,6 +237,7 @@ public final class ConnectionsController implements Refreshable {
                     f.port().getText().trim(),
                     f.database().getText().trim(),
                     f.user().getText().trim(),
+                    f.schema().getText().trim(),
                     f.password().getText())
                 : null);
 
@@ -249,14 +251,16 @@ public final class ConnectionsController implements Refreshable {
     var tfPort = new TextField(init != null ? String.valueOf(init.getPort()) : "");
     var tfDb = new TextField(init != null ? nullSafe(init.getDatabase()) : "");
     var tfUser = new TextField(init != null ? nullSafe(init.getUser()) : "");
+    var tfSchema = new TextField(init != null ? nullSafe(init.getSchema()) : "");
     var pfPass = new PasswordField();
     cbType.setValue(init != null ? init.getType() : null);
     tfName.setPromptText("e.g. prod-pg");
     cbType.setPromptText("Database type");
     tfHost.setPromptText("e.g. localhost");
     tfPort.setPromptText("e.g. 5432");
+    tfSchema.setPromptText("(optional, PostgreSQL) e.g. beyan_kullanici_yonetimi");
     pfPass.setPromptText(init != null ? "(unchanged)" : "Password");
-    return new ConnFields(tfName, cbType, tfHost, tfPort, tfDb, tfUser, pfPass);
+    return new ConnFields(tfName, cbType, tfHost, tfPort, tfDb, tfUser, tfSchema, pfPass);
   }
 
   private GridPane buildConnGrid(ConnFields f) {
@@ -264,9 +268,11 @@ public final class ConnectionsController implements Refreshable {
     grid.setHgap(10);
     grid.setVgap(8);
     grid.setPadding(new Insets(20, 16, 16, 16));
-    String[] labels = {"Name:", "Type:", "Host:", "Port:", "Database:", "User:", "Password:"};
+    String[] labels = {
+      "Name:", "Type:", "Host:", "Port:", "Database:", "User:", "Schema:", "Password:"
+    };
     Node[] controls = {
-      f.name(), f.type(), f.host(), f.port(), f.database(), f.user(), f.password()
+      f.name(), f.type(), f.host(), f.port(), f.database(), f.user(), f.schema(), f.password()
     };
     for (int i = 0; i < labels.length; i++) {
       grid.add(new Label(labels[i]), 0, i);
@@ -311,6 +317,7 @@ public final class ConnectionsController implements Refreshable {
       TextField port,
       TextField database,
       TextField user,
+      TextField schema,
       PasswordField password) {}
 
   private record ConnDialogResult(
@@ -320,5 +327,6 @@ public final class ConnectionsController implements Refreshable {
       String portText,
       String database,
       String user,
+      String schema,
       String rawPassword) {}
 }

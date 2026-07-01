@@ -75,6 +75,13 @@ public final class ConnCommand implements Callable<Integer> {
     @Option(names = "--user", required = true, description = "Database user")
     String user;
 
+    @Option(
+        names = "--schema",
+        description =
+            "Default schema for PostgreSQL (sets currentSchema/search_path so unqualified table"
+                + " names resolve). Comma-separated allowed, e.g. myschema,public")
+    String schema;
+
     @Override
     public Integer call() {
       try {
@@ -97,6 +104,7 @@ public final class ConnCommand implements Callable<Integer> {
       entry.setPort(port);
       entry.setDatabase(database);
       entry.setUser(user);
+      entry.setSchema(schema);
       entry.setEncryptedPassword(encryptedPassword);
       return entry;
     }

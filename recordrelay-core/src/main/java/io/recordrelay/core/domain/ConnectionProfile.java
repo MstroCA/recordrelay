@@ -52,10 +52,25 @@ public record ConnectionProfile(
   /**
    * Builds a standard JDBC URL for SQL connectors.
    *
+   * <p>When a {@code currentSchema} property is set and the type is PostgreSQL, it is appended so
+   * that unqualified table names resolve in that schema (equivalent to setting {@code
+   * search_path}).
+   *
    * @param scheme the JDBC sub-protocol (e.g., "postgresql", "mysql")
    * @return a JDBC URL in the form {@code jdbc:<scheme>://<host>:<port>/<database>}
    */
   public String jdbcUrl(String scheme) {
-    return String.format("jdbc:%s://%s:%d/%s", scheme, host, port, database);
+    var url = String.format("jdbc:%s://%s:%d/%s", scheme, host, port, database);
+    var schema = schema();
+    if (type == DatabaseType.POSTGRESQL && !schema.isBlank()) {
+      url += "?currentSchema=" + schema;
+    }
+    return url;
+  }
+
+  /** Returns the configured schema ({@code currentSchema} property), or an empty string. */
+  public String schema() {
+    var schema = properties.get("currentSchema");
+    return schema == null ? "" : schema.trim();
   }
 }

@@ -177,6 +177,7 @@ public final class ConnectionsPanel extends JPanel {
     private final JBTextField tfPort = new JBTextField("5432", 6);
     private final JBTextField tfDatabase = new JBTextField(20);
     private final JBTextField tfUser = new JBTextField(20);
+    private final JBTextField tfSchema = new JBTextField(20);
     private final JBPasswordField tfPassword = new JBPasswordField();
     private final String oldName;
 
@@ -205,11 +206,14 @@ public final class ConnectionsPanel extends JPanel {
       if (entry.getUser() != null) {
         tfUser.setText(entry.getUser());
       }
+      if (entry.getSchema() != null) {
+        tfSchema.setText(entry.getSchema());
+      }
     }
 
     @Override
     protected @Nullable JComponent createCenterPanel() {
-      var grid = new JPanel(new GridLayout(7, 2, 6, 6));
+      var grid = new JPanel(new GridLayout(8, 2, 6, 6));
       var pwdHint = new JLabel("(leave blank to keep existing)");
       pwdHint.setForeground(JBColor.GRAY);
       grid.add(new JLabel("Name:"));
@@ -224,6 +228,8 @@ public final class ConnectionsPanel extends JPanel {
       grid.add(tfDatabase);
       grid.add(new JLabel("User:"));
       grid.add(tfUser);
+      grid.add(new JLabel("Schema:"));
+      grid.add(tfSchema);
       grid.add(new JLabel("Password:"));
       grid.add(buildPasswordPanel(pwdHint));
       return grid;
@@ -247,6 +253,7 @@ public final class ConnectionsPanel extends JPanel {
       entry.setPort(Integer.parseInt(tfPort.getText().trim()));
       entry.setDatabase(tfDatabase.getText().trim());
       entry.setUser(tfUser.getText().trim());
+      entry.setSchema(tfSchema.getText().trim());
       char[] pwd = tfPassword.getPassword();
       if (pwd.length > 0) {
         entry.setEncryptedPassword(store.encryptor().encrypt(new String(pwd)));

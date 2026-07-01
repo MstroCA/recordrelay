@@ -40,6 +40,44 @@ class DomainModelTest {
     assertThat(c.password()).isEmpty();
   }
 
+  // ── ConnectionProfile ─────────────────────────────────────────────────────
+
+  private static ConnectionProfile pg(java.util.Map<String, String> props) {
+    return new ConnectionProfile(
+        "id", "n", "e", DatabaseType.POSTGRESQL, "h", 5432, "db", Credentials.of("u"), props);
+  }
+
+  @Test
+  void jdbcUrlAppendsCurrentSchemaForPostgres() {
+    var p = pg(Map.of("currentSchema", "beyan_kullanici_yonetimi"));
+    assertThat(p.jdbcUrl("postgresql"))
+        .isEqualTo("jdbc:postgresql://h:5432/db?currentSchema=beyan_kullanici_yonetimi");
+    assertThat(p.schema()).isEqualTo("beyan_kullanici_yonetimi");
+  }
+
+  @Test
+  void jdbcUrlOmitsSchemaWhenNotSet() {
+    var p = pg(Map.of());
+    assertThat(p.jdbcUrl("postgresql")).isEqualTo("jdbc:postgresql://h:5432/db");
+    assertThat(p.schema()).isEmpty();
+  }
+
+  @Test
+  void jdbcUrlIgnoresSchemaForNonPostgres() {
+    var p =
+        new ConnectionProfile(
+            "id",
+            "n",
+            "e",
+            DatabaseType.MYSQL,
+            "h",
+            3306,
+            "db",
+            Credentials.of("u"),
+            Map.of("currentSchema", "x"));
+    assertThat(p.jdbcUrl("mysql")).isEqualTo("jdbc:mysql://h:3306/db");
+  }
+
   // ── DatabaseRef ───────────────────────────────────────────────────────────
 
   @Test

@@ -48,8 +48,7 @@ public final class PostgreSqlRecordReader implements RecordReader {
 
   @Override
   public void open(ConnectionProfile profile, TableRef table) throws ConnectorException {
-    var url =
-        "jdbc:postgresql://" + profile.host() + ":" + profile.port() + "/" + profile.database();
+    var url = profile.jdbcUrl("postgresql");
     try {
       conn =
           DriverManager.getConnection(

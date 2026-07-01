@@ -30,6 +30,9 @@ public class ConnectionEntry {
   private String database;
   private String user;
 
+  /** Optional default schema (PostgreSQL {@code search_path} / {@code currentSchema}). */
+  private String schema;
+
   /** Password stored as {@code ENC(AES256:...)} — never plaintext. */
   private String encryptedPassword;
 
@@ -37,6 +40,10 @@ public class ConnectionEntry {
 
   /** Converts this entry to a {@link ConnectionProfile} using the supplied decrypted password. */
   public ConnectionProfile toProfile(String name, String plainPassword) {
+    var properties =
+        (schema == null || schema.isBlank())
+            ? Map.<String, String>of()
+            : Map.of("currentSchema", schema.trim());
     return new ConnectionProfile(
         name,
         name,
@@ -46,7 +53,7 @@ public class ConnectionEntry {
         port,
         database,
         new Credentials(user, plainPassword),
-        Map.of());
+        properties);
   }
 
   public String getEnvironment() {
@@ -95,6 +102,14 @@ public class ConnectionEntry {
 
   public void setUser(String user) {
     this.user = user;
+  }
+
+  public String getSchema() {
+    return schema;
+  }
+
+  public void setSchema(String schema) {
+    this.schema = schema;
   }
 
   public String getEncryptedPassword() {

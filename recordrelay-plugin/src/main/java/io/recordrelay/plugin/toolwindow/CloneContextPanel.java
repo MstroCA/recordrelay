@@ -88,9 +88,13 @@ public final class CloneContextPanel extends JPanel {
       new JCheckBox("Mask PII (email, phone, IBAN, address, national ID)");
   private final ComboBox<ConflictResolution> cmbConflict =
       new ComboBox<>(ConflictResolution.values());
+  private final JBTextField tfIdStart = new JBTextField(8);
 
   // Step 4: Field Overrides
   private final JBTextArea taOverrides = new JBTextArea(4, 40);
+
+  // Step 5: Satellite (companion) tables in a separate database
+  private final JBTextArea taSatellites = new JBTextArea(3, 40);
 
   // Export output dir (visible only in export mode)
   private final JBTextField tfOutputDir = new JBTextField();
@@ -112,6 +116,9 @@ public final class CloneContextPanel extends JPanel {
     taLog.setLineWrap(true);
     taOverrides.setLineWrap(false);
     taOverrides.setToolTipText("One override per line: column=value  or  table:column=value");
+    taSatellites.setLineWrap(false);
+    taSatellites.setToolTipText(
+        "One satellite per line: sourceConn>targetConn:table.linkColumn[.pkColumn]");
 
     setupExportModeToggle();
     btnLoadTables.addActionListener(e -> onLoadTables());
@@ -127,6 +134,8 @@ public final class CloneContextPanel extends JPanel {
     stepsPanel.add(section("Step 3 — Options", buildOptionsForm()));
     stepsPanel.add(Box.createVerticalStrut(JBUI.scale(8)));
     stepsPanel.add(section("Step 4 — Field Overrides (optional)", buildOverridesForm()));
+    stepsPanel.add(Box.createVerticalStrut(JBUI.scale(8)));
+    stepsPanel.add(section("Step 5 — Satellite Tables (optional)", buildSatellitesForm()));
 
     // Log always visible below the scroll area
     var logSection = section("Log", buildLogForm());
@@ -219,10 +228,15 @@ public final class CloneContextPanel extends JPanel {
                           case SKIP_EXISTING -> "Skip existing rows";
                           case ISOLATE_NAMESPACE -> "Isolate namespace";
                           case FAIL_SAFE -> "Fail if target has data";
-                          default -> v.name();
+                          case SEQUENCE -> "Native sequence (DB-assigned IDs)";
+                          case START_AT -> "Start at custom ID";
                         })));
     conflictRow.add(cmbConflict);
     panel.add(conflictRow);
+    var idStartRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+    idStartRow.add(new JLabel("Start ID (START_AT):"));
+    idStartRow.add(tfIdStart);
+    panel.add(idStartRow);
     return panel;
   }
 
@@ -235,6 +249,30 @@ public final class CloneContextPanel extends JPanel {
     container.add(hint, BorderLayout.NORTH);
     taOverrides.setRows(4);
     container.add(new JBScrollPane(taOverrides), BorderLayout.CENTER);
+    return container;
+  }
+
+  private JComponent buildSatellitesForm() {
+    var container = new JPanel(new BorderLayout(0, JBUI.scale(4)));
+    var hint =
+        new JLabel(
+            "<html><small>Sync a companion table from another database after the clone"
+                + " (e.g. a Kafka-fed <code>read_model</code>). One per line:"
+                + " <code>sourceConn&gt;targetConn:table.linkColumn[.pkColumn]</code>."
+                + " The link column is remapped to the new root id; overrides are applied."
+                + "</small></html>");
+    container.add(hint, BorderLayout.NORTH);
+    taSatellites.setRows(3);
+    container.add(new JBScrollPane(taSatellites), BorderLayout.CENTER);
+
+    var buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+    var btnLoad = new JButton("Load from config");
+    var btnSave = new JButton("Save to config");
+    btnLoad.addActionListener(e -> onLoadSatellites());
+    btnSave.addActionListener(e -> onSaveSatellites());
+    buttons.add(btnLoad);
+    buttons.add(btnSave);
+    container.add(buttons, BorderLayout.SOUTH);
     return container;
   }
 
@@ -521,6 +559,10 @@ public final class CloneContextPanel extends JPanel {
               + ")");
 
       var conflict = (ConflictResolution) cmbConflict.getSelectedItem();
+      var satellites = buildSatellites(entity.name());
+      if (!satellites.isEmpty()) {
+        appendLog("Satellite tables: " + satellites.satellites().size() + " definition(s)");
+      }
       var plan =
           ContextClonePlan.liveCloneWithOverrides(
               entity,
@@ -530,7 +572,9 @@ public final class CloneContextPanel extends JPanel {
               depth,
               masking,
               buildFieldOverrides(),
-              conflict != null ? conflict : ConflictResolution.REGENERATE_IDENTITIES);
+              conflict != null ? conflict : ConflictResolution.REGENERATE_IDENTITIES,
+              satellites,
+              parseIdStart());
 
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener());
 
@@ -622,6 +666,133 @@ public final class CloneContextPanel extends JPanel {
       }
     }
     return new FieldOverrideConfig(list);
+  }
+
+  /**
+   * Builds the satellite config from the editor: parses the textarea lines, or, when empty, falls
+   * back to whatever is saved for the entity in config.json.
+   */
+  private io.recordrelay.core.clone.domain.SatelliteConfig buildSatellites(String entityName)
+      throws Exception {
+    var service = RecordRelayService.getInstance();
+    var satResolver =
+        new io.recordrelay.cli.engine.SatelliteConfigResolver(
+            service.configStore(), service.resolver());
+    var lines =
+        taSatellites
+            .getText()
+            .lines()
+            .map(String::trim)
+            .filter(l -> !l.isBlank() && !l.startsWith("#"))
+            .toList();
+    if (lines.isEmpty()) {
+      return satResolver.configForEntity(entityName);
+    }
+    var list = new ArrayList<io.recordrelay.core.clone.domain.SatelliteTable>();
+    for (var line : lines) {
+      list.add(satResolver.parse(line));
+    }
+    return new io.recordrelay.core.clone.domain.SatelliteConfig(list);
+  }
+
+  private void onLoadSatellites() {
+    try {
+      var entityName = (String) cmbRootTable.getSelectedItem();
+      if (entityName == null || entityName.isBlank()) {
+        appendLog("Select a root table first.");
+        return;
+      }
+      var config = RecordRelayService.getInstance().configStore().load();
+      var entries = config.getSatellites() == null ? null : config.getSatellites().get(entityName);
+      if (entries == null || entries.isEmpty()) {
+        taSatellites.setText("");
+        appendLog("No satellites configured for " + entityName + ".");
+        return;
+      }
+      var sb = new StringBuilder();
+      for (var e : entries) {
+        sb.append(e.getSourceConn())
+            .append('>')
+            .append(e.getTargetConn())
+            .append(':')
+            .append(e.getTable())
+            .append('.')
+            .append(e.getLinkColumn());
+        if (e.getPkColumn() != null && !e.getPkColumn().isBlank()) {
+          sb.append('.').append(e.getPkColumn());
+        }
+        sb.append('\n');
+      }
+      taSatellites.setText(sb.toString());
+    } catch (Exception ex) {
+      appendLog("Failed to load satellites: " + ex.getMessage());
+    }
+  }
+
+  private void onSaveSatellites() {
+    try {
+      var entityName = (String) cmbRootTable.getSelectedItem();
+      if (entityName == null || entityName.isBlank()) {
+        appendLog("Select a root table first.");
+        return;
+      }
+      var config = RecordRelayService.getInstance().configStore().load();
+      var entries = new ArrayList<io.recordrelay.cli.config.SatelliteEntry>();
+      for (var line : taSatellites.getText().lines().map(String::trim).toList()) {
+        if (line.isBlank() || line.startsWith("#")) {
+          continue;
+        }
+        var entry = parseSatelliteEntry(line);
+        if (entry != null) {
+          entries.add(entry);
+        }
+      }
+      if (entries.isEmpty()) {
+        config.getSatellites().remove(entityName);
+      } else {
+        config.getSatellites().put(entityName, entries);
+      }
+      RecordRelayService.getInstance().configStore().save(config);
+      appendLog("Saved " + entries.size() + " satellite(s) for " + entityName + ".");
+    } catch (Exception ex) {
+      appendLog("Failed to save satellites: " + ex.getMessage());
+    }
+  }
+
+  /** Structurally parses a satellite spec line into a config entry (no connection resolution). */
+  private static io.recordrelay.cli.config.SatelliteEntry parseSatelliteEntry(String spec) {
+    int colon = spec.indexOf(':');
+    int gt = spec.indexOf('>');
+    if (colon <= 0 || gt <= 0 || gt >= colon) {
+      return null;
+    }
+    var parts = spec.substring(colon + 1).split("\\.");
+    if (parts.length < 2 || parts[0].isBlank() || parts[1].isBlank()) {
+      return null;
+    }
+    var entry = new io.recordrelay.cli.config.SatelliteEntry();
+    entry.setSourceConn(spec.substring(0, gt).trim());
+    entry.setTargetConn(spec.substring(gt + 1, colon).trim());
+    entry.setTable(parts[0].trim());
+    entry.setLinkColumn(parts[1].trim());
+    if (parts.length >= 3 && !parts[2].isBlank()) {
+      entry.setPkColumn(parts[2].trim());
+    }
+    return entry;
+  }
+
+  /** Parses the optional Start-ID field; returns {@code null} when blank or non-numeric. */
+  private Long parseIdStart() {
+    var text = tfIdStart.getText();
+    if (text == null || text.isBlank()) {
+      return null;
+    }
+    try {
+      return Long.parseLong(text.trim());
+    } catch (NumberFormatException e) {
+      appendLog("Start ID is not numeric, ignored: " + text);
+      return null;
+    }
   }
 
   private MaskingConfig buildMasking() {

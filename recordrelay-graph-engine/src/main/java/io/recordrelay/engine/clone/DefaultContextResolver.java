@@ -58,6 +58,8 @@ public final class DefaultContextResolver implements ContextResolverPort {
         .masking(plan.masking())
         .fieldOverrides(plan.fieldOverrides())
         .conflictResolution(plan.conflictResolution())
+        .satellites(plan.satellites())
+        .identityStart(plan.identityStart())
         .build();
   }
 }

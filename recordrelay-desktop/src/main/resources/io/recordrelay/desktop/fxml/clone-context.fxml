@@ -111,6 +111,12 @@
                             <Label text="%cc.lbl.conflict" styleClass="field-label"/>
                             <ComboBox fx:id="cmbConflict" prefWidth="200"/>
                         </VBox>
+                        <Separator orientation="VERTICAL"/>
+                        <VBox spacing="4">
+                            <Label text="Start ID (START_AT)" styleClass="field-label"/>
+                            <TextField fx:id="tfIdStart" prefWidth="120"
+                                       promptText="e.g. 100000"/>
+                        </VBox>
                     </HBox>
                 </VBox>
 
@@ -130,6 +136,31 @@
                         </columns>
                         <placeholder>
                             <Label text="%cc.override.empty" styleClass="placeholder-hint"/>
+                        </placeholder>
+                    </TableView>
+                </VBox>
+
+                <!-- Step 5: Satellite (companion) tables in a separate database -->
+                <VBox styleClass="card" spacing="10">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="Satellite Tables" styleClass="section-label" HBox.hgrow="ALWAYS"/>
+                        <Button text="%cc.btn.add" onAction="#onAddSatellite"/>
+                        <Button text="%cc.btn.remove" onAction="#onRemoveSatellite"/>
+                        <Button text="Save" onAction="#onSaveSatellites"/>
+                    </HBox>
+                    <Label styleClass="hint-label"
+                           text="Sync a companion table from another database after the clone (e.g. a read_model populated by Kafka). The link column is remapped to the new root id and field overrides are applied. Saved per root table in config.json."/>
+                    <TableView fx:id="tblSatellites" prefHeight="130" editable="true">
+                        <columns>
+                            <TableColumn fx:id="colSatSource" text="Source conn"  prefWidth="120"/>
+                            <TableColumn fx:id="colSatTarget" text="Target conn"  prefWidth="120"/>
+                            <TableColumn fx:id="colSatTable"  text="Table"        prefWidth="130"/>
+                            <TableColumn fx:id="colSatLink"   text="Link column"  prefWidth="120"/>
+                            <TableColumn fx:id="colSatPk"     text="PK column"    prefWidth="100"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="No satellite tables — clones stay within a single database."
+                                   styleClass="placeholder-hint"/>
                         </placeholder>
                     </TableView>
                 </VBox>

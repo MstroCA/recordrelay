@@ -23,7 +23,9 @@ import io.recordrelay.core.clone.exception.CloneException;
 import io.recordrelay.core.clone.port.out.IdentityMapperPort;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
+import io.recordrelay.core.domain.DatabaseType;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,6 +64,17 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
       Map<String, List<DataRecord>> records,
       ConflictResolution resolution)
       throws CloneException {
+    return allocate(target, rootTable, records, resolution, null);
+  }
+
+  @Override
+  public IdentityMapping allocate(
+      ConnectionProfile target,
+      String rootTable,
+      Map<String, List<DataRecord>> records,
+      ConflictResolution resolution,
+      Long identityStart)
+      throws CloneException {
 
     // SKIP_EXISTING inserts with original IDs; ON CONFLICT DO NOTHING handles clashes at DB level.
     if (resolution == ConflictResolution.SKIP_EXISTING) {
@@ -78,11 +91,21 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
       }
 
       var pkColumn = detectPkColumn(table, tableRecords.get(0));
+
+      // SEQUENCE: pull fresh IDs from the table's own native sequence (nextval).
+      if (resolution == ConflictResolution.SEQUENCE) {
+        var seqIds = allocateFromSequence(target, table, pkColumn, tableRecords.size());
+        if (seqIds != null) {
+          registerAllocatedIds(builder, table, tableRecords, pkColumn, seqIds);
+          LOG.debug("Allocated {} IDs for '{}' from native sequence", seqIds.size(), table);
+          continue;
+        }
+        LOG.warn("No native sequence found for {}.{} — falling back to max(id)+1", table, pkColumn);
+      }
+
       var targetMax = queryMaxId(target, table, pkColumn, resolution);
       var sourceMax = maxSourceId(tableRecords, pkColumn);
-      // ISOLATE_NAMESPACE adds a large gap so cloned IDs never overlap with any pre-existing range.
-      long isolationGap = (resolution == ConflictResolution.ISOLATE_NAMESPACE) ? 1_000_000L : 0L;
-      long counter = Math.max(targetMax, sourceMax) + isolationGap;
+      long counter = allocationBase(resolution, identityStart, targetMax, sourceMax);
 
       for (var record : tableRecords) {
         var sourceId = extractFieldAsString(record, pkColumn);
@@ -101,7 +124,7 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
           "Allocated {} new IDs for table '{}' starting from {} (targetMax={}, sourceMax={})",
           tableRecords.size(),
           table,
-          Math.max(targetMax, sourceMax) + 1,
+          counter - tableRecords.size() + 1,
           targetMax,
           sourceMax);
     }
@@ -112,6 +135,82 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
         mapping.totalMappings(),
         records.size());
     return mapping;
+  }
+
+  /**
+   * Computes the counter's starting point (the value <em>before</em> the first {@code ++}) for the
+   * non-sequence strategies.
+   */
+  private static long allocationBase(
+      ConflictResolution resolution, Long identityStart, long targetMax, long sourceMax) {
+    if (resolution == ConflictResolution.ISOLATE_NAMESPACE) {
+      // Large gap so cloned IDs never overlap with any pre-existing range.
+      return Math.max(targetMax, sourceMax) + 1_000_000L;
+    }
+    if (resolution == ConflictResolution.START_AT && identityStart != null) {
+      // Honour the requested start, but never below existing rows (floor at targetMax).
+      return Math.max(targetMax, identityStart - 1);
+    }
+    return Math.max(targetMax, sourceMax);
+  }
+
+  private static void registerAllocatedIds(
+      IdentityMapping.Builder builder,
+      String table,
+      List<DataRecord> tableRecords,
+      String pkColumn,
+      List<Long> newIds) {
+    int i = 0;
+    for (var record : tableRecords) {
+      var sourceId = record.get(pkColumn);
+      if (sourceId == null) {
+        LOG.warn("Record in table '{}' has no PK value for '{}'; skipping", table, pkColumn);
+        continue;
+      }
+      builder.register(table, sourceId.toString(), String.valueOf(newIds.get(i)));
+      i++;
+    }
+  }
+
+  /**
+   * Allocates {@code count} fresh IDs from the target table's native sequence. Returns {@code null}
+   * when the database/column has no discoverable sequence, signalling a fallback to {@code
+   * max(id)+1}. Currently implemented for PostgreSQL.
+   */
+  private List<Long> allocateFromSequence(
+      ConnectionProfile target, String table, String pkColumn, int count) {
+    if (target.type() != DatabaseType.POSTGRESQL) {
+      return null;
+    }
+    try (var conn = pool(target).getConnection()) {
+      String sequence = null;
+      try (var ps = conn.prepareStatement("SELECT pg_get_serial_sequence(?, ?)")) {
+        ps.setString(1, table);
+        ps.setString(2, pkColumn);
+        try (var rs = ps.executeQuery()) {
+          if (rs.next()) {
+            sequence = rs.getString(1);
+          }
+        }
+      }
+      if (sequence == null) {
+        return null;
+      }
+      var ids = new ArrayList<Long>(count);
+      try (var ps = conn.prepareStatement("SELECT nextval(?) FROM generate_series(1, ?)")) {
+        ps.setString(1, sequence);
+        ps.setInt(2, count);
+        try (var rs = ps.executeQuery()) {
+          while (rs.next()) {
+            ids.add(rs.getLong(1));
+          }
+        }
+      }
+      return ids.size() == count ? ids : null;
+    } catch (Exception e) {
+      LOG.warn("Sequence allocation failed for {}.{}: {}", table, pkColumn, e.getMessage());
+      return null;
+    }
   }
 
   @Override

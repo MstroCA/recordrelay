@@ -86,6 +86,7 @@ public final class CloneContextController implements Refreshable {
   @FXML private Label lblDepthValue;
   @FXML private CheckBox chkMaskPii;
   @FXML private ComboBox<ConflictResolution> cmbConflict;
+  @FXML private TextField tfIdStart;
 
   // ── Step 4: Field Overrides ────────────────────────────────────────────────
   @FXML private TableView<OverrideRow> tblOverrides;
@@ -94,6 +95,16 @@ public final class CloneContextController implements Refreshable {
   @FXML private TableColumn<OverrideRow, String> colOvrValue;
 
   private final ObservableList<OverrideRow> overrideRows = FXCollections.observableArrayList();
+
+  // ── Step 5: Satellite (companion) tables ───────────────────────────────────
+  @FXML private TableView<SatelliteRow> tblSatellites;
+  @FXML private TableColumn<SatelliteRow, String> colSatSource;
+  @FXML private TableColumn<SatelliteRow, String> colSatTarget;
+  @FXML private TableColumn<SatelliteRow, String> colSatTable;
+  @FXML private TableColumn<SatelliteRow, String> colSatLink;
+  @FXML private TableColumn<SatelliteRow, String> colSatPk;
+
+  private final ObservableList<SatelliteRow> satelliteRows = FXCollections.observableArrayList();
 
   // ── Actions & Progress ─────────────────────────────────────────────────────
   @FXML private Button btnClone;
@@ -132,6 +143,7 @@ public final class CloneContextController implements Refreshable {
     setupConflictCombo();
     setupExportModeToggle();
     setupOverrideTable();
+    setupSatelliteTable();
     bindViewModel();
     bindDryRunTable();
     loadConnections();
@@ -172,6 +184,8 @@ public final class CloneContextController implements Refreshable {
               case SKIP_EXISTING -> "Skip existing rows";
               case ISOLATE_NAMESPACE -> "Isolate namespace";
               case FAIL_SAFE -> "Fail if target has data";
+              case SEQUENCE -> "Native sequence (DB-assigned IDs)";
+              case START_AT -> "Start at custom ID";
             };
           }
 
@@ -239,6 +253,143 @@ public final class CloneContextController implements Refreshable {
     colOvrColumn.setOnEditCommit(e -> e.getRowValue().columnProperty().set(e.getNewValue()));
     colOvrValue.setOnEditCommit(e -> e.getRowValue().valueProperty().set(e.getNewValue()));
     tblOverrides.setItems(overrideRows);
+  }
+
+  private void setupSatelliteTable() {
+    tblSatellites.setEditable(true);
+    bindSatelliteColumn(colSatSource, SatelliteRow::sourceConnProperty);
+    bindSatelliteColumn(colSatTarget, SatelliteRow::targetConnProperty);
+    bindSatelliteColumn(colSatTable, SatelliteRow::tableProperty);
+    bindSatelliteColumn(colSatLink, SatelliteRow::linkColumnProperty);
+    bindSatelliteColumn(colSatPk, SatelliteRow::pkColumnProperty);
+    tblSatellites.setItems(satelliteRows);
+    // Reload the saved satellites for whichever root table is selected.
+    cmbRootTable.valueProperty().addListener((obs, o, n) -> loadSatellitesForEntity(n));
+  }
+
+  private void bindSatelliteColumn(
+      TableColumn<SatelliteRow, String> column,
+      java.util.function.Function<SatelliteRow, StringProperty> prop) {
+    column.setCellValueFactory(r -> prop.apply(r.getValue()));
+    column.setCellFactory(TextFieldTableCell.forTableColumn());
+    column.setOnEditCommit(e -> prop.apply(e.getRowValue()).set(e.getNewValue()));
+  }
+
+  /** Loads the satellites saved for {@code entityName} in config.json into the editor table. */
+  private void loadSatellitesForEntity(String entityName) {
+    satelliteRows.clear();
+    if (entityName == null || entityName.isBlank() || store == null) {
+      return;
+    }
+    try {
+      var config = store.load();
+      var entries = config.getSatellites() == null ? null : config.getSatellites().get(entityName);
+      if (entries == null) {
+        return;
+      }
+      for (var e : entries) {
+        satelliteRows.add(
+            new SatelliteRow(
+                nullToEmpty(e.getSourceConn()),
+                nullToEmpty(e.getTargetConn()),
+                nullToEmpty(e.getTable()),
+                nullToEmpty(e.getLinkColumn()),
+                nullToEmpty(e.getPkColumn())));
+      }
+    } catch (Exception ex) {
+      vm.appendLog("Satellite tanımları yüklenemedi: " + ex.getMessage());
+    }
+  }
+
+  @FXML
+  void onAddSatellite() {
+    satelliteRows.add(new SatelliteRow("", "", "", "beyanname_id", ""));
+  }
+
+  @FXML
+  void onRemoveSatellite() {
+    var sel = tblSatellites.getSelectionModel().getSelectedItem();
+    if (sel != null) {
+      satelliteRows.remove(sel);
+    }
+  }
+
+  /** Persists the current satellite rows to config.json under the selected root table name. */
+  @FXML
+  void onSaveSatellites() {
+    var entityName = cmbRootTable.getValue();
+    if (entityName == null || entityName.isBlank()) {
+      showAlert("Önce başlangıç tablosunu (root table) seçin.");
+      return;
+    }
+    try {
+      var config = store.load();
+      var entries = new ArrayList<io.recordrelay.cli.config.SatelliteEntry>();
+      for (var row : satelliteRows) {
+        if (row.tableProperty().get().isBlank() || row.linkColumnProperty().get().isBlank()) {
+          continue;
+        }
+        var entry = new io.recordrelay.cli.config.SatelliteEntry();
+        entry.setSourceConn(row.sourceConnProperty().get().trim());
+        entry.setTargetConn(row.targetConnProperty().get().trim());
+        entry.setTable(row.tableProperty().get().trim());
+        entry.setLinkColumn(row.linkColumnProperty().get().trim());
+        var pk = row.pkColumnProperty().get().trim();
+        entry.setPkColumn(pk.isBlank() ? null : pk);
+        entries.add(entry);
+      }
+      if (entries.isEmpty()) {
+        config.getSatellites().remove(entityName);
+      } else {
+        config.getSatellites().put(entityName, entries);
+      }
+      store.save(config);
+      vm.appendLog("Satellite tanımları kaydedildi: " + entityName + " (" + entries.size() + ")");
+    } catch (Exception ex) {
+      showError("Satellite tanımları kaydedilemedi: " + ex.getMessage());
+    }
+  }
+
+  /** Builds a {@link io.recordrelay.core.clone.domain.SatelliteConfig} from the editor rows. */
+  private io.recordrelay.core.clone.domain.SatelliteConfig buildSatellites() throws Exception {
+    var list = new ArrayList<io.recordrelay.core.clone.domain.SatelliteTable>();
+    for (var row : satelliteRows) {
+      var srcConn = row.sourceConnProperty().get().trim();
+      var tgtConn = row.targetConnProperty().get().trim();
+      var table = row.tableProperty().get().trim();
+      var link = row.linkColumnProperty().get().trim();
+      if (srcConn.isBlank() || tgtConn.isBlank() || table.isBlank() || link.isBlank()) {
+        continue;
+      }
+      var pk = row.pkColumnProperty().get().trim();
+      list.add(
+          new io.recordrelay.core.clone.domain.SatelliteTable(
+              resolver.resolve(srcConn),
+              resolver.resolve(tgtConn),
+              table,
+              link,
+              pk.isBlank() ? null : pk));
+    }
+    return list.isEmpty()
+        ? io.recordrelay.core.clone.domain.SatelliteConfig.none()
+        : new io.recordrelay.core.clone.domain.SatelliteConfig(list);
+  }
+
+  private static String nullToEmpty(String s) {
+    return s == null ? "" : s;
+  }
+
+  /** Parses the optional Start-ID field; returns {@code null} when blank or non-numeric. */
+  private Long parseIdStart() {
+    if (tfIdStart == null || tfIdStart.getText() == null || tfIdStart.getText().isBlank()) {
+      return null;
+    }
+    try {
+      return Long.parseLong(tfIdStart.getText().trim());
+    } catch (NumberFormatException e) {
+      vm.appendLog("Start ID sayısal değil, yok sayıldı: " + tfIdStart.getText());
+      return null;
+    }
   }
 
   // ── Table loading ──────────────────────────────────────────────────────────
@@ -435,6 +586,7 @@ public final class CloneContextController implements Refreshable {
           cmbConflict.getValue() != null
               ? cmbConflict.getValue()
               : ConflictResolution.REGENERATE_IDENTITIES;
+      var satellites = buildSatellites();
       var plan =
           ContextClonePlan.liveCloneWithOverrides(
               entity,
@@ -444,7 +596,12 @@ public final class CloneContextController implements Refreshable {
               depth,
               masking,
               buildFieldOverrides(),
-              conflict);
+              conflict,
+              satellites,
+              parseIdStart());
+      if (!satellites.isEmpty()) {
+        vm.appendLog("Uydu tablolar (satellite): " + satellites.satellites().size() + " tanım");
+      }
 
       vm.appendLog(
           "Kopyalanıyor: "
@@ -704,6 +861,49 @@ public final class CloneContextController implements Refreshable {
     /** Returns the override value property. */
     public StringProperty valueProperty() {
       return value;
+    }
+  }
+
+  /** Editable row model for the satellite (companion table) editor. */
+  public static final class SatelliteRow {
+    private final SimpleStringProperty sourceConn;
+    private final SimpleStringProperty targetConn;
+    private final SimpleStringProperty table;
+    private final SimpleStringProperty linkColumn;
+    private final SimpleStringProperty pkColumn;
+
+    public SatelliteRow(
+        String sourceConn, String targetConn, String table, String linkColumn, String pkColumn) {
+      this.sourceConn = new SimpleStringProperty(sourceConn);
+      this.targetConn = new SimpleStringProperty(targetConn);
+      this.table = new SimpleStringProperty(table);
+      this.linkColumn = new SimpleStringProperty(linkColumn);
+      this.pkColumn = new SimpleStringProperty(pkColumn);
+    }
+
+    /** Returns the source connection-name property. */
+    public StringProperty sourceConnProperty() {
+      return sourceConn;
+    }
+
+    /** Returns the target connection-name property. */
+    public StringProperty targetConnProperty() {
+      return targetConn;
+    }
+
+    /** Returns the companion table-name property. */
+    public StringProperty tableProperty() {
+      return table;
+    }
+
+    /** Returns the link-column property (references the root id). */
+    public StringProperty linkColumnProperty() {
+      return linkColumn;
+    }
+
+    /** Returns the primary-key column property (empty = auto-detect). */
+    public StringProperty pkColumnProperty() {
+      return pkColumn;
     }
   }
 

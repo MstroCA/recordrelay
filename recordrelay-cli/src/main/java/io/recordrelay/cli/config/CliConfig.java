@@ -17,6 +17,7 @@ package io.recordrelay.cli.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Root POJO for the CLI configuration file at {@code ~/.recordrelay/config.json}. */
@@ -25,6 +26,9 @@ public class CliConfig {
 
   private Map<String, EnvironmentEntry> environments = new LinkedHashMap<>();
   private Map<String, ConnectionEntry> connections = new LinkedHashMap<>();
+
+  /** Companion (satellite) tables keyed by entity name; synchronised after a clone. */
+  private Map<String, List<SatelliteEntry>> satellites = new LinkedHashMap<>();
 
   public CliConfig() {}
 
@@ -42,5 +46,13 @@ public class CliConfig {
 
   public void setConnections(Map<String, ConnectionEntry> connections) {
     this.connections = connections;
+  }
+
+  public Map<String, List<SatelliteEntry>> getSatellites() {
+    return satellites;
+  }
+
+  public void setSatellites(Map<String, List<SatelliteEntry>> satellites) {
+    this.satellites = satellites;
   }
 }

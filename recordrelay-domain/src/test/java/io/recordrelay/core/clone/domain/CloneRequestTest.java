@@ -56,7 +56,17 @@ class CloneRequestTest {
   void nullMaskingDefaultsToNoneConfig() {
     var request =
         new CloneRequest(
-            profile("src"), profile("tgt"), "customers", "42", 3, null, null, null, null);
+            profile("src"),
+            profile("tgt"),
+            "customers",
+            "42",
+            3,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
     assertThat(request.masking().isEmpty()).isTrue();
   }
 
@@ -64,7 +74,17 @@ class CloneRequestTest {
   void nullConflictResolutionDefaultsToRegenerateIdentities() {
     var request =
         new CloneRequest(
-            profile("src"), profile("tgt"), "customers", "42", 3, null, null, null, null);
+            profile("src"),
+            profile("tgt"),
+            "customers",
+            "42",
+            3,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
     assertThat(request.conflictResolution()).isEqualTo(ConflictResolution.REGENERATE_IDENTITIES);
   }
 
@@ -73,7 +93,17 @@ class CloneRequestTest {
     assertThatThrownBy(
             () ->
                 new CloneRequest(
-                    profile("src"), profile("tgt"), "  ", "42", 3, null, null, null, null))
+                    profile("src"),
+                    profile("tgt"),
+                    "  ",
+                    "42",
+                    3,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("rootTable");
   }
@@ -83,7 +113,17 @@ class CloneRequestTest {
     assertThatThrownBy(
             () ->
                 new CloneRequest(
-                    profile("src"), profile("tgt"), "customers", "  ", 3, null, null, null, null))
+                    profile("src"),
+                    profile("tgt"),
+                    "customers",
+                    "  ",
+                    3,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("rootId");
   }
@@ -93,7 +133,17 @@ class CloneRequestTest {
     assertThatThrownBy(
             () ->
                 new CloneRequest(
-                    profile("src"), profile("tgt"), "customers", "42", 0, null, null, null, null))
+                    profile("src"),
+                    profile("tgt"),
+                    "customers",
+                    "42",
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("depth");
   }
@@ -111,9 +161,25 @@ class CloneRequestTest {
                     null,
                     null,
                     null,
+                    null,
+                    null,
                     null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("depth");
+  }
+
+  @Test
+  void identityStartDefaultsToNullAndIsCarriedByBuilder() {
+    var noStart = CloneRequest.builder(profile("src"), profile("tgt"), "customers", "42").build();
+    assertThat(noStart.identityStart()).isNull();
+
+    var withStart =
+        CloneRequest.builder(profile("src"), profile("tgt"), "customers", "42")
+            .conflictResolution(ConflictResolution.START_AT)
+            .identityStart(100_000L)
+            .build();
+    assertThat(withStart.identityStart()).isEqualTo(100_000L);
+    assertThat(withStart.conflictResolution()).isEqualTo(ConflictResolution.START_AT);
   }
 
   @Test

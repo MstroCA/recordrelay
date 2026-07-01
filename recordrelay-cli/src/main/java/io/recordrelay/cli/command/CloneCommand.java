@@ -19,6 +19,7 @@ import io.recordrelay.cli.ExitCode;
 import io.recordrelay.cli.RecordRelayCli;
 import io.recordrelay.cli.engine.ConnProfileResolver;
 import io.recordrelay.cli.engine.DockerLauncher;
+import io.recordrelay.cli.engine.SatelliteConfigResolver;
 import io.recordrelay.cli.engine.WebhookNotifier;
 import io.recordrelay.cli.engine.WebhookNotifier.WebhookPayload;
 import io.recordrelay.core.clone.domain.BugReport;
@@ -32,6 +33,7 @@ import io.recordrelay.core.clone.domain.FieldOverrideConfig;
 import io.recordrelay.core.clone.domain.MaskerType;
 import io.recordrelay.core.clone.domain.MaskingConfig;
 import io.recordrelay.core.clone.domain.MaskingRule;
+import io.recordrelay.core.clone.domain.SatelliteConfig;
 import io.recordrelay.core.clone.port.out.CloneProgressListener;
 import io.recordrelay.core.i18n.Messages;
 import io.recordrelay.engine.clone.BuiltinEntityRegistry;
@@ -162,6 +164,19 @@ public final class CloneCommand implements Callable<Integer> {
       arity = "0..*")
   List<String> fieldOverrides;
 
+  // ── Companion / satellite tables (cross-database) ─────────────────────────
+
+  @Option(
+      names = {"--satellite"},
+      description =
+          "Sync a companion table in a separate database after the clone, remapping its link"
+              + " column to the new root id. Format:"
+              + " 'sourceConn>targetConn:table.linkColumn[.pkColumn]'."
+              + " Example: 'prod-user>test-user:read_model.beyanname_id'. Repeatable."
+              + " Merged with satellites defined for the entity in config.json.",
+      arity = "0..*")
+  List<String> satellites;
+
   // ── Multi-entity support ──────────────────────────────────────────────────
 
   @Option(
@@ -181,10 +196,18 @@ public final class CloneCommand implements Callable<Integer> {
   @Option(
       names = {"--conflict"},
       description =
-          "Conflict resolution strategy when target already has data."
+          "Conflict / identity strategy when writing to the target."
               + " One of: REGENERATE_IDENTITIES (default), SKIP_EXISTING,"
-              + " ISOLATE_NAMESPACE, FAIL_SAFE")
+              + " ISOLATE_NAMESPACE, FAIL_SAFE, SEQUENCE (use the target's native"
+              + " identity sequence), START_AT (start from --id-start)")
   ConflictResolution conflict = ConflictResolution.REGENERATE_IDENTITIES;
+
+  @Option(
+      names = {"--id-start"},
+      description =
+          "Starting primary-key value for --conflict START_AT (treated as a floor above any"
+              + " existing rows).")
+  Long idStart;
 
   // ── Dry run ───────────────────────────────────────────────────────────────
 
@@ -230,6 +253,7 @@ public final class CloneCommand implements Callable<Integer> {
       io.recordrelay.core.domain.ConnectionProfile srcProfile,
       MaskingConfig masking,
       FieldOverrideConfig overrides,
+      SatelliteConfig satellites,
       DockerLauncher.ContainerInfo container) {}
 
   @Override
@@ -257,6 +281,7 @@ public final class CloneCommand implements Callable<Integer> {
               srcProfile,
               buildMaskingConfig(),
               buildFieldOverrideConfig(),
+              buildSatelliteConfig(resolver, entityName),
               container);
 
       long startMs = System.currentTimeMillis();
@@ -449,6 +474,13 @@ public final class CloneCommand implements Callable<Integer> {
     CloneReport report;
     var registryEntity = BuiltinEntityRegistry.INSTANCE.findByName(entityName);
     if (registryEntity.isPresent()) {
+      if (asOf != null) {
+        p.printer()
+            .printLine(
+                "Warning: --at is not supported for named entity clones (--entity "
+                    + entityName
+                    + ") and will be ignored. Use --table/--id for point-in-time clones.");
+      }
       var plan =
           ContextClonePlan.liveCloneWithOverrides(
               registryEntity.get(),
@@ -458,7 +490,9 @@ public final class CloneCommand implements Callable<Integer> {
               depth,
               p.masking(),
               p.overrides(),
-              conflict);
+              conflict,
+              p.satellites(),
+              idStart);
       report =
           DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener(p.printer()));
     } else {
@@ -469,6 +503,8 @@ public final class CloneCommand implements Callable<Integer> {
               .fieldOverrides(p.overrides())
               .conflictResolution(conflict)
               .asOf(parseAsOf())
+              .satellites(p.satellites())
+              .identityStart(idStart)
               .build();
       report =
           DefaultCloneEngine.createDefault()
@@ -544,6 +580,22 @@ public final class CloneCommand implements Callable<Integer> {
       }
     }
     return new FieldOverrideConfig(list);
+  }
+
+  /**
+   * Builds the satellite configuration by merging companion tables declared for this entity in
+   * {@code config.json} with any {@code --satellite} flags passed on the command line.
+   */
+  private SatelliteConfig buildSatelliteConfig(ConnProfileResolver resolver, String entityName)
+      throws Exception {
+    var satelliteResolver = new SatelliteConfigResolver(parent.configStore(), resolver);
+    var list = new ArrayList<>(satelliteResolver.forEntity(entityName));
+    if (satellites != null) {
+      for (var raw : satellites) {
+        list.add(satelliteResolver.parse(raw));
+      }
+    }
+    return list.isEmpty() ? SatelliteConfig.none() : new SatelliteConfig(list);
   }
 
   private MaskingConfig buildMaskingConfig() {

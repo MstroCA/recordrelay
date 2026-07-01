@@ -34,7 +34,9 @@ public record CloneRequest(
     MaskingConfig masking,
     ConflictResolution conflictResolution,
     FieldOverrideConfig fieldOverrides,
-    Instant asOf) {
+    Instant asOf,
+    SatelliteConfig satellites,
+    Long identityStart) {
 
   /** Default traversal depth when none is specified. */
   public static final int DEFAULT_DEPTH = 3;
@@ -62,6 +64,7 @@ public record CloneRequest(
     conflictResolution =
         conflictResolution == null ? ConflictResolution.REGENERATE_IDENTITIES : conflictResolution;
     fieldOverrides = fieldOverrides == null ? FieldOverrideConfig.none() : fieldOverrides;
+    satellites = satellites == null ? SatelliteConfig.none() : satellites;
   }
 
   /** Returns a builder pre-populated with required fields. */
@@ -81,6 +84,8 @@ public record CloneRequest(
     private ConflictResolution conflictResolution = ConflictResolution.REGENERATE_IDENTITIES;
     private FieldOverrideConfig fieldOverrides = FieldOverrideConfig.none();
     private Instant asOf = null;
+    private SatelliteConfig satellites = SatelliteConfig.none();
+    private Long identityStart = null;
 
     private Builder(
         ConnectionProfile source, ConnectionProfile target, String rootTable, String rootId) {
@@ -150,6 +155,28 @@ public record CloneRequest(
     }
 
     /**
+     * Sets the companion (satellite) tables to synchronise after the primary clone.
+     *
+     * @param satellites satellite config; {@code null} is treated as {@link SatelliteConfig#none()}
+     * @return this builder
+     */
+    public Builder satellites(SatelliteConfig satellites) {
+      this.satellites = satellites;
+      return this;
+    }
+
+    /**
+     * Sets the starting primary-key value for {@link ConflictResolution#START_AT}.
+     *
+     * @param identityStart starting value; {@code null} means "not specified"
+     * @return this builder
+     */
+    public Builder identityStart(Long identityStart) {
+      this.identityStart = identityStart;
+      return this;
+    }
+
+    /**
      * Builds and returns an immutable {@link CloneRequest}.
      *
      * @return the constructed request
@@ -164,7 +191,9 @@ public record CloneRequest(
           masking,
           conflictResolution,
           fieldOverrides,
-          asOf);
+          asOf,
+          satellites,
+          identityStart);
     }
   }
 }

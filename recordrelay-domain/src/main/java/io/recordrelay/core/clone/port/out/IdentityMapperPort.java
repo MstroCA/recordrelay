@@ -33,4 +33,21 @@ public interface IdentityMapperPort {
       Map<String, List<DataRecord>> records,
       ConflictResolution resolution)
       throws CloneException;
+
+  /**
+   * Allocates new primary key values, honouring {@code identityStart} for {@link
+   * ConflictResolution#START_AT}. The default implementation ignores the start value and delegates
+   * to {@link #allocate(ConnectionProfile, String, Map, ConflictResolution)}.
+   *
+   * @param identityStart starting value for {@code START_AT}; {@code null} means "not specified"
+   */
+  default IdentityMapping allocate(
+      ConnectionProfile target,
+      String rootTable,
+      Map<String, List<DataRecord>> records,
+      ConflictResolution resolution,
+      Long identityStart)
+      throws CloneException {
+    return allocate(target, rootTable, records, resolution);
+  }
 }

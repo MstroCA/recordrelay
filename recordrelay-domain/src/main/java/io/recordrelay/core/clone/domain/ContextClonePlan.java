@@ -41,7 +41,9 @@ public record ContextClonePlan(
     Path outputDirectory,
     BugReport bugReport,
     FieldOverrideConfig fieldOverrides,
-    ConflictResolution conflictResolution) {
+    ConflictResolution conflictResolution,
+    SatelliteConfig satellites,
+    Long identityStart) {
 
   public ContextClonePlan {
     Objects.requireNonNull(entity, "entity");
@@ -57,6 +59,7 @@ public record ContextClonePlan(
     fieldOverrides = fieldOverrides == null ? FieldOverrideConfig.none() : fieldOverrides;
     conflictResolution =
         conflictResolution == null ? ConflictResolution.REGENERATE_IDENTITIES : conflictResolution;
+    satellites = satellites == null ? SatelliteConfig.none() : satellites;
   }
 
   /** Creates a simple live-clone plan (source → target, no package export). */
@@ -77,7 +80,9 @@ public record ContextClonePlan(
         null,
         null,
         FieldOverrideConfig.none(),
-        ConflictResolution.REGENERATE_IDENTITIES);
+        ConflictResolution.REGENERATE_IDENTITIES,
+        SatelliteConfig.none(),
+        null);
   }
 
   /** Creates a live-clone plan with field overrides applied in the target. */
@@ -99,7 +104,9 @@ public record ContextClonePlan(
         null,
         null,
         fieldOverrides,
-        ConflictResolution.REGENERATE_IDENTITIES);
+        ConflictResolution.REGENERATE_IDENTITIES,
+        SatelliteConfig.none(),
+        null);
   }
 
   /** Creates a live-clone plan with field overrides and conflict resolution strategy. */
@@ -112,6 +119,60 @@ public record ContextClonePlan(
       MaskingConfig masking,
       FieldOverrideConfig fieldOverrides,
       ConflictResolution conflictResolution) {
+    return liveCloneWithOverrides(
+        entity,
+        entityId,
+        source,
+        target,
+        depth,
+        masking,
+        fieldOverrides,
+        conflictResolution,
+        SatelliteConfig.none());
+  }
+
+  /**
+   * Creates a live-clone plan with field overrides, conflict resolution, and companion (satellite)
+   * tables synchronised into secondary databases after the primary clone.
+   */
+  public static ContextClonePlan liveCloneWithOverrides(
+      BusinessEntity entity,
+      String entityId,
+      ConnectionProfile source,
+      ConnectionProfile target,
+      int depth,
+      MaskingConfig masking,
+      FieldOverrideConfig fieldOverrides,
+      ConflictResolution conflictResolution,
+      SatelliteConfig satellites) {
+    return liveCloneWithOverrides(
+        entity,
+        entityId,
+        source,
+        target,
+        depth,
+        masking,
+        fieldOverrides,
+        conflictResolution,
+        satellites,
+        null);
+  }
+
+  /**
+   * Creates a live-clone plan with field overrides, conflict resolution, satellites, and a custom
+   * identity start value (used by {@link ConflictResolution#START_AT}).
+   */
+  public static ContextClonePlan liveCloneWithOverrides(
+      BusinessEntity entity,
+      String entityId,
+      ConnectionProfile source,
+      ConnectionProfile target,
+      int depth,
+      MaskingConfig masking,
+      FieldOverrideConfig fieldOverrides,
+      ConflictResolution conflictResolution,
+      SatelliteConfig satellites,
+      Long identityStart) {
     return new ContextClonePlan(
         entity,
         entityId,
@@ -122,7 +183,9 @@ public record ContextClonePlan(
         null,
         null,
         fieldOverrides,
-        conflictResolution);
+        conflictResolution,
+        satellites,
+        identityStart);
   }
 
   /** Creates a bug-reproduction export plan (source → .rrpkg file, no live target). */
@@ -143,7 +206,9 @@ public record ContextClonePlan(
         outputDirectory,
         bugReport,
         FieldOverrideConfig.none(),
-        ConflictResolution.REGENERATE_IDENTITIES);
+        ConflictResolution.REGENERATE_IDENTITIES,
+        SatelliteConfig.none(),
+        null);
   }
 
   /** Returns true when this plan targets a live database (not just an export). */

@@ -82,7 +82,14 @@ class IdentityMappingTest {
   @Test
   void conflictResolutionDefaultIsRegenerateIdentities() {
     assertThat(ConflictResolution.REGENERATE_IDENTITIES).isNotNull();
-    assertThat(ConflictResolution.values()).hasSize(4);
+    assertThat(ConflictResolution.values())
+        .containsExactly(
+            ConflictResolution.REGENERATE_IDENTITIES,
+            ConflictResolution.ISOLATE_NAMESPACE,
+            ConflictResolution.FAIL_SAFE,
+            ConflictResolution.SKIP_EXISTING,
+            ConflictResolution.SEQUENCE,
+            ConflictResolution.START_AT);
   }
 
   @Test

@@ -41,6 +41,7 @@ import io.recordrelay.core.clone.port.out.PackageExporterPort;
 import io.recordrelay.core.clone.port.out.PackageImporterPort;
 import io.recordrelay.core.clone.port.out.RecordFetcherPort;
 import io.recordrelay.core.clone.port.out.RelationshipResolverPort;
+import io.recordrelay.core.clone.port.out.SatelliteSyncPort;
 import io.recordrelay.core.clone.port.out.SequenceSyncPort;
 import io.recordrelay.core.domain.ConnectionProfile;
 import io.recordrelay.core.domain.DataRecord;
@@ -97,6 +98,7 @@ public final class DefaultCloneEngine
   private final PackageExporterPort packageExporter;
   private final PackageImporterPort packageImporter;
   private final SequenceSyncPort sequenceSyncer;
+  private final SatelliteSyncPort satelliteSyncer;
 
   public DefaultCloneEngine(
       RelationshipResolverPort relationshipResolver,
@@ -105,7 +107,8 @@ public final class DefaultCloneEngine
       MaskingServicePort maskingService,
       PackageExporterPort packageExporter,
       PackageImporterPort packageImporter,
-      SequenceSyncPort sequenceSyncer) {
+      SequenceSyncPort sequenceSyncer,
+      SatelliteSyncPort satelliteSyncer) {
     this.relationshipResolver =
         Objects.requireNonNull(relationshipResolver, "relationshipResolver");
     this.recordFetcher = Objects.requireNonNull(recordFetcher, "recordFetcher");
@@ -114,6 +117,7 @@ public final class DefaultCloneEngine
     this.packageExporter = Objects.requireNonNull(packageExporter, "packageExporter");
     this.packageImporter = Objects.requireNonNull(packageImporter, "packageImporter");
     this.sequenceSyncer = Objects.requireNonNull(sequenceSyncer, "sequenceSyncer");
+    this.satelliteSyncer = Objects.requireNonNull(satelliteSyncer, "satelliteSyncer");
   }
 
   /** Creates an engine with the default JDBC-backed implementations. */
@@ -125,7 +129,8 @@ public final class DefaultCloneEngine
         new DefaultMaskingService(),
         new RrPkgExporter(),
         new RrPkgImporter(),
-        new JdbcSequenceSynchronizer());
+        new JdbcSequenceSynchronizer(),
+        new JdbcSatelliteSyncer());
   }
 
   @Override
@@ -203,7 +208,11 @@ public final class DefaultCloneEngine
     long t2 = System.currentTimeMillis();
     var identityMapping =
         identityMapper.allocate(
-            request.target(), request.rootTable(), rawRecords, request.conflictResolution());
+            request.target(),
+            request.rootTable(),
+            rawRecords,
+            request.conflictResolution(),
+            request.identityStart());
     listener.onIdentitiesAllocated(identityMapping.totalMappings());
     LOG.info(
         "  [3/5] identities allocated  mappings={} elapsed={}ms",
@@ -229,14 +238,68 @@ public final class DefaultCloneEngine
 
     sequenceSyncer.synchronize(request.target(), identityMapping);
 
+    var summaries = new ArrayList<>(buildSummaries(finalRecords));
+    summaries.addAll(
+        syncSatellites(request, rawRecords, traversalGraph, identityMapping, warnings, listener));
+
     long maskedFieldCount = countMaskedFieldsAll(rawRecords, request);
     return new CloneReport(
         request.rootTable(),
         request.rootId(),
-        buildSummaries(finalRecords),
+        summaries,
         System.currentTimeMillis() - startMs,
         List.copyOf(warnings),
         maskedFieldCount);
+  }
+
+  /**
+   * Propagates the primary clone into any configured companion (satellite) databases. Runs after
+   * the primary write + sequence sync so the root identities are final. Failures are recorded as
+   * warnings and never abort the primary clone.
+   */
+  private List<ClonedTableSummary> syncSatellites(
+      CloneRequest request,
+      Map<String, List<DataRecord>> rawRecords,
+      RelationshipGraph traversalGraph,
+      IdentityMapping identityMapping,
+      List<String> warnings,
+      CloneProgressListener listener)
+      throws CloneException {
+    if (request.satellites().isEmpty()) {
+      return List.of();
+    }
+    var rootRecords = rawRecords.getOrDefault(request.rootTable(), List.of());
+    if (rootRecords.isEmpty()) {
+      return List.of();
+    }
+    var rootPk = rootPkColumn(traversalGraph, request.rootTable());
+    var sourceRootIds = new java.util.LinkedHashSet<String>();
+    for (var record : rootRecords) {
+      var value = record.get(rootPk);
+      if (value != null) {
+        sourceRootIds.add(value.toString());
+      }
+    }
+    if (sourceRootIds.isEmpty()) {
+      return List.of();
+    }
+    long t = System.currentTimeMillis();
+    var result =
+        satelliteSyncer.sync(
+            request.rootTable(),
+            sourceRootIds,
+            identityMapping,
+            request.satellites().satellites(),
+            request.fieldOverrides(),
+            listener);
+    warnings.addAll(result.warnings());
+    int written = result.summaries().stream().mapToInt(s -> (int) s.recordCount()).sum();
+    LOG.info(
+        "  [satellites] synced  tables={} records={} elapsed={}ms",
+        result.summaries().size(),
+        written,
+        elapsed(t));
+    return result.summaries();
   }
 
   private static long elapsed(long fromMs) {

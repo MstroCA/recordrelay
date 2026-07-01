@@ -100,16 +100,23 @@ public final class BigQueryRecordWriter implements RecordWriter {
       reqBuilder.addRow(UUID.randomUUID().toString(), rowContent);
     }
     int count = buffer.size();
-    buffer.clear();
     try {
       var resp = bq.insertAll(reqBuilder.build());
+      buffer.clear();
       if (resp.hasErrors()) {
         var errors = resp.getInsertErrors();
         int errorCount = errors.values().stream().mapToInt(List::size).sum();
-        LOG.warn("{} streaming insert error(s) into '{}': {}", errorCount, tableId, errors);
-      } else {
-        LOG.debug("Flushed {} row(s) to '{}'", count, tableId);
+        throw new ConnectorException(
+            errorCount
+                + " streaming insert error(s) into '"
+                + tableId
+                + "': "
+                + errors.values().stream()
+                    .flatMap(List::stream)
+                    .map(Object::toString)
+                    .collect(java.util.stream.Collectors.joining("; ")));
       }
+      LOG.debug("Flushed {} row(s) to '{}'", count, tableId);
     } catch (BigQueryException e) {
       throw new ConnectorException(
           "BigQuery insertAll failed for '" + tableId + "': " + e.getMessage(), e);

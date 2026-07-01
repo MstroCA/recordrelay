@@ -63,6 +63,9 @@ public final class DefaultMaskingService implements MaskingServicePort {
       case ADDRESS -> maskAddress(hash);
       case IBAN -> maskIban(value, hash);
       case NATIONAL_ID -> maskNationalId(value, hash);
+        // Non-exhaustive on purpose: an explicit default avoids a java.lang.MatchException
+        // reference (absent on IntelliJ 2024.1 / JBR 17, where this engine is bundled).
+      default -> maskGeneric(hash);
     };
   }
 
@@ -148,7 +151,13 @@ public final class DefaultMaskingService implements MaskingServicePort {
       case ADDRESS -> maskAddress(hash);
       case IBAN -> maskIban(value, hash);
       case NATIONAL_ID -> maskNationalId(value, hash);
+      default -> maskGeneric(hash);
     };
+  }
+
+  /** Fallback masker (also keeps the enum switches non-exhaustive to avoid MatchException). */
+  private String maskGeneric(String hash) {
+    return hash.substring(0, Math.min(12, hash.length()));
   }
 
   /** Exposes the underlying hash for determinism tests. */

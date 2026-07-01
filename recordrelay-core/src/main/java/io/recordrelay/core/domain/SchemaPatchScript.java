@@ -80,6 +80,9 @@ public record SchemaPatchScript(List<SchemaPatchStatement> statements, DatabaseT
       case MODIFY_COLUMN_TYPE -> "Type mismatches — ALTER COLUMN (review carefully)";
       case DROP_TABLE -> "Extra tables — DROP TABLE (destructive, commented out)";
       case DROP_COLUMN -> "Extra columns — DROP COLUMN (destructive, commented out)";
+        // Explicit default keeps this non-exhaustive so javac emits no java.lang.MatchException
+        // reference (absent on IntelliJ 2024.1 / JBR 17, which bundles this module).
+      default -> kind.name();
     };
   }
 }

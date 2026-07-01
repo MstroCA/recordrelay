@@ -230,6 +230,10 @@ public final class CloneContextPanel extends JPanel {
                           case FAIL_SAFE -> "Fail if target has data";
                           case SEQUENCE -> "Native sequence (DB-assigned IDs)";
                           case START_AT -> "Start at custom ID";
+                            // Explicit default keeps the switch non-exhaustive so javac does not
+                            // emit a java.lang.MatchException reference (absent on IDEA 2024.1 /
+                            // JBR 17).
+                          default -> v.name();
                         })));
     conflictRow.add(cmbConflict);
     panel.add(conflictRow);

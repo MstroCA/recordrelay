@@ -25,12 +25,23 @@ import java.util.Objects;
  * depth so the user can verify scope before committing to a live clone.
  */
 public record DryRunReport(
-    String rootTable, String rootId, List<DryRunTableEntry> tables, long durationMillis) {
+    String rootTable,
+    String rootId,
+    List<DryRunTableEntry> tables,
+    long durationMillis,
+    List<SatellitePreview> satellites) {
 
   public DryRunReport {
     Objects.requireNonNull(rootTable, "rootTable");
     Objects.requireNonNull(rootId, "rootId");
     tables = tables == null ? List.of() : List.copyOf(tables);
+    satellites = satellites == null ? List.of() : List.copyOf(satellites);
+  }
+
+  /** Backward-compatible constructor for reports without satellite previews. */
+  public DryRunReport(
+      String rootTable, String rootId, List<DryRunTableEntry> tables, long durationMillis) {
+    this(rootTable, rootId, tables, durationMillis, List.of());
   }
 
   /**

@@ -682,16 +682,20 @@ public final class CloneContextController implements Refreshable {
       var entity = buildEntity();
       var srcProfile = resolver.resolve(cmbSource.getValue());
       int depth = (int) sliderDepth.getValue();
+      var satellites = buildSatellites();
 
       // Use source as dummy target — dry run never writes
       var plan =
-          ContextClonePlan.liveClone(
+          ContextClonePlan.liveCloneWithOverrides(
               entity,
               tfEntityId.getText().trim(),
               srcProfile,
               srcProfile,
               depth,
-              MaskingConfig.none());
+              MaskingConfig.none(),
+              buildFieldOverrides(),
+              ConflictResolution.REGENERATE_IDENTITIES,
+              satellites);
 
       var engine = DefaultContextCloneEngine.createDefault();
       DryRunReport report = engine.dryRunContext(plan);
@@ -715,6 +719,18 @@ public final class CloneContextController implements Refreshable {
             + " satır  •  "
             + report.durationMillis()
             + " ms");
+    if (!report.satellites().isEmpty()) {
+      vm.appendLog("\nUydu tablo önizlemesi (ayrı DB):");
+      for (var sat : report.satellites()) {
+        vm.appendLog("  " + sat.table() + " — " + sat.sourceRowCount() + " kaynak satır");
+        if (!sat.skippedColumns().isEmpty()) {
+          vm.appendLog("      atlanacak (hedefte yok): " + sat.skippedColumns());
+        }
+        if (!sat.targetOnlyColumns().isEmpty()) {
+          vm.appendLog("      sadece hedefte (default/null): " + sat.targetOnlyColumns());
+        }
+      }
+    }
     dryRunPanel.setVisible(true);
     dryRunPanel.setManaged(true);
     btnDryRun.setDisable(false);

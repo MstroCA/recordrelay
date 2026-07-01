@@ -267,7 +267,8 @@ public final class CloneCommand implements Callable<Integer> {
       var rootId = resolved[1];
 
       if (dryRun) {
-        return performDryRun(printer, srcProfile, entityName, rootId);
+        return performDryRun(
+            printer, srcProfile, entityName, rootId, buildSatelliteConfig(resolver, entityName));
       }
       if (export || (target == null && !testcontainer)) {
         return performExport(printer, srcProfile, entityName, rootId, buildMaskingConfig());
@@ -368,7 +369,8 @@ public final class CloneCommand implements Callable<Integer> {
       io.recordrelay.cli.output.Printer printer,
       io.recordrelay.core.domain.ConnectionProfile srcProfile,
       String entityName,
-      String rootId)
+      String rootId,
+      SatelliteConfig satellites)
       throws Exception {
     printer.printLine(
         String.format("Dry run: %s #%s from '%s' (depth=%d)", entityName, rootId, source, depth));
@@ -381,13 +383,16 @@ public final class CloneCommand implements Callable<Integer> {
                 () ->
                     io.recordrelay.core.clone.domain.BusinessEntity.of(entityName, fallbackTable));
     var plan =
-        io.recordrelay.core.clone.domain.ContextClonePlan.liveClone(
+        io.recordrelay.core.clone.domain.ContextClonePlan.liveCloneWithOverrides(
             entity,
             rootId,
             srcProfile,
             srcProfile,
             depth,
-            io.recordrelay.core.clone.domain.MaskingConfig.none());
+            io.recordrelay.core.clone.domain.MaskingConfig.none(),
+            io.recordrelay.core.clone.domain.FieldOverrideConfig.none(),
+            conflict,
+            satellites);
 
     var report = DefaultContextCloneEngine.createDefault().dryRunContext(plan);
 
@@ -405,6 +410,21 @@ public final class CloneCommand implements Callable<Integer> {
         String.format(
             "Total: %d table(s), %d row(s) — %d ms",
             report.tableCount(), report.totalRows(), report.durationMillis()));
+
+    if (!report.satellites().isEmpty()) {
+      printer.printLine("");
+      printer.printLine("Satellite tables (separate DB, synced after clone):");
+      for (var sat : report.satellites()) {
+        printer.printLine(
+            String.format("  %s — %d source row(s)", sat.table(), sat.sourceRowCount()));
+        if (!sat.skippedColumns().isEmpty()) {
+          printer.printLine("      skipped (not in target): " + sat.skippedColumns());
+        }
+        if (!sat.targetOnlyColumns().isEmpty()) {
+          printer.printLine("      target-only (default/null): " + sat.targetOnlyColumns());
+        }
+      }
+    }
     printer.printLine("No data was written.");
     return ExitCode.SUCCESS;
   }

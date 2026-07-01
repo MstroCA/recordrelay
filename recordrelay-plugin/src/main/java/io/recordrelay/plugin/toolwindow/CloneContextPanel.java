@@ -428,16 +428,8 @@ public final class CloneContextPanel extends JPanel {
               @Override
               public void run(@NotNull com.intellij.openapi.progress.ProgressIndicator indicator) {
                 try {
-                  var resolver = RecordRelayService.getInstance().resolver();
-                  var srcProfile = resolver.resolve((String) cmbSource.getSelectedItem());
-                  var entity = buildEntity();
-                  var entityId = tfEntityId.getText().trim();
-                  int depth = (int) spinDepth.getValue();
-
-                  var plan =
-                      ContextClonePlan.liveClone(
-                          entity, entityId, srcProfile, srcProfile, depth, MaskingConfig.none());
-                  report = DefaultContextCloneEngine.createDefault().dryRunContext(plan);
+                  report =
+                      DefaultContextCloneEngine.createDefault().dryRunContext(buildPreviewPlan());
                 } catch (Exception ex) {
                   error = ex.getMessage();
                 }
@@ -464,6 +456,23 @@ public final class CloneContextPanel extends JPanel {
             });
   }
 
+  /** Builds the dry-run plan (source used as a dummy target — a preview never writes). */
+  private ContextClonePlan buildPreviewPlan() throws Exception {
+    var resolver = RecordRelayService.getInstance().resolver();
+    var srcProfile = resolver.resolve((String) cmbSource.getSelectedItem());
+    var entity = buildEntity();
+    return ContextClonePlan.liveCloneWithOverrides(
+        entity,
+        tfEntityId.getText().trim(),
+        srcProfile,
+        srcProfile,
+        (int) spinDepth.getValue(),
+        MaskingConfig.none(),
+        buildFieldOverrides(),
+        ConflictResolution.REGENERATE_IDENTITIES,
+        buildSatellites(entity.name()));
+  }
+
   private void showDryRunResult(DryRunReport report) {
     var sb = new StringBuilder();
     sb.append(
@@ -476,7 +485,20 @@ public final class CloneContextPanel extends JPanel {
       sb.append(
           String.format("%-40s %8d %6d%n", entry.tableName(), entry.rowCount(), entry.minDepth()));
     }
-    sb.append("%nNo data was written.");
+    if (!report.satellites().isEmpty()) {
+      sb.append(String.format("%nSatellite tables (separate DB):%n"));
+      for (var sat : report.satellites()) {
+        sb.append(String.format("  %s — %d source row(s)%n", sat.table(), sat.sourceRowCount()));
+        if (!sat.skippedColumns().isEmpty()) {
+          sb.append(String.format("      skipped (not in target): %s%n", sat.skippedColumns()));
+        }
+        if (!sat.targetOnlyColumns().isEmpty()) {
+          sb.append(
+              String.format("      target-only (default/null): %s%n", sat.targetOnlyColumns()));
+        }
+      }
+    }
+    sb.append(String.format("%nNo data was written."));
     taLog.setText(sb.toString());
     taLog.setCaretPosition(0);
     lblStatus.setText(

@@ -359,8 +359,110 @@ public final class DefaultCloneEngine
                     .thenComparing(DryRunTableEntry::tableName))
             .toList();
 
+    var satellitePreviews = previewSatellites(request, allRecords, rootPkCol);
     return new DryRunReport(
-        request.rootTable(), request.rootId(), entries, System.currentTimeMillis() - startMs);
+        request.rootTable(),
+        request.rootId(),
+        entries,
+        System.currentTimeMillis() - startMs,
+        satellitePreviews);
+  }
+
+  /**
+   * Previews each configured satellite: how many source rows would be synced and which columns
+   * differ between the satellite source and target. Never fails the dry run — any error yields an
+   * empty column diff.
+   */
+  private List<io.recordrelay.core.clone.domain.SatellitePreview> previewSatellites(
+      CloneRequest request, Map<String, List<DataRecord>> allRecords, String rootPkCol) {
+    if (request.satellites().isEmpty()) {
+      return List.of();
+    }
+    var rootRecords = allRecords.getOrDefault(request.rootTable(), List.of());
+    var rootIds = new java.util.LinkedHashSet<String>();
+    for (var record : rootRecords) {
+      var value = record.get(rootPkCol);
+      if (value != null) {
+        rootIds.add(value.toString());
+      }
+    }
+    var previews = new ArrayList<io.recordrelay.core.clone.domain.SatellitePreview>();
+    for (var satellite : request.satellites().satellites()) {
+      previews.add(previewSatellite(satellite, rootIds));
+    }
+    return previews;
+  }
+
+  private io.recordrelay.core.clone.domain.SatellitePreview previewSatellite(
+      io.recordrelay.core.clone.domain.SatelliteTable satellite, java.util.Set<String> rootIds) {
+    long rowCount = 0;
+    for (var rootId : rootIds) {
+      try {
+        rowCount +=
+            recordFetcher
+                .fetchByForeignKey(
+                    satellite.source(), satellite.table(), satellite.linkColumn(), rootId)
+                .size();
+      } catch (CloneException e) {
+        LOG.warn("Satellite preview: could not read '{}': {}", satellite.table(), e.getMessage());
+      }
+    }
+    var skipped = new ArrayList<String>();
+    var targetOnly = new ArrayList<String>();
+    diffSatelliteColumns(satellite, skipped, targetOnly);
+    return new io.recordrelay.core.clone.domain.SatellitePreview(
+        satellite.table(), rowCount, skipped, targetOnly);
+  }
+
+  /** Fills {@code skipped}/{@code targetOnly} with the source↔target column differences. */
+  private void diffSatelliteColumns(
+      io.recordrelay.core.clone.domain.SatelliteTable satellite,
+      List<String> skipped,
+      List<String> targetOnly) {
+    try {
+      var sourceCols = satelliteColumns(satellite.source(), satellite.table());
+      var targetCols = satelliteColumns(satellite.target(), satellite.table());
+      if (sourceCols.isEmpty() || targetCols.isEmpty()) {
+        return;
+      }
+      for (var col : sourceCols) {
+        if (!containsIgnoreCase(targetCols, col)) {
+          skipped.add(col);
+        }
+      }
+      for (var col : targetCols) {
+        if (!containsIgnoreCase(sourceCols, col)) {
+          targetOnly.add(col);
+        }
+      }
+    } catch (Exception e) {
+      LOG.debug(
+          "Satellite column diff unavailable for '{}': {}", satellite.table(), e.getMessage());
+    }
+  }
+
+  private List<String> satelliteColumns(ConnectionProfile profile, String table) {
+    try {
+      var connector = ConnectorRegistry.findConnector(profile);
+      var tableRef =
+          new TableRef(
+              new DatabaseRef(profile.database(), profile.type()), profile.schema(), table);
+      return connector.schemaInspector().inspectColumns(profile, tableRef).stream()
+          .map(io.recordrelay.core.domain.ColumnMeta::name)
+          .toList();
+    } catch (Exception e) {
+      LOG.debug("Could not inspect columns of '{}': {}", table, e.getMessage());
+      return List.of();
+    }
+  }
+
+  private static boolean containsIgnoreCase(List<String> cols, String target) {
+    for (var c : cols) {
+      if (c.equalsIgnoreCase(target)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override

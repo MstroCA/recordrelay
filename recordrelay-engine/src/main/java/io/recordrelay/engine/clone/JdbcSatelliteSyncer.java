@@ -91,6 +91,11 @@ public final class JdbcSatelliteSyncer implements SatelliteSyncPort, AutoCloseab
     if (satellites == null || satellites.isEmpty() || sourceRootIds.isEmpty()) {
       return SatelliteSyncResult.empty();
     }
+    LOG.info(
+        "Satellite sync: {} companion table(s), root {} id(s) {}",
+        satellites.size(),
+        rootTable,
+        sourceRootIds);
     for (var satellite : satellites) {
       try {
         processSatellite(
@@ -119,7 +124,14 @@ public final class JdbcSatelliteSyncer implements SatelliteSyncPort, AutoCloseab
       Sink sink)
       throws CloneException {
     listener.onTableExtractionStarted(satellite.table());
+    LOG.info(
+        "Satellite '{}': reading from source db '{}' where {} in root ids (target db '{}')",
+        satellite.table(),
+        satellite.source().database(),
+        satellite.linkColumn(),
+        satellite.target().database());
     var collected = collectAndRelink(satellite, rootTable, sourceRootIds, rootMapping);
+    LOG.info("Satellite '{}': fetched {} source row(s)", satellite.table(), collected.size());
     listener.onTableExtractionCompleted(satellite.table(), collected.size());
     if (collected.isEmpty()) {
       var msg =
@@ -162,6 +174,11 @@ public final class JdbcSatelliteSyncer implements SatelliteSyncPort, AutoCloseab
     writeRows(satellite.target(), satellite.table(), toWrite, listener, sink.warnings());
     sequenceSyncer.synchronize(satellite.target(), pkMapping);
     sink.summaries().add(new ClonedTableSummary(satellite.table(), toWrite.size()));
+    LOG.info(
+        "Satellite '{}': wrote {} row(s) to target (pk={} regenerated, overrides applied)",
+        satellite.table(),
+        toWrite.size(),
+        pkColumn);
   }
 
   /**
@@ -182,6 +199,13 @@ public final class JdbcSatelliteSyncer implements SatelliteSyncPort, AutoCloseab
         continue;
       }
       var newRootId = rootMapping.resolve(rootTable, sourceRootId).orElse(sourceRootId);
+      LOG.debug(
+          "Satellite '{}': {} row(s) for {}={} → remap link to {}",
+          satellite.table(),
+          rows.size(),
+          satellite.linkColumn(),
+          sourceRootId,
+          newRootId);
       for (var row : rows) {
         var fields = new LinkedHashMap<>(row.fields());
         fields.put(satellite.linkColumn(), castLike(fields.get(satellite.linkColumn()), newRootId));

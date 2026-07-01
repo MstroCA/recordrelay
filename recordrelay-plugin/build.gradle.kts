@@ -93,6 +93,28 @@ intellijPlatform {
             """.trimIndent()
         changeNotes =
             """
+            <h3>1.5.0</h3>
+            <ul>
+              <li>Schema-drift tolerant PostgreSQL writes: only columns present in the target table
+                  are inserted; source-only columns are skipped with a warning instead of failing.</li>
+              <li>Insert/fetch failures now include the underlying SQL cause for easier diagnosis.</li>
+            </ul>
+            <h3>1.4.0</h3>
+            <ul>
+              <li>Per-connection <b>schema</b> support (PostgreSQL search_path/currentSchema) so
+                  unqualified table names resolve across fetch, write, identity, and sequence sync.
+                  A Schema field was added to the connection dialog.</li>
+            </ul>
+            <h3>1.3.0</h3>
+            <ul>
+              <li><b>Satellite (companion) tables</b>: after a clone, sync rows from a table in a
+                  separate database that references the cloned root by a single link column
+                  (e.g. an event-sourced read_model). The link column is remapped to the new root id
+                  and the same field overrides are applied. Configure them in the new Satellite
+                  Tables section of the Clone screen.</li>
+              <li>New identity strategies: <b>Native sequence</b> (DB-assigned IDs) and
+                  <b>Start at custom ID</b>, selectable in the conflict/identity dropdown.</li>
+            </ul>
             <h3>1.2.0</h3>
             <ul>
               <li>Added four conflict resolution modes: Regenerate Identities, Isolate Namespace,

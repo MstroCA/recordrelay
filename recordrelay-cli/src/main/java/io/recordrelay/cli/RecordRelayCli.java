@@ -93,10 +93,29 @@ public final class RecordRelayCli implements Callable<Integer> {
       description = "Override the config directory (default: ~/.recordrelay)")
   Path configDir;
 
+  @Option(
+      names = {"-v", "--verbose"},
+      description = "Enable verbose (DEBUG) logging — shows SQL, per-table and per-record detail")
+  boolean verbose;
+
   /** CLI entry point. */
   public static void main(String[] args) {
+    // Raise the log level before any logger initialises (logback reads the property at startup).
+    if (isVerbose(args)) {
+      System.setProperty("rr.log.level", "DEBUG");
+      System.setProperty("rr.hikari.level", "INFO");
+    }
     int exitCode = new CommandLine(new RecordRelayCli()).execute(args);
     System.exit(exitCode);
+  }
+
+  private static boolean isVerbose(String[] args) {
+    for (var arg : args) {
+      if ("-v".equals(arg) || "--verbose".equals(arg)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override

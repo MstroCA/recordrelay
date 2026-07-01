@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CLI logging. Default level is INFO (phase-by-phase progress with counts).
+  Pass -v / --verbose on the command line to raise it to DEBUG (SQL, per-record
+  detail) — RecordRelayCli.main sets the rr.log.level system property.
+-->
+<configuration>
+  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+    <target>System.err</target>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{30} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- HikariCP is chatty at INFO; keep it at WARN unless verbose. -->
+  <logger name="com.zaxxer.hikari" level="${rr.hikari.level:-WARN}"/>
+
+  <root level="${rr.log.level:-INFO}">
+    <appender-ref ref="STDERR"/>
+  </root>
+</configuration>

@@ -32,6 +32,11 @@
 
 RecordRelay is not an ETL tool. It is a **business context reproduction** platform for developers and SREs: it reproduces a real entity — a customer, order, or user — along with all its relationships, from production to a local environment in minutes, or packages it as a `.rrpkg` file to share with others.
 
+**Beyond a single database:**
+- **Satellite (companion) tables** — reach into a *separate* database whose rows reference the cloned root by a single logical column (e.g. an event-sourced `read_model` normally produced by Kafka). After the clone, the matching rows are copied with the link column remapped to the newly allocated root id and the same field overrides applied — no message bus required.
+- **Identity strategies** — `REGENERATE_IDENTITIES` (default), `ISOLATE_NAMESPACE`, `SKIP_EXISTING`, `FAIL_SAFE`, `SEQUENCE` (allocate from the target's native identity sequence) and `START_AT` (custom start value).
+- **Per-connection schema** and **schema-drift tolerance** — connections carry an optional schema (PostgreSQL `search_path`); writes insert only the columns that exist in the target, skipping source-only columns instead of failing.
+
 **Three deployment targets:**
 - **Desktop** — JavaFX desktop application (AtlantaFX) — 14 screens covering cloning, discovery, query analysis, ERD graph view, schema drift, masking coverage, presets, scheduled sync, and in-app help
 - **CLI** — command-line tool that integrates into CI/CD pipelines
@@ -101,6 +106,24 @@ rr conn add --name local --type POSTGRESQL --host localhost --port 5432 --databa
 
 # Clone a customer from production to local
 rr clone --entity customer --id 12345 --from prod --target local --depth 3
+
+# Verbose logging (SQL + per-table/per-record detail)
+rr clone --entity customer --id 12345 --from prod --target local -v
+
+# Identity strategy: allocate IDs from the target's native sequence, or a custom start
+rr clone --entity order --id 987 --from prod --target local --conflict SEQUENCE
+rr clone --entity order --id 987 --from prod --target local --conflict START_AT --id-start 100000
+
+# Connection with a non-default schema (PostgreSQL search_path)
+rr conn add --name prod-user --type POSTGRESQL --host db.prod --port 5432 \
+    --database userdb --user admin --schema app_schema
+
+# Satellite (companion) table in a SEPARATE database, linked by a single column.
+# After the clone, matching rows are copied with the link column remapped to the new
+# root id and the same field overrides applied. Also definable per-entity in config.json.
+rr clone --entity beyanname --id 12 --from prod-core --target test-core \
+    --override mukellef_vkn=1234567890 \
+    --satellite "prod-user>test-user:read_model.beyanname_id"
 
 # Export to a package (share with others)
 rr export --entity customer --id 12345 --from prod --output ./exports/

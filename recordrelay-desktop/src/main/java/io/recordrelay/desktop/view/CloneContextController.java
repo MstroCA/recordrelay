@@ -109,6 +109,9 @@ public final class CloneContextController implements Refreshable {
   /** Connection names shown in the satellite source/target dropdowns. */
   private final ObservableList<String> connNames = FXCollections.observableArrayList();
 
+  /** Table names for the satellite Table dropdown, loaded from the chosen source connection. */
+  private final ObservableList<String> satTableOptions = FXCollections.observableArrayList();
+
   // ── Actions & Progress ─────────────────────────────────────────────────────
   @FXML private Button btnClone;
   @FXML private Button btnExport;
@@ -262,9 +265,17 @@ public final class CloneContextController implements Refreshable {
   private void setupSatelliteTable() {
     tblSatellites.setEditable(true);
     // Source/target are chosen from the configured connections (dropdown, not free text).
-    bindSatelliteCombo(colSatSource, SatelliteRow::sourceConnProperty);
-    bindSatelliteCombo(colSatTarget, SatelliteRow::targetConnProperty);
-    bindSatelliteColumn(colSatTable, SatelliteRow::tableProperty);
+    // Picking a source also loads that connection's tables into the Table dropdown.
+    colSatSource.setCellValueFactory(r -> r.getValue().sourceConnProperty());
+    colSatSource.setCellFactory(
+        javafx.scene.control.cell.ComboBoxTableCell.forTableColumn(connNames));
+    colSatSource.setOnEditCommit(
+        e -> {
+          e.getRowValue().sourceConnProperty().set(e.getNewValue());
+          loadSatelliteTables(e.getNewValue());
+        });
+    bindSatelliteCombo(colSatTarget, SatelliteRow::targetConnProperty, connNames);
+    bindSatelliteEditableCombo(colSatTable, SatelliteRow::tableProperty, satTableOptions);
     bindSatelliteColumn(colSatLink, SatelliteRow::linkColumnProperty);
     bindSatelliteColumn(colSatPk, SatelliteRow::pkColumnProperty);
     tblSatellites.setItems(satelliteRows);
@@ -282,10 +293,56 @@ public final class CloneContextController implements Refreshable {
 
   private void bindSatelliteCombo(
       TableColumn<SatelliteRow, String> column,
-      java.util.function.Function<SatelliteRow, StringProperty> prop) {
+      java.util.function.Function<SatelliteRow, StringProperty> prop,
+      ObservableList<String> options) {
     column.setCellValueFactory(r -> prop.apply(r.getValue()));
-    column.setCellFactory(javafx.scene.control.cell.ComboBoxTableCell.forTableColumn(connNames));
+    column.setCellFactory(javafx.scene.control.cell.ComboBoxTableCell.forTableColumn(options));
     column.setOnEditCommit(e -> prop.apply(e.getRowValue()).set(e.getNewValue()));
+  }
+
+  private void bindSatelliteEditableCombo(
+      TableColumn<SatelliteRow, String> column,
+      java.util.function.Function<SatelliteRow, StringProperty> prop,
+      ObservableList<String> options) {
+    column.setCellValueFactory(r -> prop.apply(r.getValue()));
+    column.setCellFactory(
+        col -> {
+          var cell = new javafx.scene.control.cell.ComboBoxTableCell<SatelliteRow, String>(options);
+          cell.setComboBoxEditable(true);
+          return cell;
+        });
+    column.setOnEditCommit(e -> prop.apply(e.getRowValue()).set(e.getNewValue()));
+  }
+
+  /** Loads the given connection's table names into the satellite Table dropdown (background). */
+  private void loadSatelliteTables(String connName) {
+    if (connName == null || connName.isBlank()) {
+      return;
+    }
+    new Thread(
+            () -> {
+              try {
+                var profile = resolver.resolve(connName);
+                var connector = ConnectorRegistry.findConnector(profile);
+                var dbRef = new DatabaseRef(profile.database(), profile.type());
+                var names =
+                    connector.schemaInspector().listTables(profile, dbRef).stream()
+                        .map(t -> t.tableName())
+                        .sorted()
+                        .toList();
+                Platform.runLater(() -> satTableOptions.setAll(names));
+              } catch (Exception ex) {
+                Platform.runLater(
+                    () ->
+                        vm.appendLog(
+                            "Satellite tabloları yüklenemedi ("
+                                + connName
+                                + "): "
+                                + ex.getMessage()));
+              }
+            },
+            "rr-sat-tables")
+        .start();
   }
 
   /** Loads the satellites saved for {@code entityName} in config.json into the editor table. */

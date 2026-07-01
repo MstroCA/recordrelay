@@ -94,7 +94,12 @@ public final class CloneContextPanel extends JPanel {
   private final JBTextArea taOverrides = new JBTextArea(4, 40);
 
   // Step 5: Satellite (companion) tables in a separate database
-  private final JBTextArea taSatellites = new JBTextArea(3, 40);
+  private final javax.swing.table.DefaultTableModel satModel =
+      new javax.swing.table.DefaultTableModel(
+          new Object[] {"Source conn", "Target conn", "Table", "Link column", "PK column"}, 0);
+  private final com.intellij.ui.table.JBTable tblSatellites =
+      new com.intellij.ui.table.JBTable(satModel);
+  private final ComboBox<String> satTableCombo = new ComboBox<>();
 
   // Export output dir (visible only in export mode)
   private final JBTextField tfOutputDir = new JBTextField();
@@ -116,10 +121,6 @@ public final class CloneContextPanel extends JPanel {
     taLog.setLineWrap(true);
     taOverrides.setLineWrap(false);
     taOverrides.setToolTipText("One override per line: column=value  or  table:column=value");
-    taSatellites.setLineWrap(false);
-    taSatellites.setToolTipText(
-        "One satellite per line: sourceConn>targetConn:table.linkColumn[.pkColumn]");
-
     setupExportModeToggle();
     btnLoadTables.addActionListener(e -> onLoadTables());
 
@@ -260,24 +261,116 @@ public final class CloneContextPanel extends JPanel {
     var container = new JPanel(new BorderLayout(0, JBUI.scale(4)));
     var hint =
         new JLabel(
-            "<html><small>Sync a companion table from another database after the clone"
-                + " (e.g. a Kafka-fed <code>read_model</code>). One per line:"
-                + " <code>sourceConn&gt;targetConn:table.linkColumn[.pkColumn]</code>."
-                + " The link column is remapped to the new root id; overrides are applied."
+            "<html><small>Companion tables in a <b>separate</b> database, linked to the cloned root"
+                + " by one column (e.g. a Kafka-fed <code>read_model</code>). Source/Target are"
+                + " picked from your connections; Table is loaded from the source connection."
                 + "</small></html>");
     container.add(hint, BorderLayout.NORTH);
-    taSatellites.setRows(3);
-    container.add(new JBScrollPane(taSatellites), BorderLayout.CENTER);
+
+    var connNames = connectionNames();
+    tblSatellites
+        .getColumnModel()
+        .getColumn(0)
+        .setCellEditor(new javax.swing.DefaultCellEditor(new ComboBox<>(connNames)));
+    tblSatellites
+        .getColumnModel()
+        .getColumn(1)
+        .setCellEditor(new javax.swing.DefaultCellEditor(new ComboBox<>(connNames)));
+    satTableCombo.setEditable(true);
+    tblSatellites
+        .getColumnModel()
+        .getColumn(2)
+        .setCellEditor(new javax.swing.DefaultCellEditor(satTableCombo));
+    tblSatellites.setRowHeight(JBUI.scale(24));
+    tblSatellites.setPreferredScrollableViewportSize(
+        new java.awt.Dimension(JBUI.scale(520), JBUI.scale(96)));
+    // Picking a Source loads that connection's tables into the Table dropdown.
+    satModel.addTableModelListener(
+        e -> {
+          if (e.getColumn() == 0
+              && e.getType() == javax.swing.event.TableModelEvent.UPDATE
+              && e.getFirstRow() >= 0) {
+            loadSatelliteTables((String) satModel.getValueAt(e.getFirstRow(), 0));
+          }
+        });
+    container.add(new JBScrollPane(tblSatellites), BorderLayout.CENTER);
 
     var buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+    var btnAdd = new JButton("Add");
+    var btnRemove = new JButton("Remove");
     var btnLoad = new JButton("Load from config");
     var btnSave = new JButton("Save to config");
+    btnAdd.addActionListener(e -> satModel.addRow(new Object[] {"", "", "", "beyanname_id", ""}));
+    btnRemove.addActionListener(e -> removeSelectedSatelliteRow());
     btnLoad.addActionListener(e -> onLoadSatellites());
     btnSave.addActionListener(e -> onSaveSatellites());
+    buttons.add(btnAdd);
+    buttons.add(btnRemove);
     buttons.add(btnLoad);
     buttons.add(btnSave);
     container.add(buttons, BorderLayout.SOUTH);
     return container;
+  }
+
+  private String[] connectionNames() {
+    try {
+      return RecordRelayService.getInstance()
+          .configStore()
+          .load()
+          .getConnections()
+          .keySet()
+          .toArray(new String[0]);
+    } catch (Exception e) {
+      return new String[0];
+    }
+  }
+
+  private void removeSelectedSatelliteRow() {
+    if (tblSatellites.isEditing()) {
+      tblSatellites.getCellEditor().stopCellEditing();
+    }
+    int row = tblSatellites.getSelectedRow();
+    if (row >= 0) {
+      satModel.removeRow(row);
+    }
+  }
+
+  /** Loads the given connection's table names into the satellite Table dropdown (background). */
+  private void loadSatelliteTables(String connName) {
+    if (connName == null || connName.isBlank()) {
+      return;
+    }
+    ProgressManager.getInstance()
+        .run(
+            new Task.Backgroundable(project, "RecordRelay — loading tables…", false) {
+              private java.util.List<String> names = java.util.List.of();
+
+              @Override
+              public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                  var resolver = RecordRelayService.getInstance().resolver();
+                  var profile = resolver.resolve(connName);
+                  var connector = ConnectorRegistry.findConnector(profile);
+                  var dbRef = new DatabaseRef(profile.database(), profile.type());
+                  names =
+                      connector.schemaInspector().listTables(profile, dbRef).stream()
+                          .map(t -> t.tableName())
+                          .sorted()
+                          .toList();
+                } catch (Exception ignored) {
+                  // leave the dropdown as-is; the Table cell stays free-text editable
+                }
+              }
+
+              @Override
+              public void onSuccess() {
+                SwingUtilities.invokeLater(
+                    () -> {
+                      satTableCombo.removeAllItems();
+                      names.forEach(satTableCombo::addItem);
+                    });
+              }
+            });
   }
 
   private JComponent buildLogForm() {
@@ -686,22 +779,24 @@ public final class CloneContextPanel extends JPanel {
   private io.recordrelay.core.clone.domain.SatelliteConfig buildSatellites(String entityName)
       throws Exception {
     var service = RecordRelayService.getInstance();
-    var satResolver =
-        new io.recordrelay.cli.engine.SatelliteConfigResolver(
-            service.configStore(), service.resolver());
-    var lines =
-        taSatellites
-            .getText()
-            .lines()
-            .map(String::trim)
-            .filter(l -> !l.isBlank() && !l.startsWith("#"))
-            .toList();
-    if (lines.isEmpty()) {
-      return satResolver.configForEntity(entityName);
+    var rows = satelliteRowsFromTable();
+    if (rows.isEmpty()) {
+      // Nothing entered in the editor — fall back to whatever is saved for the entity.
+      return new io.recordrelay.cli.engine.SatelliteConfigResolver(
+              service.configStore(), service.resolver())
+          .configForEntity(entityName);
     }
+    var resolver = service.resolver();
     var list = new ArrayList<io.recordrelay.core.clone.domain.SatelliteTable>();
-    for (var line : lines) {
-      list.add(satResolver.parse(line));
+    for (var e : rows) {
+      var pk = e.getPkColumn();
+      list.add(
+          new io.recordrelay.core.clone.domain.SatelliteTable(
+              resolver.resolve(e.getSourceConn()),
+              resolver.resolve(e.getTargetConn()),
+              e.getTable(),
+              e.getLinkColumn(),
+              (pk == null || pk.isBlank()) ? null : pk));
     }
     return new io.recordrelay.core.clone.domain.SatelliteConfig(list);
   }
@@ -715,26 +810,21 @@ public final class CloneContextPanel extends JPanel {
       }
       var config = RecordRelayService.getInstance().configStore().load();
       var entries = config.getSatellites() == null ? null : config.getSatellites().get(entityName);
+      satModel.setRowCount(0);
       if (entries == null || entries.isEmpty()) {
-        taSatellites.setText("");
         appendLog("No satellites configured for " + entityName + ".");
         return;
       }
-      var sb = new StringBuilder();
       for (var e : entries) {
-        sb.append(e.getSourceConn())
-            .append('>')
-            .append(e.getTargetConn())
-            .append(':')
-            .append(e.getTable())
-            .append('.')
-            .append(e.getLinkColumn());
-        if (e.getPkColumn() != null && !e.getPkColumn().isBlank()) {
-          sb.append('.').append(e.getPkColumn());
-        }
-        sb.append('\n');
+        satModel.addRow(
+            new Object[] {
+              nz(e.getSourceConn()),
+              nz(e.getTargetConn()),
+              nz(e.getTable()),
+              nz(e.getLinkColumn()),
+              nz(e.getPkColumn())
+            });
       }
-      taSatellites.setText(sb.toString());
     } catch (Exception ex) {
       appendLog("Failed to load satellites: " + ex.getMessage());
     }
@@ -748,16 +838,7 @@ public final class CloneContextPanel extends JPanel {
         return;
       }
       var config = RecordRelayService.getInstance().configStore().load();
-      var entries = new ArrayList<io.recordrelay.cli.config.SatelliteEntry>();
-      for (var line : taSatellites.getText().lines().map(String::trim).toList()) {
-        if (line.isBlank() || line.startsWith("#")) {
-          continue;
-        }
-        var entry = parseSatelliteEntry(line);
-        if (entry != null) {
-          entries.add(entry);
-        }
-      }
+      var entries = satelliteRowsFromTable();
       if (entries.isEmpty()) {
         config.getSatellites().remove(entityName);
       } else {
@@ -770,26 +851,41 @@ public final class CloneContextPanel extends JPanel {
     }
   }
 
-  /** Structurally parses a satellite spec line into a config entry (no connection resolution). */
-  private static io.recordrelay.cli.config.SatelliteEntry parseSatelliteEntry(String spec) {
-    int colon = spec.indexOf(':');
-    int gt = spec.indexOf('>');
-    if (colon <= 0 || gt <= 0 || gt >= colon) {
-      return null;
+  /** Reads the valid rows from the satellite table (source/target/table/link all present). */
+  private List<io.recordrelay.cli.config.SatelliteEntry> satelliteRowsFromTable() {
+    if (tblSatellites.isEditing()) {
+      tblSatellites.getCellEditor().stopCellEditing();
     }
-    var parts = spec.substring(colon + 1).split("\\.");
-    if (parts.length < 2 || parts[0].isBlank() || parts[1].isBlank()) {
-      return null;
+    var rows = new ArrayList<io.recordrelay.cli.config.SatelliteEntry>();
+    for (int i = 0; i < satModel.getRowCount(); i++) {
+      var src = cell(i, 0);
+      var tgt = cell(i, 1);
+      var table = cell(i, 2);
+      var link = cell(i, 3);
+      var pk = cell(i, 4);
+      if (src.isBlank() || tgt.isBlank() || table.isBlank() || link.isBlank()) {
+        continue;
+      }
+      var entry = new io.recordrelay.cli.config.SatelliteEntry();
+      entry.setSourceConn(src);
+      entry.setTargetConn(tgt);
+      entry.setTable(table);
+      entry.setLinkColumn(link);
+      if (!pk.isBlank()) {
+        entry.setPkColumn(pk);
+      }
+      rows.add(entry);
     }
-    var entry = new io.recordrelay.cli.config.SatelliteEntry();
-    entry.setSourceConn(spec.substring(0, gt).trim());
-    entry.setTargetConn(spec.substring(gt + 1, colon).trim());
-    entry.setTable(parts[0].trim());
-    entry.setLinkColumn(parts[1].trim());
-    if (parts.length >= 3 && !parts[2].isBlank()) {
-      entry.setPkColumn(parts[2].trim());
-    }
-    return entry;
+    return rows;
+  }
+
+  private String cell(int row, int col) {
+    var v = satModel.getValueAt(row, col);
+    return v == null ? "" : v.toString().trim();
+  }
+
+  private static String nz(String s) {
+    return s == null ? "" : s;
   }
 
   private void logCloneReport(io.recordrelay.core.clone.domain.CloneReport report) {

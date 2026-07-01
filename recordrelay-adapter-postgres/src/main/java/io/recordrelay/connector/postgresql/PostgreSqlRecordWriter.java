@@ -29,9 +29,11 @@ import java.sql.Savepoint;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.postgresql.util.PSQLException;
@@ -59,6 +61,10 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
   private List<String> columnOrder;
   private String qualifiedTable;
   private String plainTableName;
+
+  /** Columns that actually exist in the target table; {@code null} when they could not be read. */
+  private Set<String> targetColumns;
+
   private final List<DataRecord> buffer = new ArrayList<>(DEFAULT_BATCH_SIZE);
   private final LinkedHashMap<String, String> conflictRemaps = new LinkedHashMap<>();
   private int batchSize = DEFAULT_BATCH_SIZE;
@@ -81,10 +87,53 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
           DriverManager.getConnection(
               url, profile.credentials().username(), profile.credentials().password());
       conn.setAutoCommit(false);
+      loadTargetColumns(table);
       LOG.debug("Opened writer connection to '{}'", qualifiedTable);
     } catch (SQLException e) {
       throw new ConnectorException("Failed to open writer for '" + qualifiedTable + "'", e);
     }
+  }
+
+  /**
+   * Reads the target table's column names so writes tolerate schema drift: source columns absent
+   * from the target are skipped instead of failing the whole insert. Leaves {@link #targetColumns}
+   * {@code null} (meaning "insert every source column") when the metadata cannot be read.
+   */
+  private void loadTargetColumns(TableRef table) {
+    var schema = table.schemaName();
+    var sql =
+        schema.isEmpty()
+            ? "SELECT column_name FROM information_schema.columns"
+                + " WHERE table_name = ? AND table_schema = ANY(current_schemas(false))"
+            : "SELECT column_name FROM information_schema.columns"
+                + " WHERE table_name = ? AND table_schema = ?";
+    var cols = new LinkedHashSet<String>();
+    try (var ps = conn.prepareStatement(sql)) {
+      ps.setString(1, plainTableName);
+      if (!schema.isEmpty()) {
+        ps.setString(2, schema);
+      }
+      try (var rs = ps.executeQuery()) {
+        while (rs.next()) {
+          cols.add(rs.getString(1));
+        }
+      }
+    } catch (SQLException e) {
+      LOG.warn("Could not read target columns for '{}': {}", qualifiedTable, e.getMessage());
+    }
+    this.targetColumns = cols.isEmpty() ? null : cols;
+  }
+
+  private boolean targetHasColumn(String column) {
+    if (targetColumns == null) {
+      return true;
+    }
+    for (var c : targetColumns) {
+      if (c.equalsIgnoreCase(column)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -139,7 +188,25 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
   }
 
   private void initInsertStatement(DataRecord sample) throws ConnectorException {
-    columnOrder = new ArrayList<>(sample.fieldNames());
+    columnOrder = new ArrayList<>();
+    var skipped = new ArrayList<String>();
+    for (var col : sample.fieldNames()) {
+      if (targetHasColumn(col)) {
+        columnOrder.add(col);
+      } else {
+        skipped.add(col);
+      }
+    }
+    if (!skipped.isEmpty()) {
+      LOG.warn(
+          "Skipping {} source column(s) absent from target {}: {}",
+          skipped.size(),
+          qualifiedTable,
+          skipped);
+    }
+    if (columnOrder.isEmpty()) {
+      throw new ConnectorException("No source columns match the target table " + qualifiedTable);
+    }
     var colList = columnOrder.stream().map(this::quoteIdent).collect(Collectors.joining(", "));
     var placeholders = columnOrder.stream().map(c -> "?").collect(Collectors.joining(", "));
     // OVERRIDING SYSTEM VALUE allows inserting explicit values into identity/serial columns.

@@ -43,6 +43,13 @@ final class AttributeValues {
     if (av.b() != null) {
       return av.b().asByteArray();
     }
+    return toCollection(av);
+  }
+
+  /**
+   * Converts the set/list/map-valued forms of an {@link AttributeValue}; {@code null} otherwise.
+   */
+  private static Object toCollection(AttributeValue av) {
     if (av.hasSs()) {
       return av.ss();
     }

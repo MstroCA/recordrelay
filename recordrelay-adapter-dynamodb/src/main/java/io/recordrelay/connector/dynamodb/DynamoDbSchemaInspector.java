@@ -152,14 +152,30 @@ public final class DynamoDbSchemaInspector implements SchemaInspector {
 
   private static String inferAttributeType(
       software.amazon.awssdk.services.dynamodb.model.AttributeValue av) {
-    if (av.s() != null) return "S";
-    if (av.n() != null) return "N";
-    if (av.bool() != null) return "BOOL";
-    if (av.b() != null) return "B";
-    if (av.hasSs()) return "SS";
-    if (av.hasNs()) return "NS";
-    if (av.hasL()) return "L";
-    if (av.hasM()) return "M";
+    if (av.s() != null) {
+      return "S";
+    }
+    if (av.n() != null) {
+      return "N";
+    }
+    if (av.bool() != null) {
+      return "BOOL";
+    }
+    if (av.b() != null) {
+      return "B";
+    }
+    if (av.hasSs()) {
+      return "SS";
+    }
+    if (av.hasNs()) {
+      return "NS";
+    }
+    if (av.hasL()) {
+      return "L";
+    }
+    if (av.hasM()) {
+      return "M";
+    }
     return "S";
   }
 

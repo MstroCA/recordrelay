@@ -179,7 +179,8 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
         rollbackQuietly();
         flushRowByRow();
       } else {
-        throw new ConnectorException("Batch insert failed for '" + qualifiedTable + "'", e);
+        throw new ConnectorException(
+            "Batch insert failed for '" + qualifiedTable + "': " + e.getMessage(), e);
       }
     }
   }
@@ -194,7 +195,8 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
     } catch (ConnectorException ce) {
       throw ce;
     } catch (SQLException e) {
-      throw new ConnectorException("Row-by-row insert failed for '" + qualifiedTable + "'", e);
+      throw new ConnectorException(
+          "Row-by-row insert failed for '" + qualifiedTable + "': " + e.getMessage(), e);
     }
   }
 
@@ -215,7 +217,8 @@ public final class PostgreSqlRecordWriter implements RecordWriter {
       if (isUniqueViolation(e)) {
         handleUniqueViolation(record, e);
       } else {
-        throw new ConnectorException("Row insert failed for '" + qualifiedTable + "'", e);
+        throw new ConnectorException(
+            "Row insert failed for '" + qualifiedTable + "': " + e.getMessage(), e);
       }
     }
   }

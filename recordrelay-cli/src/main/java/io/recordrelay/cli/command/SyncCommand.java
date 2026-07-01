@@ -214,14 +214,21 @@ public final class SyncCommand implements Callable<Integer> {
       var resolver = new ConnProfileResolver(sync.parent.configStore());
       var srcProfile = resolver.resolve(entry.getSourceConn());
       var tgtProfile = resolver.resolve(entry.getTargetConn());
+      var entity = resolveEntity(entry);
+      var satellites =
+          new io.recordrelay.cli.engine.SatelliteConfigResolver(sync.parent.configStore(), resolver)
+              .configForEntity(entity.name());
       var plan =
-          ContextClonePlan.liveClone(
-              resolveEntity(entry),
+          ContextClonePlan.liveCloneWithOverrides(
+              entity,
               entry.getEntityId(),
               srcProfile,
               tgtProfile,
               entry.getDepth(),
-              buildMasking(entry));
+              buildMasking(entry),
+              io.recordrelay.core.clone.domain.FieldOverrideConfig.none(),
+              io.recordrelay.core.clone.domain.ConflictResolution.REGENERATE_IDENTITIES,
+              satellites);
 
       var report =
           DefaultContextCloneEngine.createDefault()

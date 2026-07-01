@@ -249,8 +249,17 @@ public final class ServeCommand implements Callable<Integer> {
               .findByName(entity)
               .orElseGet(() -> BusinessEntity.of(entity, entity + "s"));
       var plan =
-          ContextClonePlan.liveClone(
-              businessEntity, entityId, srcProfile, tgtProfile, depth, masking);
+          ContextClonePlan.liveCloneWithOverrides(
+              businessEntity,
+              entityId,
+              srcProfile,
+              tgtProfile,
+              depth,
+              masking,
+              io.recordrelay.core.clone.domain.FieldOverrideConfig.none(),
+              io.recordrelay.core.clone.domain.ConflictResolution.REGENERATE_IDENTITIES,
+              new io.recordrelay.cli.engine.SatelliteConfigResolver(store, resolver)
+                  .configForEntity(businessEntity.name()));
 
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, null);
 
@@ -304,8 +313,17 @@ public final class ServeCommand implements Callable<Integer> {
               .orElseGet(() -> BusinessEntity.of(sync.getEntityName(), sync.getEntityName() + "s"));
       var masking = sync.isMaskPii() ? standardMasking() : MaskingConfig.none();
       var plan =
-          ContextClonePlan.liveClone(
-              businessEntity, sync.getEntityId(), srcProfile, tgtProfile, sync.getDepth(), masking);
+          ContextClonePlan.liveCloneWithOverrides(
+              businessEntity,
+              sync.getEntityId(),
+              srcProfile,
+              tgtProfile,
+              sync.getDepth(),
+              masking,
+              io.recordrelay.core.clone.domain.FieldOverrideConfig.none(),
+              io.recordrelay.core.clone.domain.ConflictResolution.REGENERATE_IDENTITIES,
+              new io.recordrelay.cli.engine.SatelliteConfigResolver(parent.configStore(), resolver)
+                  .configForEntity(businessEntity.name()));
 
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, null);
       store.updateRunResult(name, java.time.Instant.now().toString(), "OK");
@@ -363,13 +381,17 @@ public final class ServeCommand implements Callable<Integer> {
                   () -> BusinessEntity.of(preset.getEntityName(), preset.getEntityName() + "s"));
       var masking = preset.isMaskPii() ? standardMasking() : MaskingConfig.none();
       var plan =
-          ContextClonePlan.liveClone(
+          ContextClonePlan.liveCloneWithOverrides(
               businessEntity,
               preset.getEntityId(),
               srcProfile,
               tgtProfile,
               preset.getDepth(),
-              masking);
+              masking,
+              io.recordrelay.core.clone.domain.FieldOverrideConfig.none(),
+              io.recordrelay.core.clone.domain.ConflictResolution.REGENERATE_IDENTITIES,
+              new io.recordrelay.cli.engine.SatelliteConfigResolver(parent.configStore(), resolver)
+                  .configForEntity(businessEntity.name()));
 
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, null);
 

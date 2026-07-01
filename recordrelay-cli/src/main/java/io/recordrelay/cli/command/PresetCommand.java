@@ -201,10 +201,21 @@ public final class PresetCommand implements Callable<Integer> {
         var entity = resolveEntity(p);
         var masking = buildMasking(p);
         var overrides = buildOverrides(p);
+        var satellites =
+            new io.recordrelay.cli.engine.SatelliteConfigResolver(connStore, resolver)
+                .configForEntity(entity.name());
 
         var plan =
             ContextClonePlan.liveCloneWithOverrides(
-                entity, p.getEntityId(), srcProfile, tgtProfile, p.getDepth(), masking, overrides);
+                entity,
+                p.getEntityId(),
+                srcProfile,
+                tgtProfile,
+                p.getDepth(),
+                masking,
+                overrides,
+                io.recordrelay.core.clone.domain.ConflictResolution.REGENERATE_IDENTITIES,
+                satellites);
 
         var report =
             DefaultContextCloneEngine.createDefault()

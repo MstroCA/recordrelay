@@ -61,7 +61,15 @@ public final class JdbcRecordFetcher implements RecordFetcherPort, AutoCloseable
       }
     } catch (SQLException e) {
       throw new CloneException(
-          "fetchById failed for " + tableName + "." + idColumn + "=" + idValue, e);
+          "fetchById failed for "
+              + tableName
+              + "."
+              + idColumn
+              + "="
+              + idValue
+              + ": "
+              + e.getMessage(),
+          e);
     }
   }
 
@@ -126,7 +134,15 @@ public final class JdbcRecordFetcher implements RecordFetcherPort, AutoCloseable
       }
     } catch (SQLException e) {
       throw new CloneException(
-          "fetchByForeignKey failed for " + tableName + "." + fkColumn + "=" + fkValue, e);
+          "fetchByForeignKey failed for "
+              + tableName
+              + "."
+              + fkColumn
+              + "="
+              + fkValue
+              + ": "
+              + e.getMessage(),
+          e);
     }
   }
 

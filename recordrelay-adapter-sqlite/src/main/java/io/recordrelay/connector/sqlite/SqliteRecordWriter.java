@@ -40,6 +40,7 @@ public final class SqliteRecordWriter implements RecordWriter {
   private PreparedStatement insertStmt;
   private List<String> columnOrder;
   private String tableName;
+  private java.util.Set<String> targetColumns;
   private final List<DataRecord> buffer = new ArrayList<>(DEFAULT_BATCH);
   private boolean skipExisting;
 
@@ -56,6 +57,7 @@ public final class SqliteRecordWriter implements RecordWriter {
     try {
       conn = DriverManager.getConnection("jdbc:sqlite:" + profile.database());
       conn.setAutoCommit(false);
+      loadTargetColumns();
       LOG.debug("Opened writer on '{}'", tableName);
     } catch (SQLException e) {
       throw new ConnectorException("Failed to open writer for '" + tableName + "'", e);
@@ -103,8 +105,56 @@ public final class SqliteRecordWriter implements RecordWriter {
     }
   }
 
+  /** Reads the target table's columns (via a 0-row SELECT) so writes tolerate schema drift. */
+  private void loadTargetColumns() {
+    var cols = new java.util.LinkedHashSet<String>();
+    try (var st = conn.createStatement();
+        var rs = st.executeQuery("SELECT * FROM \"" + tableName + "\" WHERE 1 = 0")) {
+      var md = rs.getMetaData();
+      for (int i = 1; i <= md.getColumnCount(); i++) {
+        cols.add(md.getColumnLabel(i));
+      }
+    } catch (SQLException e) {
+      LOG.warn("Could not read target columns for '{}': {}", tableName, e.getMessage());
+    }
+    this.targetColumns = cols.isEmpty() ? null : cols;
+  }
+
+  /** Returns the source columns that exist in the target, skipping (and logging) the rest. */
+  private List<String> matchingColumns(DataRecord sample) throws ConnectorException {
+    var kept = new ArrayList<String>();
+    var skipped = new ArrayList<String>();
+    for (var col : sample.fieldNames()) {
+      if (targetColumns == null || containsIgnoreCase(targetColumns, col)) {
+        kept.add(col);
+      } else {
+        skipped.add(col);
+      }
+    }
+    if (!skipped.isEmpty()) {
+      LOG.warn(
+          "Skipping {} source column(s) absent from target {}: {}",
+          skipped.size(),
+          tableName,
+          skipped);
+    }
+    if (kept.isEmpty()) {
+      throw new ConnectorException("No source columns match target " + tableName);
+    }
+    return kept;
+  }
+
+  private static boolean containsIgnoreCase(java.util.Set<String> cols, String target) {
+    for (var c : cols) {
+      if (c.equalsIgnoreCase(target)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private void initInsert(DataRecord sample) throws ConnectorException {
-    columnOrder = new ArrayList<>(sample.fieldNames());
+    columnOrder = new ArrayList<>(matchingColumns(sample));
     var cols = String.join(", ", columnOrder);
     var placeholders = columnOrder.stream().map(c -> "?").collect(Collectors.joining(", "));
     var verb = skipExisting ? "INSERT OR IGNORE INTO " : "INSERT INTO ";

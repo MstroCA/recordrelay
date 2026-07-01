@@ -10,6 +10,11 @@ configurations.all {
 
 description = "RecordRelay IntelliJ IDEA plugin"
 
+// Shared IDE compatibility range — referenced by both the plugin manifest and the
+// custom-repository updatePlugins.xml so the two never drift apart.
+val pluginSinceBuild = "241"
+val pluginUntilBuild = "262.*"
+
 repositories {
     mavenCentral()
     intellijPlatform {
@@ -109,8 +114,8 @@ intellijPlatform {
             </ul>
             """.trimIndent()
         ideaVersion {
-            sinceBuild = "241"
-            untilBuild = "262.*"
+            sinceBuild = pluginSinceBuild
+            untilBuild = pluginUntilBuild
         }
     }
     // pluginVerification: run './gradlew :recordrelay-plugin:runPluginVerifier' manually.
@@ -157,4 +162,48 @@ dependencies {
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit5)
     testRuntimeOnly(libs.logback.classic)
+}
+
+// ── Custom plugin repository (self-hosted updates) ──────────────────────────
+//
+// When a plugin is installed from a ZIP rather than the JetBrains Marketplace,
+// IDEA only learns about new versions from a repository descriptor named
+// updatePlugins.xml. Host the built ZIP and the generated updatePlugins.xml at a
+// stable URL, then add that URL under
+//   Settings → Plugins → ⚙ → Manage Plugin Repositories…
+// After that, new versions show up as an update (no uninstall/reinstall needed).
+//
+// Generate with:
+//   ./gradlew :recordrelay-plugin:generateUpdatePluginsXml -PpluginRepoBaseUrl=https://host/recordrelay
+val pluginRepoBaseUrl: Provider<String> =
+    providers.gradleProperty("pluginRepoBaseUrl").orElse("https://REPLACE-ME.example.com/recordrelay")
+
+tasks.register("generateUpdatePluginsXml") {
+    group = "distribution"
+    description = "Generates updatePlugins.xml describing the current plugin build for a custom repo."
+    dependsOn("buildPlugin")
+
+    val outFile = layout.buildDirectory.file("distributions/updatePlugins.xml")
+    val version = project.version.toString()
+    val baseUrl = pluginRepoBaseUrl.map { it.trimEnd('/') }
+    val sinceBuild = pluginSinceBuild
+    val untilBuild = pluginUntilBuild
+
+    outputs.file(outFile)
+    doLast {
+        val zipName = "RecordRelay-$version.zip"
+        val xml =
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <plugins>
+              <plugin id="io.recordrelay.plugin" url="${baseUrl.get()}/$zipName" version="$version">
+                <idea-version since-build="$sinceBuild" until-build="$untilBuild"/>
+              </plugin>
+            </plugins>
+            """.trimIndent() + "\n"
+        val file = outFile.get().asFile
+        file.parentFile.mkdirs()
+        file.writeText(xml)
+        logger.lifecycle("Wrote ${file.absolutePath} (points at ${baseUrl.get()}/$zipName)")
+    }
 }

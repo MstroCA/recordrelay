@@ -447,24 +447,26 @@ public final class CloneCommand implements Callable<Integer> {
     WebhookNotifier.notify(webhookUrl, payload);
   }
 
+  private io.recordrelay.core.domain.ConnectionProfile resolveTargetProfile(CloneParams p)
+      throws Exception {
+    if (p.container() == null) {
+      return p.resolver().resolve(target);
+    }
+    return new io.recordrelay.core.domain.ConnectionProfile(
+        "testcontainer",
+        "testcontainer",
+        "test",
+        p.container().type(),
+        p.container().host(),
+        p.container().hostPort(),
+        p.srcProfile().database(),
+        new io.recordrelay.core.domain.Credentials("rr_test", "rr_test"),
+        java.util.Map.of());
+  }
+
   private Integer performLiveClone(CloneParams p, String entityName, String rootId)
       throws Exception {
-    io.recordrelay.core.domain.ConnectionProfile tgtProfile;
-    if (p.container() != null) {
-      tgtProfile =
-          new io.recordrelay.core.domain.ConnectionProfile(
-              "testcontainer",
-              "testcontainer",
-              "test",
-              p.container().type(),
-              p.container().host(),
-              p.container().hostPort(),
-              p.srcProfile().database(),
-              new io.recordrelay.core.domain.Credentials("rr_test", "rr_test"),
-              java.util.Map.of());
-    } else {
-      tgtProfile = p.resolver().resolve(target);
-    }
+    var tgtProfile = resolveTargetProfile(p);
     p.printer()
         .printLine(
             String.format(

@@ -577,22 +577,7 @@ public final class CloneContextPanel extends JPanel {
               parseIdStart());
 
       var report = DefaultContextCloneEngine.createDefault().cloneContext(plan, buildListener());
-
-      appendLog(
-          "Clone complete — "
-              + report.totalRecords()
-              + " records in "
-              + report.formattedDuration());
-      if (!report.warnings().isEmpty()) {
-        appendLog("WARNINGS:");
-        report.warnings().forEach(w -> appendLog("  ⚠ " + w));
-      }
-      var statusText =
-          "Done — "
-              + report.totalRecords()
-              + " records"
-              + (report.warnings().isEmpty() ? "" : " (" + report.warnings().size() + " warnings)");
-      SwingUtilities.invokeLater(() -> lblStatus.setText(statusText));
+      logCloneReport(report);
     } catch (Exception ex) {
       appendLog("ERROR: " + ex.getMessage());
       SwingUtilities.invokeLater(() -> lblStatus.setText("Failed: " + ex.getMessage()));
@@ -779,6 +764,21 @@ public final class CloneContextPanel extends JPanel {
       entry.setPkColumn(parts[2].trim());
     }
     return entry;
+  }
+
+  private void logCloneReport(io.recordrelay.core.clone.domain.CloneReport report) {
+    appendLog(
+        "Clone complete — " + report.totalRecords() + " records in " + report.formattedDuration());
+    if (!report.warnings().isEmpty()) {
+      appendLog("WARNINGS:");
+      report.warnings().forEach(w -> appendLog("  ⚠ " + w));
+    }
+    var statusText =
+        "Done — "
+            + report.totalRecords()
+            + " records"
+            + (report.warnings().isEmpty() ? "" : " (" + report.warnings().size() + " warnings)");
+    SwingUtilities.invokeLater(() -> lblStatus.setText(statusText));
   }
 
   /** Parses the optional Start-ID field; returns {@code null} when blank or non-numeric. */

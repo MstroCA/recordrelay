@@ -617,27 +617,30 @@ public final class CloneContextController implements Refreshable {
 
       var engine = DefaultContextCloneEngine.createDefault();
       var report = engine.cloneContext(plan, buildListener());
-
-      vm.appendLog("\nTamamlandı:");
-      vm.appendLog("  Tablo sayısı : " + report.tableCount());
-      vm.appendLog("  Kayıt sayısı : " + report.totalRecords());
-      vm.appendLog("  Süre         : " + report.formattedDuration());
-      if (report.maskedFieldCount() > 0) {
-        vm.appendLog("  Maskelenen   : " + report.maskedFieldCount() + " alan");
-      }
-      if (!report.warnings().isEmpty()) {
-        vm.appendLog("\nUYARILAR:");
-        report.warnings().forEach(w -> vm.appendLog("  ⚠ " + w));
-      }
-      vm.markComplete(
-          "Tamamlandı — "
-              + report.totalRecords()
-              + " kayıt kopyalandı"
-              + (report.warnings().isEmpty() ? "" : " (" + report.warnings().size() + " uyarı)"));
+      logCloneReport(report);
     } catch (Exception e) {
       vm.appendLog("HATA: " + e.getMessage());
       vm.markFailed(e.getMessage());
     }
+  }
+
+  private void logCloneReport(io.recordrelay.core.clone.domain.CloneReport report) {
+    vm.appendLog("\nTamamlandı:");
+    vm.appendLog("  Tablo sayısı : " + report.tableCount());
+    vm.appendLog("  Kayıt sayısı : " + report.totalRecords());
+    vm.appendLog("  Süre         : " + report.formattedDuration());
+    if (report.maskedFieldCount() > 0) {
+      vm.appendLog("  Maskelenen   : " + report.maskedFieldCount() + " alan");
+    }
+    if (!report.warnings().isEmpty()) {
+      vm.appendLog("\nUYARILAR:");
+      report.warnings().forEach(w -> vm.appendLog("  ⚠ " + w));
+    }
+    vm.markComplete(
+        "Tamamlandı — "
+            + report.totalRecords()
+            + " kayıt kopyalandı"
+            + (report.warnings().isEmpty() ? "" : " (" + report.warnings().size() + " uyarı)"));
   }
 
   private void runExport() {

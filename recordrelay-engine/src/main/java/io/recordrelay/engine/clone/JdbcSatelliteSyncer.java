@@ -87,32 +87,27 @@ public final class JdbcSatelliteSyncer implements SatelliteSyncPort, AutoCloseab
       FieldOverrideConfig overrides,
       CloneProgressListener listener)
       throws CloneException {
-    var summaries = new ArrayList<ClonedTableSummary>();
-    var warnings = new ArrayList<String>();
+    var sink = new Sink(new ArrayList<>(), new ArrayList<>());
     if (satellites == null || satellites.isEmpty() || sourceRootIds.isEmpty()) {
       return SatelliteSyncResult.empty();
     }
     for (var satellite : satellites) {
       try {
         processSatellite(
-            satellite,
-            rootTable,
-            sourceRootIds,
-            rootMapping,
-            overrides,
-            listener,
-            summaries,
-            warnings);
+            satellite, rootTable, sourceRootIds, rootMapping, overrides, listener, sink);
       } catch (CloneException e) {
         var msg = "Satellite '" + satellite.table() + "' sync failed: " + e.getMessage();
-        warnings.add(msg);
+        sink.warnings().add(msg);
         listener.onWarning(msg);
         LOG.warn(
             "Satellite sync failed  table={}  reason={}", satellite.table(), e.getMessage(), e);
       }
     }
-    return new SatelliteSyncResult(summaries, warnings);
+    return new SatelliteSyncResult(sink.summaries(), sink.warnings());
   }
+
+  /** Accumulates per-satellite write summaries and non-fatal warnings across the run. */
+  private record Sink(List<ClonedTableSummary> summaries, List<String> warnings) {}
 
   private void processSatellite(
       SatelliteTable satellite,
@@ -121,8 +116,7 @@ public final class JdbcSatelliteSyncer implements SatelliteSyncPort, AutoCloseab
       IdentityMapping rootMapping,
       FieldOverrideConfig overrides,
       CloneProgressListener listener,
-      List<ClonedTableSummary> summaries,
-      List<String> warnings)
+      Sink sink)
       throws CloneException {
     listener.onTableExtractionStarted(satellite.table());
     var collected = collectAndRelink(satellite, rootTable, sourceRootIds, rootMapping);
@@ -135,7 +129,7 @@ public final class JdbcSatelliteSyncer implements SatelliteSyncPort, AutoCloseab
               + satellite.linkColumn()
               + " in "
               + sourceRootIds;
-      warnings.add(msg);
+      sink.warnings().add(msg);
       listener.onWarning(msg);
       return;
     }
@@ -165,9 +159,9 @@ public final class JdbcSatelliteSyncer implements SatelliteSyncPort, AutoCloseab
       toWrite.add(new DataRecord(fields));
     }
 
-    writeRows(satellite.target(), satellite.table(), toWrite, listener, warnings);
+    writeRows(satellite.target(), satellite.table(), toWrite, listener, sink.warnings());
     sequenceSyncer.synchronize(satellite.target(), pkMapping);
-    summaries.add(new ClonedTableSummary(satellite.table(), toWrite.size()));
+    sink.summaries().add(new ClonedTableSummary(satellite.table(), toWrite.size()));
   }
 
   /**

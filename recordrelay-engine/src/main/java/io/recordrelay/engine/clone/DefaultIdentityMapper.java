@@ -82,51 +82,10 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
     }
 
     var builder = IdentityMapping.builder();
-
     for (var entry : records.entrySet()) {
-      var table = entry.getKey();
-      var tableRecords = entry.getValue();
-      if (tableRecords.isEmpty()) {
-        continue;
+      if (!entry.getValue().isEmpty()) {
+        allocateTable(builder, target, entry.getKey(), entry.getValue(), resolution, identityStart);
       }
-
-      var pkColumn = detectPkColumn(table, tableRecords.get(0));
-
-      // SEQUENCE: pull fresh IDs from the table's own native sequence (nextval).
-      if (resolution == ConflictResolution.SEQUENCE) {
-        var seqIds = allocateFromSequence(target, table, pkColumn, tableRecords.size());
-        if (seqIds != null) {
-          registerAllocatedIds(builder, table, tableRecords, pkColumn, seqIds);
-          LOG.debug("Allocated {} IDs for '{}' from native sequence", seqIds.size(), table);
-          continue;
-        }
-        LOG.warn("No native sequence found for {}.{} — falling back to max(id)+1", table, pkColumn);
-      }
-
-      var targetMax = queryMaxId(target, table, pkColumn, resolution);
-      var sourceMax = maxSourceId(tableRecords, pkColumn);
-      long counter = allocationBase(resolution, identityStart, targetMax, sourceMax);
-
-      for (var record : tableRecords) {
-        var sourceId = extractFieldAsString(record, pkColumn);
-        if (sourceId == null) {
-          LOG.warn(
-              "Record in table '{}' has no value for PK column '{}'; skipping identity allocation",
-              table,
-              pkColumn);
-          continue;
-        }
-        counter++;
-        builder.register(table, sourceId, String.valueOf(counter));
-      }
-
-      LOG.debug(
-          "Allocated {} new IDs for table '{}' starting from {} (targetMax={}, sourceMax={})",
-          tableRecords.size(),
-          table,
-          counter - tableRecords.size() + 1,
-          targetMax,
-          sourceMax);
     }
 
     var mapping = builder.build();
@@ -135,6 +94,51 @@ public final class DefaultIdentityMapper implements IdentityMapperPort, AutoClos
         mapping.totalMappings(),
         records.size());
     return mapping;
+  }
+
+  /** Allocates new IDs for a single table and registers them into {@code builder}. */
+  private void allocateTable(
+      IdentityMapping.Builder builder,
+      ConnectionProfile target,
+      String table,
+      List<DataRecord> tableRecords,
+      ConflictResolution resolution,
+      Long identityStart)
+      throws CloneException {
+    var pkColumn = detectPkColumn(table, tableRecords.get(0));
+
+    // SEQUENCE: pull fresh IDs from the table's own native sequence (nextval).
+    if (resolution == ConflictResolution.SEQUENCE) {
+      var seqIds = allocateFromSequence(target, table, pkColumn, tableRecords.size());
+      if (seqIds != null) {
+        registerAllocatedIds(builder, table, tableRecords, pkColumn, seqIds);
+        LOG.debug("Allocated {} IDs for '{}' from native sequence", seqIds.size(), table);
+        return;
+      }
+      LOG.warn("No native sequence found for {}.{} — falling back to max(id)+1", table, pkColumn);
+    }
+
+    var targetMax = queryMaxId(target, table, pkColumn, resolution);
+    var sourceMax = maxSourceId(tableRecords, pkColumn);
+    long counter = allocationBase(resolution, identityStart, targetMax, sourceMax);
+
+    for (var record : tableRecords) {
+      var sourceId = extractFieldAsString(record, pkColumn);
+      if (sourceId == null) {
+        LOG.warn(
+            "Record in table '{}' has no value for PK column '{}'; skipping identity allocation",
+            table,
+            pkColumn);
+        continue;
+      }
+      counter++;
+      builder.register(table, sourceId, String.valueOf(counter));
+    }
+    LOG.debug(
+        "Allocated {} new IDs for table '{}' (targetMax={})",
+        tableRecords.size(),
+        table,
+        targetMax);
   }
 
   /**

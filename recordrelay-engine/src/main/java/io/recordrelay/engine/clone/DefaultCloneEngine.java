@@ -205,19 +205,7 @@ public final class DefaultCloneEngine
         totalRaw,
         elapsed(t1));
 
-    long t2 = System.currentTimeMillis();
-    var identityMapping =
-        identityMapper.allocate(
-            request.target(),
-            request.rootTable(),
-            rawRecords,
-            request.conflictResolution(),
-            request.identityStart());
-    listener.onIdentitiesAllocated(identityMapping.totalMappings());
-    LOG.info(
-        "  [3/5] identities allocated  mappings={} elapsed={}ms",
-        identityMapping.totalMappings(),
-        elapsed(t2));
+    var identityMapping = allocateIdentities(request, rawRecords, listener);
 
     long t3 = System.currentTimeMillis();
     var contextFkGraph = buildContextFkGraph(request, rawRecords.keySet());
@@ -300,6 +288,27 @@ public final class DefaultCloneEngine
         written,
         elapsed(t));
     return result.summaries();
+  }
+
+  private IdentityMapping allocateIdentities(
+      CloneRequest request,
+      Map<String, List<DataRecord>> rawRecords,
+      CloneProgressListener listener)
+      throws CloneException {
+    long t2 = System.currentTimeMillis();
+    var identityMapping =
+        identityMapper.allocate(
+            request.target(),
+            request.rootTable(),
+            rawRecords,
+            request.conflictResolution(),
+            request.identityStart());
+    listener.onIdentitiesAllocated(identityMapping.totalMappings());
+    LOG.info(
+        "  [3/5] identities allocated  mappings={} elapsed={}ms",
+        identityMapping.totalMappings(),
+        elapsed(t2));
+    return identityMapping;
   }
 
   private static long elapsed(long fromMs) {

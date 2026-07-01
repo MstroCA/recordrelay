@@ -63,6 +63,7 @@ public interface SatelliteSyncPort {
       warnings = warnings == null ? List.of() : List.copyOf(warnings);
     }
 
+    /** Returns a result with no summaries and no warnings. */
     public static SatelliteSyncResult empty() {
       return new SatelliteSyncResult(List.of(), List.of());
     }

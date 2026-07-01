@@ -7,6 +7,11 @@ versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Two new identity-allocation strategies in the conflict/identity selector: **`SEQUENCE`** (allocate IDs straight from the target table's native identity/serial sequence via `nextval`, i.e. exactly what the DB would assign — no post-write sequence drift; PostgreSQL, falls back to `max(id)+1` elsewhere) and **`START_AT`** (allocate sequentially from a caller-supplied start value, floor-protected against existing rows). Exposed as `--id-start` on the CLI and a "Start ID" field in Desktop and Plugin. New `identityStart` on `CloneRequest`/`ContextClonePlan`
+- Satellite (companion) tables — after a clone, sync rows from a table in a **separate** database that references the cloned root by a single link column (e.g. an event-sourced `read_model` in a user-module DB normally populated by Kafka). The engine copies the matching rows, remaps the link column to the newly allocated root id, regenerates the companion PK, applies the same field overrides, and bumps the target sequence. Defined once per entity in `config.json` (`satellites` map) and honoured by CLI, Desktop, and Plugin; CLI also supports ad-hoc `--satellite sourceConn>targetConn:table.linkColumn[.pkColumn]`. New: `SatelliteTable`/`SatelliteConfig` domain types, `SatelliteSyncPort` + `JdbcSatelliteSyncer`, `SatelliteConfigResolver`
+- Satellite editors in the Desktop (editable table) and IntelliJ Plugin (spec textarea with Load/Save-to-config) Clone Context screens
+- End-to-end Testcontainers integration test (`SatelliteCloneIT`, two-DB topology) proving link remap + field overrides across databases; run with `./gradlew :recordrelay-engine:integrationTest`
+- Self-hosted plugin update channel — `generateUpdatePluginsXml` Gradle task emits a custom-repository `updatePlugins.xml` so IDEA detects new versions without uninstall/reinstall (see `docs/plugin-updates.md`)
 - DB-driven Clone Context UI in both Desktop and IntelliJ Plugin — root table loaded via `SchemaInspector.listTables()`, no hardcoded entity picker
 - Export mode in plugin `CloneContextPanel` — `JFileChooser` output directory picker, calls `ContextClonePlan.bugCapture()`
 - Clone history dashboard in plugin `MonitorPanel` — KPI metrics (total clones, success rate, avg duration), history table, health check

@@ -177,7 +177,7 @@ jobs:
             --dest recordrelay-desktop/build/packages
 
       - name: Upload desktop artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: desktop-${{ matrix.os }}
           path: recordrelay-desktop/build/packages/*.${{ matrix.pkg_ext }}
@@ -227,7 +227,7 @@ jobs:
           tar -czf "${DIST}.tar.gz" "${DIST}/"
 
       - name: Upload CLI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cli
           path: rr-cli-${{ steps.ver.outputs.VERSION }}.tar.gz
@@ -272,7 +272,7 @@ jobs:
         run: ./gradlew :recordrelay-plugin:signPlugin "-PreleaseVersion=${{ steps.ver.outputs.VERSION }}"
 
       - name: Upload plugin artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: plugin
           path: |

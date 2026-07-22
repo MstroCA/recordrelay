@@ -24,7 +24,7 @@ google-cloud-bigquery = "2.41.0"
 # New SQL connectors
 mysql-connector = "9.1.0"
 mssql-jdbc = "12.8.1.jre11"
-oracle-jdbc = "23.6.0.24.10"
+oracle-jdbc = "23.26.2.0.0"
 sqlite-jdbc = "3.47.1.0"
 
 # New NoSQL connectors
